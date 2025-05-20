@@ -3,11 +3,10 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import MapScreen from '../screens/MapScreen';
-import TestScreen from '../screens/TestScreen';
-import A from '../screens/A';
-import B from '../screens/B';
-import { Settings } from 'react-native';  
-import SettingsScreen from '../screens/Settings';
+import DevicesScreen from '../screens/PAScreen';
+import AddDeviceScreen from '../screens/AddPA';
+import ConfigureScreen from '../screens/ConfigureScreen'; // New import
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,14 +21,14 @@ export function BottomTabNavigator() {
             case 'Map':
               iconName = focused ? 'map' : 'map-outline';
               break;
-            case 'Events':
-              iconName = focused ? 'people' : 'people-outline';
+            case 'Devices':
+              iconName = focused ? 'list' : 'list-outline';
               break;
-            case 'Create':
+            case 'Add Device':
               iconName = focused ? 'add-circle' : 'add-circle-outline';
               break;
-            case 'History':
-              iconName = focused ? 'time' : 'time-outline';
+            case 'Configure': // Updated name
+              iconName = focused ? 'cog' : 'cog-outline'; // Changed icon to represent configuration
               break;
             case 'Settings':
               iconName = focused ? 'settings' : 'settings-outline';
@@ -42,7 +41,7 @@ export function BottomTabNavigator() {
         },
         tabBarActiveTintColor: '#85BB65',
         tabBarInactiveTintColor: 'gray',
-        headerShown: false, // Hide headers for a cleaner look (optional)
+        headerShown: false,
       })}
     >
       <Tab.Screen
@@ -51,19 +50,19 @@ export function BottomTabNavigator() {
         options={{ tabBarLabel: 'Map' }}
       />
       <Tab.Screen
-        name="Test"
-        component={TestScreen}
-        options={{ tabBarLabel: 'Events' }}
+        name="Devices"
+        component={DevicesScreen}
+        options={{ tabBarLabel: 'Devices' }}
       />
       <Tab.Screen
-        name="A"
-        component={A}
-        options={{ tabBarLabel: 'Create' }}
+        name="Add Device"
+        component={AddDeviceScreen}
+        options={{ tabBarLabel: 'Add Device' }}
       />
       <Tab.Screen
-        name="B"
-        component={B}
-        options={{ tabBarLabel: 'History' }}
+        name="Configure" // Updated name
+        component={ConfigureScreen}
+        options={{ tabBarLabel: 'Configure' }}
       />
       <Tab.Screen
         name="Settings"
