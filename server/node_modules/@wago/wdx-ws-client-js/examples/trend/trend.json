@@ -1,0 +1,33 @@
+{
+    "uuid": "396979d1-cde8-4d87-b5c9-3fa7fbdc8f66",
+    "name": "Trend a/b",
+    "active": true,
+    "dataPoolAmount": 1,
+    "dataPoolPeriod": "SECOND",
+    "dataPoolInterval": 1000,
+    "followType": null,
+    "type": "TRACE",
+    "interpolationActive": true,
+    "interpolationType": "reduce",
+    "maxPoints": 2000,
+    "timeFormat": null,
+    "defaultTimeFormat": "Timestamp",
+    "dataSet": [
+        {
+            "uuid": "ec4cdf3a-2ccb-4c09-99f7-8db073532234",
+            "name": "a",
+            "dataSchemaPath": "Virtual.store.a",
+            "enabled": true,
+            "order": null,
+            "valueSnapshot": "68"
+        },
+        {
+            "uuid": "c9ab35a4-19ed-4852-987c-26b1d1689c11",
+            "name": "b",
+            "dataSchemaPath": "Virtual.store.b",
+            "enabled": true,
+            "order": null,
+            "valueSnapshot": "194"
+        }
+    ]
+}

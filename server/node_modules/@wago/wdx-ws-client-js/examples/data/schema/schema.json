@@ -1,0 +1,19 @@
+{
+    "path": "Virtual.store.c",
+    "relativePath": "c",
+    "registered": false,
+    "extendable": false,
+    "readonly": false,
+    "expandable": false,
+    "refreshable": false,
+    "editable": true,
+    "removable": true,
+    "subscribeable": true,
+    "value": "",
+    "uuid": "bd72ab5a-3e74-4804-ab4b-4f92626c9106",
+    "metadata": {
+        "uuid": "87f12f12-0fd0-4abc-94e8-4f7ecd6b38d4",
+        "type": "virtual"
+    },
+    "name": "c"
+}

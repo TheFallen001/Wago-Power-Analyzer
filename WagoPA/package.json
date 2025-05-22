@@ -1,15 +1,27 @@
 {
   "name": "wagopa",
-  "license": "0BSD",
   "version": "1.0.0",
+  "license": "MIT",
   "main": "index.ts",
+  "private": true,
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build": "npx tsc",
+    "build:prod": "npm run clean && npm run build && npm run docs",
+    "build:dev": "npm run build",
+    "docs": "npm run docs:md",
+    "docs:md": "npx typedoc --plugin typedoc-plugin-markdown --theme markdown --out docs",
+    "clean": "npx rimraf ./docs ./build ./.build.json",
+    "cover": "npm run cover:unit && npm run cover:integration && npm run cover:report",
+    "cover:unit": "nyc --silent npm run test:unit",
+    "cover:integration": "nyc --silent --no-clean npm run test:integration",
+    "cover:report": "nyc report --reporter=lcov --reporter=text"
   },
   "dependencies": {
+    "@babel/runtime": "^7.27.1",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-community/datetimepicker": "^8.3.0",
     "@react-native-picker/picker": "^2.11.0",
@@ -17,6 +29,8 @@
     "@react-navigation/native": "^7.1.9",
     "@react-navigation/native-stack": "^7.3.13",
     "@react-navigation/stack": "^7.3.2",
+    "@wago/wdx-schema": "^24.0.0",
+    "@wago/wdx-ws-client-js": "^24.0.0",
     "expo": "53.0.9",
     "expo-barcode-scanner": "~12.7.0",
     "expo-camera": "~16.1.6",
@@ -36,13 +50,27 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
-    "react-native-vector-icons": "^10.2.0"
+    "react-native-vector-icons": "^10.2.0",
+    "react-native-websocket": "^1.0.2",
+    "rxjs": "^7.8.2",
+    "uuid": "^9.0.1",
+    "websocket": "^1.0.35"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
+    "@babel/core": "^7.27.1",
+    "@types/node": "^20.5.9",
     "@types/react": "~19.0.10",
+    "@types/uuid": "^9.0.4",
+    "@types/websocket": "^1.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
-    "typescript": "~5.8.3"
-  },
-  "private": true
+    "concat-md": "^0.5.0",
+    "nodemon": "^3.0.2",
+    "nyc": "^15.1.0",
+    "rimraf": "^5.0.1",
+    "showdown": "^2.1.0",
+    "ts-node": "^10.9.2",
+    "typedoc": "^0.25.6",
+    "typedoc-plugin-markdown": "^3.14.0",
+    "typescript": "^5.4.5"
+  }
 }

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { devices, updateDeviceConfig } from '../utils/DeviceStore';
+import { devices, updateDeviceConfig, subscribeToDeviceUpdates } from '../utils/DeviceStore';
 import { RootParamList } from '../navigation/types';
 import ConfigCard from '../components/ConfigCard';
 
@@ -19,10 +19,13 @@ const ConfigureScreen = () => {
   const [baud2, setBaud2] = useState('');
   const [check2, setCheck2] = useState('');
   const [stopBit2, setStopBit2] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const updateFormWithDevice = useCallback((deviceIdToUse: string | undefined) => {
+  // Update form with selected device data from DeviceStore
+  const updateFormWithDevice = (deviceIdToUse: string | undefined) => {
     const selectedDevice = devices.find((d) => d.id === deviceIdToUse);
     if (selectedDevice) {
+      console.log(`Updating form for device: ${selectedDevice.name}`);
       setAddr1(selectedDevice.config.addr1.toString());
       setBaud1(selectedDevice.config.baud1.toString());
       setCheck1(selectedDevice.config.check1.toString());
@@ -31,6 +34,7 @@ const ConfigureScreen = () => {
       setCheck2(selectedDevice.config.check2.toString());
       setStopBit2(selectedDevice.config.stopBit2.toString());
     } else {
+      console.log('No device selected, clearing form');
       setAddr1('');
       setBaud1('');
       setCheck1('');
@@ -39,17 +43,41 @@ const ConfigureScreen = () => {
       setCheck2('');
       setStopBit2('');
     }
+  };
+
+  // Subscribe to DeviceStore updates
+  useEffect(() => {
+    console.log('Subscribing to device updates in ConfigureScreen');
+    const unsubscribe = subscribeToDeviceUpdates((updatedDevices) => {
+      console.log('Received device update in ConfigureScreen:', updatedDevices.map(d => ({ id: d.id, name: d.name })));
+      setIsLoading(false);
+      if (updatedDevices.length > 0 && !selectedDeviceId) {
+        const initialDevice = deviceId && updatedDevices.some(d => d.id === deviceId) ? deviceId : updatedDevices[0].id;
+        console.log(`Setting initial device: ${initialDevice}`);
+        setSelectedDeviceId(initialDevice);
+        updateFormWithDevice(initialDevice);
+      } else if (updatedDevices.length === 0) {
+        console.log('No devices available, clearing selection');
+        setSelectedDeviceId(undefined);
+        updateFormWithDevice(undefined);
+      }
+      // Update form if the selected device's config changed
+      if (selectedDeviceId) {
+        updateFormWithDevice(selectedDeviceId);
+      }
+    });
+
+    return () => {
+      console.log('Unsubscribing from device updates in ConfigureScreen');
+      unsubscribe();
+    };
   }, []);
 
+  // Update form when selected device changes
   useEffect(() => {
-    if (deviceId) {
-      setSelectedDeviceId(deviceId);
-      updateFormWithDevice(deviceId);
-    } else {
-      setSelectedDeviceId(undefined);
-      updateFormWithDevice(undefined);
-    }
-  }, [deviceId, updateFormWithDevice]);
+    console.log(`Selected device changed to: ${selectedDeviceId}`);
+    updateFormWithDevice(selectedDeviceId);
+  }, [selectedDeviceId]);
 
   const handleApply = () => {
     if (!selectedDeviceId) {
@@ -72,11 +100,24 @@ const ConfigureScreen = () => {
       return;
     }
 
+    // Update DeviceStore (which will also send to WDX)
+    console.log('Applying configuration:', newConfig);
     updateDeviceConfig(selectedDeviceId, newConfig);
+
     Alert.alert('Success', 'Configuration applied successfully!');
     navigation.goBack();
   };
 
+  if (isLoading) {
+    console.log('Rendering loading state');
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Loading devices...</Text>
+      </View>
+    );
+  }
+
+  console.log('Rendering main UI with devices:', devices.map(d => ({ id: d.id, name: d.name })));
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Power Analyzer Configuration</Text>
@@ -86,10 +127,10 @@ const ConfigureScreen = () => {
           value={selectedDeviceId ? devices.find(d => d.id === selectedDeviceId)?.name || 'No Device' : 'No Device Selected'}
           options={devices.map(device => ({ label: device.name, value: device.id }))}
           onChange={(value) => {
+            console.log(`Device selection changed to: ${value}`);
             setSelectedDeviceId(value);
-            updateFormWithDevice(value);
           }}
-          disabled={false}
+          disabled={devices.length === 0}
         />
         <ConfigCard
           label="Address (Addr1)"
