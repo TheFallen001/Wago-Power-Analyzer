@@ -1,7 +1,6 @@
-// components/DrawerField.tsx
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Picker as RNPicker } from 'react-native';
-
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Picker as RNPicker } from '@react-native-picker/picker'; // Correct import
 interface DrawerFieldProps {
   label: string;
   value: string;

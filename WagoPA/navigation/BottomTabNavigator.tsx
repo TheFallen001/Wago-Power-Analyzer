@@ -1,11 +1,10 @@
-// navigation/BottomTabNavigator.tsx
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import MapScreen from '../screens/MapScreen';
 import DevicesScreen from '../screens/PAScreen';
 import AddDeviceScreen from '../screens/AddPA';
-import ConfigureScreen from '../screens/ConfigureScreen'; // New import
+import ConfigureScreen from '../screens/ConfigureScreen'; 
 import SettingsScreen from '../screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();

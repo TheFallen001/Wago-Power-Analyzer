@@ -87,16 +87,16 @@ const AddDeviceScreen = () => {
         <Button
           title="Active"
           onPress={() => setStatus('Active')}
-          color={status === 'Active' ? '#007AFF' : '#ccc'}
+          color={status === 'Active' ? '#28a745' : '#ccc'}
         />
         <Button
           title="Inactive"
           onPress={() => setStatus('Inactive')}
-          color={status === 'Inactive' ? '#007AFF' : '#ccc'}
+          color={status === 'Inactive' ? '#FF2400' : '#ccc'}
         />
       </View>
 
-      <Button title="Add Device" onPress={handleAddDevice} color="#007AFF" />
+      <Button title="Add Device" onPress={handleAddDevice} color="#28a745" />
     </View>
   );
 };
@@ -104,7 +104,7 @@ const AddDeviceScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 40,
     backgroundColor: '#fff',
   },
   title: {

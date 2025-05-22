@@ -22,11 +22,6 @@ const AppNavigator = () => {
           component={BottomTabNavigator}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="Configure"
-          component={ConfigureScreen}
-          options={{ headerShown: false }}
-        />
       </Stack.Navigator>
     </NavigationContainer>
   );
