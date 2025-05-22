@@ -4,6 +4,8 @@
     "slug": "WagoPA",
     "version": "1.0.0",
     "orientation": "portrait",
+    "jsEngine": "jsc",
+
     "icon": "./assets/logo-wago.jpg",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,

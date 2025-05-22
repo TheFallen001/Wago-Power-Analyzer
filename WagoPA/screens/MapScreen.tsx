@@ -27,8 +27,7 @@ const MapScreen = () => {
     latitudeDelta: 0.5,
     longitudeDelta: 0.5,
   });
-  const scaleAnim = useRef(new Animated.Value(0)).current; // For scale animation
-
+  const scaleAnim = useRef(new Animated.Value(0)).current; 
   useEffect(() => {
     if (mapRef.current && devices.length > 0) {
       const coordinates = devices.map((device) => ({
@@ -44,48 +43,45 @@ const MapScreen = () => {
 
   useEffect(() => {
     if (selectedDevice) {
-      // Start animation when modal opens
       Animated.timing(scaleAnim, {
         toValue: 1,
         duration: 200,
         useNativeDriver: true,
       }).start();
     } else {
-      // Reset animation when modal closes
       scaleAnim.setValue(0);
     }
   }, [selectedDevice, scaleAnim]);
 
   const handleConfigure = (deviceId: string) => {
-    console.log('Configure button pressed for device:', deviceId); // Debug log
+    console.log('Configure button pressed for device:', deviceId); 
     navigation.navigate('Configure', { deviceId });
-    setSelectedDevice(null); // Close modal after navigation
+    setSelectedDevice(null); 
   };
 
   const handleMarkerPress = useCallback(
-    (device: typeof devices[0], event: any) => {
-      setSelectedDevice(device);
-      // Approximate screen position based on marker coordinates
-      const { latitude, longitude } = device;
-      const { width, height } = Dimensions.get('window');
+  (device: typeof devices[0]) => {
+    const { latitude, longitude } = device;
 
-      // Convert lat/lng to approximate screen position (simplified)
-      const latDelta = region.latitudeDelta;
-      const lngDelta = region.longitudeDelta;
-      const latRange = latDelta * 0.5;
-      const lngRange = lngDelta * 0.5;
+    mapRef.current?.animateToRegion(
+      {
+        latitude,
+        longitude,
+        latitudeDelta: region.latitudeDelta,
+        longitudeDelta: region.longitudeDelta,
+      },
+      300
+    );
 
-      const x = ((longitude - (region.longitude - lngRange)) / lngDelta) * width;
-      const y = ((region.latitude + latRange - latitude) / latDelta) * height;
+    const { width, height } = Dimensions.get('window');
+    const modalX = width / 2 - 125; 
+    const modalY = height / 2 - 160; 
 
-      // Adjust position to place modal above marker
-      setModalPosition({
-        x: Math.max(20, Math.min(x - 125, width - 270)), // 125 is half modal width, 270 is modal width + padding
-        y: Math.max(20, y - 180), // Position above marker (modal height + offset)
-      });
-    },
-    [region]
-  );
+    setModalPosition({ x: modalX, y: modalY });
+    setSelectedDevice(device);
+  },
+  [region]
+);
 
   const handleRegionChange = (newRegion: Region) => {
     setRegion(newRegion);
@@ -109,7 +105,7 @@ const MapScreen = () => {
         }}
         onRegionChangeComplete={handleRegionChange}
         onDoublePress={(e) => {
-          e.stopPropagation(); // Prevent double-tap zoom
+          e.stopPropagation(); 
         }}
       >
         {devices.map((device) => (
@@ -119,7 +115,7 @@ const MapScreen = () => {
               latitude: device.latitude,
               longitude: device.longitude,
             }}
-            onPress={(e) => handleMarkerPress(device, e)}
+            onPress={(e) => handleMarkerPress(device)}
           >
             <View style={styles.markerDot} />
           </Marker>
@@ -197,7 +193,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0)', // Transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0)', 
   },
   modalContent: {
     position: 'absolute',
