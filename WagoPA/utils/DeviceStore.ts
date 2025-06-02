@@ -124,6 +124,10 @@ const initializeWebSocket = () => {
       const config = message.config;
       updateDeviceFromWDXData(path, config);
       notifyListeners();
+    } else if (message.type === 'configUpdateError') {
+      // Handle config update error from backend
+      console.error('Config update error from backend:', message);
+      // Optionally, notify listeners or show an alert in the UI
     } else {
       console.log('Unknown message type received at', new Date().toISOString(), ':', message.type);
     }
@@ -157,8 +161,21 @@ export const updateDeviceConfig = (id: string, config: Device['config']) => {
       const deviceName = device.name.replace('Analyzer - ', '');
       const devicePath = devicePathMap[deviceName];
       if (devicePath) {
-        // Send the entire config as a single message to backend
-        ws.send(JSON.stringify({ type: 'setConfig', path: devicePath, config }));
+        // Send each config property as a separate message to backend (WDX expects one key at a time)
+        Object.entries(config).forEach(([key, value]) => {
+          let wdxKey = key;
+          if (key === 'addr1') wdxKey = 'addr1';
+          else if (key === 'baud1') wdxKey = 'baud1';
+          else if (key === 'check1') wdxKey = 'checkDigit 1';
+          else if (key === 'stopBit1') wdxKey = 'stopBit1';
+          else if (key === 'baud2') wdxKey = 'baud2';
+          else if (key === 'check2') wdxKey = 'check2';
+          else if (key === 'stopBit2') wdxKey = 'stopBit2';
+          // WDX expects a single value, not an object, so send just the value
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'setConfig', path: devicePath, config: { [wdxKey]: value } }));
+          }
+        });
       } else {
         console.log(`No device path found for device: ${deviceName} at`, new Date().toISOString());
       }

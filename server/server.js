@@ -16,6 +16,9 @@ const clients = new Set();
 // Store the latest schema for new clients
 let latestSchemaDevices = [];
 
+// Move client to a higher scope so it is accessible in the WebSocket connection handler
+let client;
+
 wss.on('connection', (ws) => {
   console.log('New React Native client connected at', new Date().toISOString());
   clients.add(ws);
@@ -44,28 +47,57 @@ wss.on('connection', (ws) => {
     try {
       const message = JSON.parse(data);
       if (message.type === 'setConfig' && message.path && message.config) {
-        // Find the child path and update value via WDX
         if (client && client.dataService && typeof client.dataService.setValue === 'function') {
-          // Send each config key as a separate setValue call
+          // For each config key, use the correct WDX key mapping and update the value at the correct path
           Object.entries(message.config).forEach(([key, value]) => {
-            // Map frontend config keys to WDX keys if needed
             let wdxKey = key;
-            if (key === 'addr1') wdxKey = 'Addr1';
-            else if (key === 'baud1') wdxKey = 'Baud1';
-            else if (key === 'check1') wdxKey = 'Check Digit 1';
-            else if (key === 'stopBit1') wdxKey = 'Stop Bit 1';
-            else if (key === 'baud2') wdxKey = 'Baud2';
-            else if (key === 'check2') wdxKey = 'Check Digit 2';
-            else if (key === 'stopBit2') wdxKey = 'Stop Bit 2';
-            // Compose the value object for WDX
-            const valueObj = { [wdxKey]: value };
-            client.dataService.setValue(message.path, valueObj).subscribe({
+            if (key === 'addr1') wdxKey = 'addr1';
+            else if (key === 'baud1') wdxKey = 'baud1';
+            else if (key === 'check1') wdxKey = 'check1';
+            else if (key === 'stopBit1') wdxKey = 'stopBit1';
+            else if (key === 'baud2') wdxKey = 'baud2';
+            else if (key === 'check2') wdxKey = 'check2';
+            else if (key === 'stopBit2') wdxKey = 'stopBit2';
+            // The correct path for each config key is message.path + '.' + wdxKey (e.g., Virtual.Virt.Addr1)
+            const valuePath = `${message.path}.${wdxKey}`;
+            console.log(`[WDX setValue] Attempting to set`, { path: valuePath, key: wdxKey, value });
+            client.dataService.setValue(valuePath, value).subscribe({
               next: (result) => {
-                // Optionally, broadcast config update confirmation
-                ws.send(JSON.stringify({ type: 'configUpdated', path: message.path, config: valueObj }));
+                console.log('[WDX setValue SUCCESS]', { path: valuePath, key: wdxKey, value, result: JSON.stringify(result) });
+                ws.send(JSON.stringify({ type: 'configUpdated', path: valuePath, config: { [wdxKey]: value } }));
+                // Broadcast to all clients so all UIs update immediately
+                broadcast({ type: 'data', path: valuePath, value: { [wdxKey]: value } });
+                // After a successful update, fetch the latest schema and broadcast to all clients
+                client.dataService.getSchema('Virtual', 1).subscribe({
+                  next: (schema) => {
+                    const children = schema.children || [];
+                    const devices = children.map((child) => {
+                      const deviceName = child.path.split('.').pop() || child.path;
+                      return {
+                        name: deviceName,
+                        config: {
+                          addr1: child.value?.addr1 ?? 0,
+                          baud1: child.value?.baud1 ?? 0,
+                          check1: child.value?.check1 ?? 0,
+                          stopBit1: child.value?.stopBit1 ?? 0,
+                          baud2: child.value?.baud2 ?? 0,
+                          check2: child.value?.check2 ?? 0,
+                          stopBit2: child.value?.stopBit2 ?? 0,
+                        },
+                        path: child.path
+                      };
+                    });
+                    latestSchemaDevices = devices.map(({ name, config }) => ({ name, config }));
+                    broadcast({ type: 'schema', devices: latestSchemaDevices });
+                  },
+                  error: (err) => {
+                    console.error('[WDX getSchema ERROR after setValue]', err);
+                  }
+                });
               },
               error: (err) => {
-                ws.send(JSON.stringify({ type: 'configUpdateError', path: message.path, error: err.message }));
+                console.error('[WDX setValue ERROR]', { path: valuePath, key: wdxKey, value, error: err && err.message ? err.message : err });
+                ws.send(JSON.stringify({ type: 'configUpdateError', path: valuePath, error: err && err.message ? err.message : err }));
               }
             });
           });
@@ -93,8 +125,8 @@ const broadcast = (message) => {
 
 // Initialize WDX client
 const initializeWDXClient = async () => {
-  const client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService({
-    url: 'ws://192.168.31.204:7081/wdx/ws',
+  client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService({
+    url: 'ws://192.168.31.174:7481/wdx/ws',
     reconnectAttempts: 5,
     reconnectDelay: 1000,
   });
