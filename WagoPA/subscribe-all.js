@@ -12,12 +12,12 @@
     
     // Set up WebSocket client
     const c = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService({
-      url: 'ws://192.168.31.175:7081/wdx/ws',
+      url: 'ws://192.168.31.204:7081/wdx/ws',
       reconnectAttempts: 5,
       reconnectDelay: 1000
     });
 
-    console.log('Connecting to ws://192.168.31.175:7081/wdx/ws');
+    console.log('Connecting to ws://192.168.31.204:7081/wdx/ws');
     await c.connect();
     console.log('Connected successfully');
 

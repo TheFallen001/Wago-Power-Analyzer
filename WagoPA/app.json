@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "jsEngine": "jsc",
-
     "icon": "./assets/logo-wago.jpg",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -15,14 +14,23 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/logo-wago.jpg",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.CAMERA"
+      ],
+      "package": "com.anonymous.WagoPA"
     },
     "web": {
       "favicon": "./assets/logo-wago.jpg"

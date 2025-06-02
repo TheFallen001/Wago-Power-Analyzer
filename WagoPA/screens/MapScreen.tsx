@@ -1,5 +1,5 @@
 // screens/MapScreen.tsx
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -9,25 +9,30 @@ import {
   Modal,
   Pressable,
   Animated,
-} from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { devices } from '../utils/DeviceStore';
-import { RootParamList } from '../navigation/types';
+} from "react-native";
+import MapView, { Marker, Region, PROVIDER_GOOGLE } from "react-native-maps";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { devices } from "../utils/DeviceStore";
+import { RootParamList } from "../navigation/types";
 
 const MapScreen = () => {
   const mapRef = useRef<MapView>(null);
   const navigation = useNavigation<NativeStackNavigationProp<RootParamList>>();
-  const [selectedDevice, setSelectedDevice] = useState<typeof devices[0] | null>(null);
-  const [modalPosition, setModalPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [selectedDevice, setSelectedDevice] = useState<
+    (typeof devices)[0] | null
+  >(null);
+  const [modalPosition, setModalPosition] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
   const [region, setRegion] = useState<Region>({
     latitude: 41.0082,
     longitude: 28.9784,
     latitudeDelta: 0.5,
     longitudeDelta: 0.5,
   });
-  const scaleAnim = useRef(new Animated.Value(0)).current; 
+  const scaleAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (mapRef.current && devices.length > 0) {
       const coordinates = devices.map((device) => ({
@@ -54,34 +59,34 @@ const MapScreen = () => {
   }, [selectedDevice, scaleAnim]);
 
   const handleConfigure = (deviceId: string) => {
-    console.log('Configure button pressed for device:', deviceId); 
-    navigation.navigate('Configure', { deviceId });
-    setSelectedDevice(null); 
+    console.log("Configure button pressed for device:", deviceId);
+    navigation.navigate("Configure", { deviceId });
+    setSelectedDevice(null);
   };
 
   const handleMarkerPress = useCallback(
-  (device: typeof devices[0]) => {
-    const { latitude, longitude } = device;
+    (device: (typeof devices)[0]) => {
+      const { latitude, longitude } = device;
 
-    mapRef.current?.animateToRegion(
-      {
-        latitude,
-        longitude,
-        latitudeDelta: region.latitudeDelta,
-        longitudeDelta: region.longitudeDelta,
-      },
-      300
-    );
+      mapRef.current?.animateToRegion(
+        {
+          latitude,
+          longitude,
+          latitudeDelta: region.latitudeDelta,
+          longitudeDelta: region.longitudeDelta,
+        },
+        300
+      );
 
-    const { width, height } = Dimensions.get('window');
-    const modalX = width / 2 - 125; 
-    const modalY = height / 2 - 160; 
+      const { width, height } = Dimensions.get("window");
+      const modalX = width / 2 - 125;
+      const modalY = height / 2 - 160;
 
-    setModalPosition({ x: modalX, y: modalY });
-    setSelectedDevice(device);
-  },
-  [region]
-);
+      setModalPosition({ x: modalX, y: modalY });
+      setSelectedDevice(device);
+    },
+    [region]
+  );
 
   const handleRegionChange = (newRegion: Region) => {
     setRegion(newRegion);
@@ -96,7 +101,7 @@ const MapScreen = () => {
       <MapView
         ref={mapRef}
         style={styles.map}
-        customMapStyle={customMapStyle}
+        provider={PROVIDER_GOOGLE}
         initialRegion={{
           latitude: 41.0082,
           longitude: 28.9784,
@@ -105,7 +110,7 @@ const MapScreen = () => {
         }}
         onRegionChangeComplete={handleRegionChange}
         onDoublePress={(e) => {
-          e.stopPropagation(); 
+          e.stopPropagation();
         }}
       >
         {devices.map((device) => (
@@ -146,7 +151,10 @@ const MapScreen = () => {
                 <Text>Voltage Range: {selectedDevice.voltageRange}</Text>
                 <Text>Status: {selectedDevice.status}</Text>
                 <TouchableOpacity
-                  style={[styles.configureButton, { backgroundColor: '#28a745' }]}
+                  style={[
+                    styles.configureButton,
+                    { backgroundColor: "#28a745" },
+                  ]}
                   onPress={() => handleConfigure(selectedDevice.id)}
                   activeOpacity={0.7}
                 >
@@ -162,86 +170,73 @@ const MapScreen = () => {
   );
 };
 
-const customMapStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#ebe3cd' }] },
-  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#523735' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f1e6' }] },
-  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#c9b2a6' }] },
-  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#f5f1e6' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#f8c967' }] },
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-  { featureType: 'water', stylers: [{ color: '#c9e8ff' }] },
-];
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   map: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
+    width: Dimensions.get("window").width,
+    height: Dimensions.get("window").height,
   },
   markerDot: {
     width: 20,
     height: 20,
-    backgroundColor: '#6CBB3C',
+    backgroundColor: "#6CBB3C",
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: "#fff",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0)', 
+    backgroundColor: "rgba(0, 0, 0, 0)",
   },
   modalContent: {
-    position: 'absolute',
-    backgroundColor: '#fff',
+    position: "absolute",
+    backgroundColor: "#fff",
     borderRadius: 10,
     width: 250,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
   item: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     padding: 15,
   },
   name: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 5,
-    color: '#000',
+    color: "#000",
   },
   configureButton: {
     padding: 5,
     borderRadius: 5,
     marginTop: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   configureButtonText: {
-    color: '#fff',
-    textAlign: 'center',
+    color: "#fff",
+    textAlign: "center",
     fontSize: 14,
   },
   pointer: {
     width: 0,
     height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
+    backgroundColor: "transparent",
+    borderStyle: "solid",
     borderLeftWidth: 10,
     borderRightWidth: 10,
     borderTopWidth: 10,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: '#f9f9f9',
-    alignSelf: 'center',
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderTopColor: "#f9f9f9",
+    alignSelf: "center",
     marginBottom: -10,
   },
 });
