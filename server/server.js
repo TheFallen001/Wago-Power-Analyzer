@@ -67,28 +67,47 @@ wss.on('connection', (ws) => {
                 ws.send(JSON.stringify({ type: 'configUpdated', path: valuePath, config: { [wdxKey]: value } }));
                 // Broadcast to all clients so all UIs update immediately
                 broadcast({ type: 'data', path: valuePath, value: { [wdxKey]: value } });
-                // After a successful update, fetch the latest schema and broadcast to all clients
+                // After a successful update, restart the schema subscription to get fresh values from WDX
                 client.dataService.getSchema('Virtual', 1).subscribe({
                   next: (schema) => {
                     const children = schema.children || [];
-                    const devices = children.map((child) => {
-                      const deviceName = child.path.split('.').pop() || child.path;
-                      return {
-                        name: deviceName,
-                        config: {
-                          addr1: child.value?.addr1 ?? 0,
-                          baud1: child.value?.baud1 ?? 0,
-                          check1: child.value?.check1 ?? 0,
-                          stopBit1: child.value?.stopBit1 ?? 0,
-                          baud2: child.value?.baud2 ?? 0,
-                          check2: child.value?.check2 ?? 0,
-                          stopBit2: child.value?.stopBit2 ?? 0,
-                        },
-                        path: child.path
-                      };
+                    // For each device, subscribe to its value and update config with the actual value
+                    const devicePromises = children.map((child) => {
+                      return new Promise((resolve) => {
+                        client.dataService.register(child.path).subscribe({
+                          next: (data) => {
+                            const deviceName = child.path.split('.').pop() || child.path;
+                            resolve({
+                              name: deviceName,
+                              config: {
+                                addr1: data?.value?.addr1 ?? data?.value?.Addr1 ?? 0,
+                                baud1: data?.value?.baud1 ?? data?.value?.Baud1 ?? 0,
+                                check1: data?.value?.check1 ?? data?.value?.['Check Digit 1'] ?? 0,
+                                stopBit1: data?.value?.stopBit1 ?? data?.value?.['Stop Bit 1'] ?? 0,
+                                baud2: data?.value?.baud2 ?? data?.value?.Baud2 ?? 0,
+                                check2: data?.value?.check2 ?? data?.value?.['Check Digit 2'] ?? 0,
+                                stopBit2: data?.value?.stopBit2 ?? data?.value?.['Stop Bit 2'] ?? 0,
+                              },
+                              path: child.path
+                            });
+                          },
+                          error: () => {
+                            const deviceName = child.path.split('.').pop() || child.path;
+                            resolve({
+                              name: deviceName,
+                              config: {
+                                addr1: 0, baud1: 0, check1: 0, stopBit1: 0, baud2: 0, check2: 0, stopBit2: 0
+                              },
+                              path: child.path
+                            });
+                          }
+                        });
+                      });
                     });
-                    latestSchemaDevices = devices.map(({ name, config }) => ({ name, config }));
-                    broadcast({ type: 'schema', devices: latestSchemaDevices });
+                    Promise.all(devicePromises).then((devices) => {
+                      latestSchemaDevices = devices.map(({ name, config }) => ({ name, config }));
+                      broadcast({ type: 'schema', devices: latestSchemaDevices });
+                    });
                   },
                   error: (err) => {
                     console.error('[WDX getSchema ERROR after setValue]', err);
@@ -135,7 +154,7 @@ const initializeWDXClient = async () => {
   client.dataService = new DataService(client);
 
   try {
-    console.log('Connecting to WDX server at ws://192.168.31.204:7081/wdx/ws at', new Date().toISOString());
+    console.log('Connecting to WDX server at ws://192.168.31.174:7481/wdx/ws at', new Date().toISOString());
     await client.connect();
     console.log('Connected successfully to WDX server at', new Date().toISOString());
 
