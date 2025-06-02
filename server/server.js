@@ -4,6 +4,7 @@
  */
 const WDXWSClient = require('@wago/wdx-ws-client-js');
 const WebSocket = require('ws');
+const { DataService } = require('./services/DataService.js');
 
 // Set up WebSocket server for React Native clients
 const wss = new WebSocket.Server({ port: 8080 });
@@ -38,6 +39,42 @@ wss.on('connection', (ws) => {
     console.error('Client WebSocket error at', new Date().toISOString(), ':', error.message);
     clients.delete(ws);
   });
+
+  ws.on('message', (data) => {
+    try {
+      const message = JSON.parse(data);
+      if (message.type === 'setConfig' && message.path && message.config) {
+        // Find the child path and update value via WDX
+        if (client && client.dataService && typeof client.dataService.setValue === 'function') {
+          // Send each config key as a separate setValue call
+          Object.entries(message.config).forEach(([key, value]) => {
+            // Map frontend config keys to WDX keys if needed
+            let wdxKey = key;
+            if (key === 'addr1') wdxKey = 'Addr1';
+            else if (key === 'baud1') wdxKey = 'Baud1';
+            else if (key === 'check1') wdxKey = 'Check Digit 1';
+            else if (key === 'stopBit1') wdxKey = 'Stop Bit 1';
+            else if (key === 'baud2') wdxKey = 'Baud2';
+            else if (key === 'check2') wdxKey = 'Check Digit 2';
+            else if (key === 'stopBit2') wdxKey = 'Stop Bit 2';
+            // Compose the value object for WDX
+            const valueObj = { [wdxKey]: value };
+            client.dataService.setValue(message.path, valueObj).subscribe({
+              next: (result) => {
+                // Optionally, broadcast config update confirmation
+                ws.send(JSON.stringify({ type: 'configUpdated', path: message.path, config: valueObj }));
+              },
+              error: (err) => {
+                ws.send(JSON.stringify({ type: 'configUpdateError', path: message.path, error: err.message }));
+              }
+            });
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to process message from frontend:', err);
+    }
+  });
 });
 
 // Broadcast message to all connected clients
@@ -57,13 +94,16 @@ const broadcast = (message) => {
 // Initialize WDX client
 const initializeWDXClient = async () => {
   const client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService({
-    url: 'ws://192.168.31.175:7081/wdx/ws',
+    url: 'ws://192.168.31.174:7481/wdx/ws',
     reconnectAttempts: 5,
     reconnectDelay: 1000,
   });
 
+  // Attach DataService to client for backend operations, passing the client instance
+  client.dataService = new DataService(client);
+
   try {
-    console.log('Connecting to WDX server at ws://192.168.31.175:7081/wdx/ws at', new Date().toISOString());
+    console.log('Connecting to WDX server at ws://192.168.31.174:7481/wdx/ws at', new Date().toISOString());
     await client.connect();
     console.log('Connected successfully to WDX server at', new Date().toISOString());
 
@@ -80,48 +120,50 @@ const initializeWDXClient = async () => {
         }
 
         console.log('Schema children:', children);
-        const devices = [];
-        const devicePathMap = {};
 
-        children.forEach((child) => {
-          const deviceName = child.path.split('.').pop() || child.path;
-          console.log(`Processing child device: ${deviceName}, path: ${child.path} at`, new Date().toISOString());
-          devicePathMap[deviceName] = child.path;
-          devices.push({
-            name: deviceName,
-            config: {
-              addr1: 0,
-              baud1: 0,
-              check1: 0,
-              stopBit1: 0,
-              baud2: 0,
-              check2: 0,
-              stopBit2: 0,
-            },
+        // Subscribe to all child nodes and collect their initial values
+        const devicePromises = children.map((child) => {
+          return new Promise((resolve) => {
+            client.dataService.register(child.path).subscribe({
+              next: (data) => {
+                // Use the first data received for initial config
+                const deviceName = child.path.split('.').pop() || child.path;
+                resolve({
+                  name: deviceName,
+                  config: {
+                    addr1: data?.value?.addr1 ?? 0,
+                    baud1: data?.value?.baud1 ?? 0,
+                    check1: data?.value?.check1 ?? 0,
+                    stopBit1: data?.value?.stopBit1 ?? 0,
+                    baud2: data?.value?.baud2 ?? 0,
+                    check2: data?.value?.check2 ?? 0,
+                    stopBit2: data?.value?.stopBit2 ?? 0,
+                  },
+                  path: child.path
+                });
+              },
+              error: () => {
+                // On error, fallback to default config
+                const deviceName = child.path.split('.').pop() || child.path;
+                resolve({
+                  name: deviceName,
+                  config: {
+                    addr1: 0, baud1: 0, check1: 0, stopBit1: 0, baud2: 0, check2: 0, stopBit2: 0
+                  },
+                  path: child.path
+                });
+              }
+            });
           });
         });
 
-        // Store and broadcast initial devices to clients
-        latestSchemaDevices = devices;
-        broadcast({ type: 'schema', devices });
-
-        // Subscribe to all child nodes
-        children.forEach((child) => {
-          console.log(`Subscribing to child node: ${child.path} at`, new Date().toISOString());
-          client.dataService.register(child.path).subscribe({
-            next: (data) => {
-              console.log(`Data for ${child.path}:`, data ? data.value : null, 'at', new Date().toISOString());
-              // Broadcast data updates to clients
-              broadcast({ type: 'data', path: child.path, value: data ? data.value : null });
-            },
-            error: (error) => {
-              console.error(`Error subscribing to ${child.path} at`, new Date().toISOString(), ':', error.message);
-            },
-            complete: () => {
-              console.log(`Subscription completed for ${child.path} at`, new Date().toISOString());
-            },
-          });
+        Promise.all(devicePromises).then((devices) => {
+          // Store and broadcast initial devices to clients
+          latestSchemaDevices = devices.map(({ name, config }) => ({ name, config }));
+          broadcast({ type: 'schema', devices: latestSchemaDevices });
         });
+
+        // No longer pushing default devices here
       },
       error: async (error) => {
         console.error('Schema Error at', new Date().toISOString(), ':', error.message);

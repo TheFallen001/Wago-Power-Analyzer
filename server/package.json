@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@wago/wdx-schema": "^29.0.0",
     "@wago/wdx-ws-client-js": "^24.0.0",
     "ws": "^8.18.2"
   }

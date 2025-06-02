@@ -54,7 +54,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = 'ws://192.168.31.175:8080'; // Update this to your Node.js server IP if not running locally
+  const serverUrl = 'ws://192.168.31.174:8080'; // Use localhost for local dev, or update as needed
   console.log(`Attempting to connect to intermediary server at ${serverUrl} at`, new Date().toISOString());
   ws = new WebSocket(serverUrl);
 
@@ -118,6 +118,12 @@ const initializeWebSocket = () => {
       notifyListeners();
     } else if (message.type === 'set') {
       console.log('Received set request from client at', new Date().toISOString(), ':', message);
+    } else if (message.type === 'configUpdated') {
+      // Backend confirms config update, update local device config
+      const path = message.path;
+      const config = message.config;
+      updateDeviceFromWDXData(path, config);
+      notifyListeners();
     } else {
       console.log('Unknown message type received at', new Date().toISOString(), ':', message.type);
     }
@@ -131,7 +137,8 @@ const initializeWebSocket = () => {
   };
 
   ws.onerror = (error) => {
-    console.error('WebSocket error occurred at', new Date().toISOString(), ':', error.message);
+    // Fix: error may be an Event, not always have .message
+    console.error('WebSocket error occurred at', new Date().toISOString(), ':', error);
   };
 };
 
@@ -139,12 +146,7 @@ const initializeWebSocket = () => {
 console.log('Starting WebSocket initialization at', new Date().toISOString());
 initializeWebSocket();
 
-export const addDevice = (device: Device) => {
-  console.log('Adding device:', device.name, 'at', new Date().toISOString());
-  devices.push(device);
-  notifyListeners();
-};
-
+// Send config update to backend
 export const updateDeviceConfig = (id: string, config: Device['config']) => {
   console.log(`Updating config for device ID: ${id} at`, new Date().toISOString());
   const device = devices.find((d) => d.id === id);
@@ -155,22 +157,8 @@ export const updateDeviceConfig = (id: string, config: Device['config']) => {
       const deviceName = device.name.replace('Analyzer - ', '');
       const devicePath = devicePathMap[deviceName];
       if (devicePath) {
-        console.log(`Sending updated config for device: ${deviceName} at`, new Date().toISOString());
-        Object.entries(config).forEach(([key, value]) => {
-          let wdxKey = '';
-          if (key === 'addr1') wdxKey = 'Addr1';
-          else if (key === 'baud1') wdxKey = 'Baud1';
-          else if (key === 'check1') wdxKey = 'Check Digit 1';
-          else if (key === 'stopBit1') wdxKey = 'Stop Bit 1';
-          else if (key === 'baud2') wdxKey = 'Baud2';
-          else if (key === 'check2') wdxKey = 'Check Digit 2';
-          else if (key === 'stopBit2') wdxKey = 'Stop Bit 2';
-
-          if (wdxKey) {
-            console.log(`Sending to intermediary: path=${devicePath}, key=${wdxKey}, value=${value} at`, new Date().toISOString());
-            ws.send(JSON.stringify({ type: 'set', path: devicePath, key: wdxKey, value }));
-          }
-        });
+        // Send the entire config as a single message to backend
+        ws.send(JSON.stringify({ type: 'setConfig', path: devicePath, config }));
       } else {
         console.log(`No device path found for device: ${deviceName} at`, new Date().toISOString());
       }
