@@ -151,9 +151,12 @@ console.log('Starting WebSocket initialization at', new Date().toISOString());
 initializeWebSocket();
 
 // Send config update to backend
-export const updateDeviceConfig = (id: string, config: Device['config']) => {
-  console.log(`Updating config for device ID: ${id} at`, new Date().toISOString());
-  const device = devices.find((d) => d.id === id);
+export const updateDeviceConfig = (idOrName: string, config: Device['config']) => {
+  console.log(`Updating config for device ID or Name: ${idOrName} at`, new Date().toISOString());
+  let device = devices.find((d) => d.id === idOrName);
+  if (!device) {
+    device = devices.find((d) => d.name === idOrName);
+  }
   if (device) {
     device.config = config;
     console.log(`Device ${device.name} config updated at`, new Date().toISOString(), ':', config);
@@ -184,38 +187,38 @@ export const updateDeviceConfig = (id: string, config: Device['config']) => {
     }
     notifyListeners();
   } else {
-    console.log(`Device with ID ${id} not found for config update at`, new Date().toISOString());
+    console.log(`Device with ID or Name ${idOrName} not found for config update at`, new Date().toISOString());
   }
 };
 
 export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device['config'] }[]) => {
   console.log('Updating devices from WDX, incoming devices:', wdxDevices, 'at', new Date().toISOString());
-  devices.length = 0;
-
+  // Only update devices that are present in the incoming schema
   wdxDevices.forEach((wdxDevice, index) => {
     const deviceName = wdxDevice.name;
-    const id = (index + 1).toString();
-
-    const device: Device = {
-      id,
-      name: `Analyzer - ${deviceName}`,
-      latitude: 41.0 + index * 0.01,
-      longitude: 29.0 + index * 0.01,
-      voltageRange: '230V',
-      status: 'Active',
-      config: {
-        addr1: wdxDevice.config.addr1 || 1,
-        baud1: wdxDevice.config.baud1 || 9600,
-        check1: wdxDevice.config.check1 || 0,
-        stopBit1: wdxDevice.config.stopBit1 || 0,
-        baud2: wdxDevice.config.baud2 || 9600,
-        check2: wdxDevice.config.check2 || 0,
-        stopBit2: wdxDevice.config.stopBit2 || 0,
-      },
-    };
-    devices.push(device);
+    const fullName = `Analyzer - ${deviceName}`;
+    let device = devices.find(d => d.name === fullName);
+    if (!device) {
+      // If device does not exist, add it
+      device = {
+        id: (index + 1).toString(),
+        name: fullName,
+        latitude: 41.0 + index * 0.01,
+        longitude: 29.0 + index * 0.01,
+        voltageRange: '230V',
+        status: 'Active',
+        config: wdxDevice.config || {
+          addr1: 1, baud1: 9600, check1: 0, stopBit1: 0, baud2: 9600, check2: 0, stopBit2: 0
+        },
+      };
+      devices.push(device);
+    } else if (wdxDevice.config && Object.keys(wdxDevice.config).length > 0) {
+      // Only update config if present in schema
+      device.config = wdxDevice.config;
+    }
   });
-
+  // Optionally, remove devices that are no longer in the schema
+  // devices = devices.filter(d => wdxDevices.some(w => `Analyzer - ${w.name}` === d.name));
   console.log('Devices updated from WDX at', new Date().toISOString(), ':', devices.map(d => ({ id: d.id, name: d.name })));
 };
 
