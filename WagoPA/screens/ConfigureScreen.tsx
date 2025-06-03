@@ -11,7 +11,7 @@ const ConfigureScreen = () => {
   const route = useRoute<RouteProp<RootParamList, 'Configure'>>();
   const deviceId = route.params?.deviceId;
 
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(deviceId);
+  const [device, setDevice] = useState<typeof devices[0] | undefined>(undefined);
   const [addr1, setAddr1] = useState('');
   const [baud1, setBaud1] = useState('');
   const [check1, setCheck1] = useState('');
@@ -22,19 +22,16 @@ const ConfigureScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Update form with selected device data from DeviceStore
-  const updateFormWithDevice = (deviceIdToUse: string | undefined) => {
-    const selectedDevice = devices.find((d) => d.id === deviceIdToUse);
-    if (selectedDevice) {
-      console.log(`Updating form for device: ${selectedDevice.name}`);
-      setAddr1(selectedDevice.config.addr1.toString());
-      setBaud1(selectedDevice.config.baud1.toString());
-      setCheck1(selectedDevice.config.check1.toString());
-      setStopBit1(selectedDevice.config.stopBit1.toString());
-      setBaud2(selectedDevice.config.baud2.toString());
-      setCheck2(selectedDevice.config.check2.toString());
-      setStopBit2(selectedDevice.config.stopBit2.toString());
+  const updateFormWithDevice = (dev: typeof devices[0] | undefined) => {
+    if (dev) {
+      setAddr1(dev.config.addr1.toString());
+      setBaud1(dev.config.baud1.toString());
+      setCheck1(dev.config.check1.toString());
+      setStopBit1(dev.config.stopBit1.toString());
+      setBaud2(dev.config.baud2.toString());
+      setCheck2(dev.config.check2.toString());
+      setStopBit2(dev.config.stopBit2.toString());
     } else {
-      console.log('No device selected, clearing form');
       setAddr1('');
       setBaud1('');
       setCheck1('');
@@ -47,44 +44,44 @@ const ConfigureScreen = () => {
 
   // Subscribe to DeviceStore updates
   useEffect(() => {
-    console.log('Subscribing to device updates in ConfigureScreen');
     const unsubscribe = subscribeToDeviceUpdates((updatedDevices) => {
-      console.log('Received device update in ConfigureScreen:', updatedDevices.map(d => ({ id: d.id, name: d.name })));
       setIsLoading(false);
-      if (updatedDevices.length > 0 && !selectedDeviceId) {
-        const initialDevice = deviceId && updatedDevices.some(d => d.id === deviceId) ? deviceId : updatedDevices[0].id;
-        console.log(`Setting initial device: ${initialDevice}`);
-        setSelectedDeviceId(initialDevice);
-        updateFormWithDevice(initialDevice);
-      } else if (updatedDevices.length === 0) {
-        console.log('No devices available, clearing selection');
-        setSelectedDeviceId(undefined);
-        updateFormWithDevice(undefined);
-      }
-      // Update form if the selected device's config changed
-      if (selectedDeviceId) {
-        updateFormWithDevice(selectedDeviceId);
+      // Always select the device from navigation if deviceId changes
+      const initial =
+        updatedDevices.find((d) => d.name === deviceId) ||
+        updatedDevices.find((d) => d.id === deviceId) ||
+        updatedDevices[0];
+      // Only update if device is not set or deviceId changed
+      if (!device || (deviceId && (device.name !== deviceId && device.id !== deviceId))) {
+        setDevice(initial);
+        updateFormWithDevice(initial);
+      } else {
+        // If device is set, update its config if it changed (by name)
+        const found = updatedDevices.find((d) => d.name === device.name);
+        setDevice(found);
+        updateFormWithDevice(found);
       }
     });
+    return () => unsubscribe();
+  }, [deviceId]);
 
-    return () => {
-      console.log('Unsubscribing from device updates in ConfigureScreen');
-      unsubscribe();
-    };
-  }, []);
-
-  // Update form when selected device changes
+  // Update form when device changes
   useEffect(() => {
-    console.log(`Selected device changed to: ${selectedDeviceId}`);
-    updateFormWithDevice(selectedDeviceId);
-  }, [selectedDeviceId]);
+    updateFormWithDevice(device);
+  }, [device]);
+
+  // When device changes (from dropdown), update form fields
+  const handleDeviceChange = (name: string) => {
+    const found = devices.find((d) => d.name === name);
+    setDevice(found);
+    updateFormWithDevice(found);
+  };
 
   const handleApply = () => {
-    if (!selectedDeviceId) {
-      Alert.alert('Error', 'Please select a device to configure.');
+    if (!device) {
+      Alert.alert('Error', 'Device not found.');
       return;
     }
-
     const newConfig = {
       addr1: parseInt(addr1, 10),
       baud1: parseInt(baud1, 10),
@@ -94,42 +91,38 @@ const ConfigureScreen = () => {
       check2: parseInt(check2, 10),
       stopBit2: parseInt(stopBit2, 10),
     };
-
     if (newConfig.addr1 < 1 || newConfig.addr1 > 247) {
       Alert.alert('Error', 'Address must be between 1 and 247.');
       return;
     }
-
-    // Update DeviceStore (which will also send to WDX)
-    console.log('Applying configuration:', newConfig);
-    updateDeviceConfig(selectedDeviceId, newConfig);
-
+    updateDeviceConfig(device.name, newConfig); // Use name as identifier for config update
     Alert.alert('Success', 'Configuration applied successfully!');
     navigation.goBack();
   };
 
   if (isLoading) {
-    console.log('Rendering loading state');
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Loading devices...</Text>
+        <Text style={styles.title}>Loading device...</Text>
       </View>
     );
   }
-
-  console.log('Rendering main UI with devices:', devices.map(d => ({ id: d.id, name: d.name })));
+  if (!device) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Device not found.</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Power Analyzer Configuration</Text>
       <View style={styles.content}>
         <ConfigCard
           label="Device"
-          value={selectedDeviceId ? devices.find(d => d.id === selectedDeviceId)?.name || 'No Device' : 'No Device Selected'}
-          options={devices.map(device => ({ label: device.name, value: device.id }))}
-          onChange={(value) => {
-            console.log(`Device selection changed to: ${value}`);
-            setSelectedDeviceId(value);
-          }}
+          value={device?.name || ''}
+          options={devices.map(d => ({ label: d.name, value: d.name }))}
+          onChange={handleDeviceChange}
           disabled={devices.length === 0}
         />
         <ConfigCard
@@ -137,7 +130,7 @@ const ConfigureScreen = () => {
           value={addr1}
           options={Array.from({ length: 247 }, (_, i) => ({ label: (i + 1).toString(), value: (i + 1).toString() }))}
           onChange={setAddr1}
-          disabled={!selectedDeviceId}
+          disabled={false}
         />
         <ConfigCard
           label="Baud Rate 1 (Baud1)"
@@ -152,7 +145,7 @@ const ConfigureScreen = () => {
             { label: '57600', value: '57600' },
           ]}
           onChange={setBaud1}
-          disabled={!selectedDeviceId}
+          disabled={false}
         />
         <ConfigCard
           label="Check Digit 1 (Check1)"
@@ -163,7 +156,7 @@ const ConfigureScreen = () => {
             { label: '2 Parity', value: '2' },
           ]}
           onChange={setCheck1}
-          disabled={!selectedDeviceId}
+          disabled={false}
         />
         <ConfigCard
           label="Stop Bit (Check1)"
@@ -174,7 +167,7 @@ const ConfigureScreen = () => {
             { label: '2 stop bit', value: '2' },
           ]}
           onChange={setStopBit1}
-          disabled={!selectedDeviceId}
+          disabled={false}
         />
         <ConfigCard
           label="Baud Rate 2 (Baud2)"
@@ -189,7 +182,7 @@ const ConfigureScreen = () => {
             { label: '57600', value: '57600' },
           ]}
           onChange={setBaud2}
-          disabled={!selectedDeviceId}
+          disabled={false}
         />
         <ConfigCard
           label="Check Digit 2 (Check2)"
@@ -200,7 +193,7 @@ const ConfigureScreen = () => {
             { label: 'Parity', value: '2' },
           ]}
           onChange={setCheck2}
-          disabled={!selectedDeviceId}
+          disabled={false}
         />
         <ConfigCard
           label="Stop Bit (Check2)"
@@ -211,7 +204,7 @@ const ConfigureScreen = () => {
             { label: '2 stop bit', value: '2' },
           ]}
           onChange={setStopBit2}
-          disabled={!selectedDeviceId}
+          disabled={false}
         />
         <Pressable style={styles.applyButton} onPress={handleApply}>
           <Text style={styles.applyButtonText}>Apply Configuration</Text>
