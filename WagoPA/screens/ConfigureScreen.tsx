@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Alert, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { devices, updateDeviceConfig, subscribeToDeviceUpdates } from '../utils/DeviceStore';
 import { RootParamList } from '../navigation/types';
 import ConfigCard from '../components/ConfigCard';
+import tw from 'twrnc';
 
 const ConfigureScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootParamList>>();
@@ -115,101 +116,103 @@ const ConfigureScreen = () => {
     );
   }
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Power Analyzer Configuration</Text>
-      <View style={styles.content}>
-        <ConfigCard
-          label="Device"
-          value={device?.name || ''}
-          options={devices.map(d => ({ label: d.name, value: d.name }))}
-          onChange={handleDeviceChange}
-          disabled={devices.length === 0}
-        />
-        <ConfigCard
-          label="Address (Addr1)"
-          value={addr1}
-          options={Array.from({ length: 247 }, (_, i) => ({ label: (i + 1).toString(), value: (i + 1).toString() }))}
-          onChange={setAddr1}
-          disabled={false}
-        />
-        <ConfigCard
-          label="Baud Rate 1 (Baud1)"
-          value={baud1}
-          options={[
-            { label: '1200', value: '1200' },
-            { label: '2400', value: '2400' },
-            { label: '4800', value: '4800' },
-            { label: '9600', value: '9600' },
-            { label: '19200', value: '19200' },
-            { label: '38400', value: '38400' },
-            { label: '57600', value: '57600' },
-          ]}
-          onChange={setBaud1}
-          disabled={false}
-        />
-        <ConfigCard
-          label="Check Digit 1 (Check1)"
-          value={check1}
-          options={[
-            { label: '0 No check', value: '0' },
-            { label: '1 Odd parity', value: '1' },
-            { label: '2 Parity', value: '2' },
-          ]}
-          onChange={setCheck1}
-          disabled={false}
-        />
-        <ConfigCard
-          label="Stop Bit (Check1)"
-          value={stopBit1}
-          options={[
-            { label: '1 stop bit', value: '0' },
-            { label: '1.5 stop bit', value: '1' },
-            { label: '2 stop bit', value: '2' },
-          ]}
-          onChange={setStopBit1}
-          disabled={false}
-        />
-        <ConfigCard
-          label="Baud Rate 2 (Baud2)"
-          value={baud2}
-          options={[
-            { label: '1200', value: '1200' },
-            { label: '2400', value: '2400' },
-            { label: '4800', value: '4800' },
-            { label: '9600', value: '9600' },
-            { label: '19200', value: '19200' },
-            { label: '38400', value: '38400' },
-            { label: '57600', value: '57600' },
-          ]}
-          onChange={setBaud2}
-          disabled={false}
-        />
-        <ConfigCard
-          label="Check Digit 2 (Check2)"
-          value={check2}
-          options={[
-            { label: 'No check', value: '0' },
-            { label: 'Odd parity', value: '1' },
-            { label: 'Parity', value: '2' },
-          ]}
-          onChange={setCheck2}
-          disabled={false}
-        />
-        <ConfigCard
-          label="Stop Bit (Check2)"
-          value={stopBit2}
-          options={[
-            { label: '1 stop bit', value: '0' },
-            { label: '1.5 stop bit', value: '1' },
-            { label: '2 stop bit', value: '2' },
-          ]}
-          onChange={setStopBit2}
-          disabled={false}
-        />
-        <Pressable style={styles.applyButton} onPress={handleApply}>
-          <Text style={styles.applyButtonText}>Apply Configuration</Text>
-        </Pressable>
-      </View>
+    <View style={tw`flex-1 bg-white pt-10`}>
+      <Text style={tw`text-2xl font-bold text-center mb-5`}>Power Analyzer Configuration</Text>
+      <ScrollView contentContainerStyle={tw`flex-grow p-5`}> 
+        <View style={tw`flex-1`}>
+          <ConfigCard
+            label="Device"
+            value={device?.name || ''}
+            options={devices.map(d => ({ label: d.name, value: d.name }))}
+            onChange={handleDeviceChange}
+            disabled={devices.length === 0}
+          />
+          <ConfigCard
+            label="Address (Addr1)"
+            value={addr1}
+            options={Array.from({ length: 247 }, (_, i) => ({ label: (i + 1).toString(), value: (i + 1).toString() }))}
+            onChange={setAddr1}
+            disabled={false}
+          />
+          <ConfigCard
+            label="Baud Rate 1 (Baud1)"
+            value={baud1}
+            options={[
+              { label: '1200', value: '1200' },
+              { label: '2400', value: '2400' },
+              { label: '4800', value: '4800' },
+              { label: '9600', value: '9600' },
+              { label: '19200', value: '19200' },
+              { label: '38400', value: '38400' },
+              { label: '57600', value: '57600' },
+            ]}
+            onChange={setBaud1}
+            disabled={false}
+          />
+          <ConfigCard
+            label="Check Digit 1 (Check1)"
+            value={check1}
+            options={[
+              { label: '0 No check', value: '0' },
+              { label: '1 Odd parity', value: '1' },
+              { label: '2 Parity', value: '2' },
+            ]}
+            onChange={setCheck1}
+            disabled={false}
+          />
+          <ConfigCard
+            label="Stop Bit (Check1)"
+            value={stopBit1}
+            options={[
+              { label: '1 stop bit', value: '0' },
+              { label: '1.5 stop bit', value: '1' },
+              { label: '2 stop bit', value: '2' },
+            ]}
+            onChange={setStopBit1}
+            disabled={false}
+          />
+          <ConfigCard
+            label="Baud Rate 2 (Baud2)"
+            value={baud2}
+            options={[
+              { label: '1200', value: '1200' },
+              { label: '2400', value: '2400' },
+              { label: '4800', value: '4800' },
+              { label: '9600', value: '9600' },
+              { label: '19200', value: '19200' },
+              { label: '38400', value: '38400' },
+              { label: '57600', value: '57600' },
+            ]}
+            onChange={setBaud2}
+            disabled={false}
+          />
+          <ConfigCard
+            label="Check Digit 2 (Check2)"
+            value={check2}
+            options={[
+              { label: 'No check', value: '0' },
+              { label: 'Odd parity', value: '1' },
+              { label: 'Parity', value: '2' },
+            ]}
+            onChange={setCheck2}
+            disabled={false}
+          />
+          <ConfigCard
+            label="Stop Bit (Check2)"
+            value={stopBit2}
+            options={[
+              { label: '1 stop bit', value: '0' },
+              { label: '1.5 stop bit', value: '1' },
+              { label: '2 stop bit', value: '2' },
+            ]}
+            onChange={setStopBit2}
+            disabled={false}
+          />
+          <Pressable style={tw`bg-green-600 py-3 rounded mt-4 items-center`} onPress={handleApply}>
+            <Text style={tw`text-white text-base`}>Apply Configuration</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </View>
   );
 };

@@ -9,12 +9,14 @@ import {
   Modal,
   Pressable,
   Animated,
+  ScrollView,
 } from "react-native";
 import MapView, { Marker, Region, PROVIDER_GOOGLE } from "react-native-maps";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { devices } from "../utils/DeviceStore";
 import { RootParamList } from "../navigation/types";
+import tw from "twrnc";
 
 const MapScreen = () => {
   const mapRef = useRef<MapView>(null);
@@ -97,75 +99,78 @@ const MapScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={{
-          latitude: 41.0082,
-          longitude: 28.9784,
-          latitudeDelta: 0.5,
-          longitudeDelta: 0.5,
-        }}
-        onRegionChangeComplete={handleRegionChange}
-        onDoublePress={(e) => {
-          e.stopPropagation();
-        }}
-      >
-        {devices.map((device) => (
-          <Marker
-            key={device.id}
-            coordinate={{
-              latitude: device.latitude,
-              longitude: device.longitude,
-            }}
-            onPress={(e) => handleMarkerPress(device)}
-          >
-            <View style={styles.markerDot} />
-          </Marker>
-        ))}
-      </MapView>
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={selectedDevice !== null}
-        onRequestClose={closeModal}
-      >
-        <Pressable style={styles.modalOverlay} onPress={closeModal}>
-          {selectedDevice && (
-            <Animated.View
-              style={[
-                styles.modalContent,
-                {
-                  transform: [{ scale: scaleAnim }],
-                  left: modalPosition.x,
-                  top: modalPosition.y,
-                },
-              ]}
+    <View style={tw`flex-1 bg-white`}>
+      <ScrollView contentContainerStyle={tw`flex-grow`}>
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          provider={PROVIDER_GOOGLE}
+          initialRegion={{
+            latitude: 41.0082,
+            longitude: 28.9784,
+            latitudeDelta: 0.5,
+            longitudeDelta: 0.5,
+          }}
+          onRegionChangeComplete={handleRegionChange}
+          onDoublePress={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          {devices.map((device) => (
+            <Marker
+              key={device.id}
+              coordinate={{
+                latitude: device.latitude,
+                longitude: device.longitude,
+              }}
+              onPress={(e) => handleMarkerPress(device)}
             >
-              <View style={styles.item}>
-                <Text style={styles.name}>{selectedDevice.name}</Text>
-                <Text>Latitude: {selectedDevice.latitude}</Text>
-                <Text>Longitude: {selectedDevice.longitude}</Text>
-                <Text>Voltage Range: {selectedDevice.voltageRange}</Text>
-                <Text>Status: {selectedDevice.status}</Text>
-                <TouchableOpacity
-                  style={[
-                    styles.configureButton,
-                    { backgroundColor: "#28a745" },
-                  ]}
-                  onPress={() => handleConfigure(selectedDevice.id)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.configureButtonText}>Configure</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.pointer} />
-            </Animated.View>
-          )}
-        </Pressable>
-      </Modal>
+              <View style={styles.markerDot} />
+            </Marker>
+          ))}
+        </MapView>
+        {/* Modal remains outside ScrollView for correct overlay behavior */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={selectedDevice !== null}
+          onRequestClose={closeModal}
+        >
+          <Pressable style={styles.modalOverlay} onPress={closeModal}>
+            {selectedDevice && (
+              <Animated.View
+                style={[
+                  styles.modalContent,
+                  {
+                    transform: [{ scale: scaleAnim }],
+                    left: modalPosition.x,
+                    top: modalPosition.y,
+                  },
+                ]}
+              >
+                <View style={styles.item}>
+                  <Text style={styles.name}>{selectedDevice.name}</Text>
+                  <Text>Latitude: {selectedDevice.latitude}</Text>
+                  <Text>Longitude: {selectedDevice.longitude}</Text>
+                  <Text>Voltage Range: {selectedDevice.voltageRange}</Text>
+                  <Text>Status: {selectedDevice.status}</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.configureButton,
+                      { backgroundColor: "#28a745" },
+                    ]}
+                    onPress={() => handleConfigure(selectedDevice.name)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.configureButtonText}>Configure</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.pointer} />
+              </Animated.View>
+            )}
+          </Pressable>
+        </Modal>
+      </ScrollView>
     </View>
   );
 };
