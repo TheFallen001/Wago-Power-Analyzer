@@ -24,25 +24,48 @@ const listeners: Array<(devices: Device[]) => void> = [];
 
 // Notify listeners when devices are updated
 const notifyListeners = () => {
-  console.log('Notifying listeners with devices at', new Date().toISOString(), ':', devices.map(d => ({ id: d.id, name: d.name })));
-  listeners.forEach(listener => listener(devices));
+  console.log(
+    "Notifying listeners with devices at",
+    new Date().toISOString(),
+    ":",
+    devices.map((d) => ({ id: d.id, name: d.name }))
+  );
+  listeners.forEach((listener) => listener(devices));
 };
 
 // Subscribe to device updates
-export const subscribeToDeviceUpdates = (callback: (devices: Device[]) => void) => {
-  console.log('New subscriber added, current listeners:', listeners.length + 1, 'at', new Date().toISOString());
+export const subscribeToDeviceUpdates = (
+  callback: (devices: Device[]) => void
+) => {
+  console.log(
+    "New subscriber added, current listeners:",
+    listeners.length + 1,
+    "at",
+    new Date().toISOString()
+  );
   listeners.push(callback);
   if (isInitialized) {
-    console.log('Devices already initialized, sending to new subscriber at', new Date().toISOString());
+    console.log(
+      "Devices already initialized, sending to new subscriber at",
+      new Date().toISOString()
+    );
     callback(devices);
   } else {
-    console.log('Devices not yet initialized, subscriber will wait at', new Date().toISOString());
+    console.log(
+      "Devices not yet initialized, subscriber will wait at",
+      new Date().toISOString()
+    );
   }
   return () => {
     const index = listeners.indexOf(callback);
     if (index !== -1) {
       listeners.splice(index, 1);
-      console.log('Subscriber removed, current listeners:', listeners.length, 'at', new Date().toISOString());
+      console.log(
+        "Subscriber removed, current listeners:",
+        listeners.length,
+        "at",
+        new Date().toISOString()
+      );
     }
   };
 };
@@ -50,40 +73,79 @@ export const subscribeToDeviceUpdates = (callback: (devices: Device[]) => void) 
 // Initialize WebSocket connection to intermediary server
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) {
-    console.log('WebSocket already connected, skipping initialization at', new Date().toISOString());
+    console.log(
+      "WebSocket already connected, skipping initialization at",
+      new Date().toISOString()
+    );
     return;
   }
 
-  const serverUrl = 'ws://192.168.31.177:8080'; // Update this to your Node.js server IP if not running locally
-  console.log(`Attempting to connect to intermediary server at ${serverUrl} at`, new Date().toISOString());
+  const serverUrl = "ws://192.168.31.207:8080"; // Update this to your Node.js server IP if not running locally
+  console.log(
+    `Attempting to connect to intermediary server at ${serverUrl} at`,
+    new Date().toISOString()
+  );
   ws = new WebSocket(serverUrl);
 
   ws.onopen = () => {
-    console.log('Connected successfully to intermediary server at', new Date().toISOString());
+    console.log(
+      "Connected successfully to intermediary server at",
+      new Date().toISOString()
+    );
   };
 
   ws.onmessage = (event) => {
-    console.log('WebSocket message received at', new Date().toISOString(), ':', event.data);
+    console.log(
+      "WebSocket message received at",
+      new Date().toISOString(),
+      ":",
+      event.data
+    );
     let message;
     try {
+      
       message = JSON.parse(event.data);
-      console.log('Parsed message successfully at', new Date().toISOString(), ':', message);
+      console.log(
+        "Parsed message successfully at",
+        new Date().toISOString(),
+        ":",
+        message
+      );
     } catch (error) {
-      console.error('Failed to parse WebSocket message at', new Date().toISOString(), ':', event.data, error);
+      console.error(
+        "Failed to parse WebSocket message at",
+        new Date().toISOString(),
+        ":",
+        event.data,
+        error
+      );
       return;
     }
 
-    if (message.type === 'schema') {
-      console.log('Processing schema message at', new Date().toISOString());
+    if (message.type === "schema") {
+      console.log("Processing schema message at", new Date().toISOString());
       const wdxDevices = message.devices || [];
       if (!Array.isArray(wdxDevices)) {
-        console.error('Invalid schema data: devices is not an array at', new Date().toISOString(), ':', message.devices);
+        console.error(
+          "Invalid schema data: devices is not an array at",
+          new Date().toISOString(),
+          ":",
+          message.devices
+        );
         return;
       }
 
-      console.log('Schema devices at', new Date().toISOString(), ':', wdxDevices);
+      console.log(
+        "Schema devices at",
+        new Date().toISOString(),
+        ":",
+        wdxDevices
+      );
       if (wdxDevices.length === 0) {
-        console.log('Schema devices array is empty, no devices to initialize at', new Date().toISOString());
+        console.log(
+          "Schema devices array is empty, no devices to initialize at",
+          new Date().toISOString()
+        );
       }
 
       devicePathMap = {};
@@ -91,34 +153,69 @@ const initializeWebSocket = () => {
         const deviceName = device.name;
         devicePathMap[deviceName] = `Virtual.${deviceName}`;
       });
-      console.log('Device path map updated at', new Date().toISOString(), ':', devicePathMap);
+      console.log(
+        "Device path map updated at",
+        new Date().toISOString(),
+        ":",
+        devicePathMap
+      );
 
-      updateDevicesFromWDX(wdxDevices.map(device => ({
-        name: device.name,
-        config: device.config || {
-          addr1: 0, baud1: 0, check1: 0, stopBit1: 0,
-          baud2: 0, check2: 0, stopBit2: 0,
-        },
-      })));
-      console.log('Devices initialized from schema at', new Date().toISOString(), ':', devices.map(d => ({ id: d.id, name: d.name })));
+      updateDevicesFromWDX(
+        wdxDevices.map((device) => ({
+          name: device.name,
+          config: device.config || {
+            addr1: 0,
+            baud1: 0,
+            check1: 0,
+            stopBit1: 0,
+            baud2: 0,
+            check2: 0,
+            stopBit2: 0,
+          },
+        }))
+      );
+      console.log(
+        "Devices initialized from schema at",
+        new Date().toISOString(),
+        ":",
+        devices.map((d) => ({ id: d.id, name: d.name }))
+      );
 
       if (devices.length > 0) {
         isInitialized = true;
-        console.log('Devices successfully initialized, notifying listeners at', new Date().toISOString());
+        console.log(
+          "Devices successfully initialized, notifying listeners at",
+          new Date().toISOString()
+        );
         notifyListeners();
       } else {
-        console.log('No devices initialized from schema at', new Date().toISOString());
+        console.log(
+          "No devices initialized from schema at",
+          new Date().toISOString()
+        );
       }
-    } else if (message.type === 'data') {
-      console.log('Processing data message at', new Date().toISOString());
+    } else if (message.type === "data") {
+      console.log("Processing data message at", new Date().toISOString());
       const path = message.path;
       const value = message.value;
       updateDeviceFromWDXData(path, value);
-      console.log('Processed data update for path:', path, 'value:', value, 'at', new Date().toISOString());
+      console.log(
+        "Processed data update for path:",
+        path,
+        "value:",
+        value,
+        "at",
+        new Date().toISOString()
+      );
       notifyListeners();
-    } else if (message.type === 'set') {
-      console.log('Received set request from client at', new Date().toISOString(), ':', message);
-    } else if (message.type === 'configUpdated') {
+    } else if (message.type === "set") {
+      console.log(
+        "Received set request from client at",
+        new Date().toISOString(),
+        ":",
+        message
+      );
+    } else if (message.type === "configUpdated") {
       // Backend confirms config update, update local device config
       const path = message.path;
       const config = message.config;
@@ -129,12 +226,24 @@ const initializeWebSocket = () => {
       console.error('Config update error from backend:', message);
       // Optionally, notify listeners or show an alert in the UI
     } else {
-      console.log('Unknown message type received at', new Date().toISOString(), ':', message.type);
+      console.log(
+        "Unknown message type received at",
+        new Date().toISOString(),
+        ":",
+        message.type
+      );
     }
   };
 
   ws.onclose = (event) => {
-    console.log('WebSocket disconnected at', new Date().toISOString(), 'reason:', event.reason, 'code:', event.code);
+    console.log(
+      "WebSocket disconnected at",
+      new Date().toISOString(),
+      "reason:",
+      event.reason,
+      "code:",
+      event.code
+    );
     isInitialized = false;
     ws = null;
     setTimeout(initializeWebSocket, 5000);
@@ -142,12 +251,17 @@ const initializeWebSocket = () => {
 
   ws.onerror = (error) => {
     // Fix: error may be an Event, not always have .message
-    console.error('WebSocket error occurred at', new Date().toISOString(), ':', error);
+    console.error(
+      "WebSocket error occurred at",
+      new Date().toISOString(),
+      ":",
+      error
+    );
   };
 };
 
 // Start WebSocket connection on module load
-console.log('Starting WebSocket initialization at', new Date().toISOString());
+console.log("Starting WebSocket initialization at", new Date().toISOString());
 initializeWebSocket();
 
 // Send config update to backend
@@ -159,9 +273,14 @@ export const updateDeviceConfig = (idOrName: string, config: Device['config']) =
   }
   if (device) {
     device.config = config;
-    console.log(`Device ${device.name} config updated at`, new Date().toISOString(), ':', config);
+    console.log(
+      `Device ${device.name} config updated at`,
+      new Date().toISOString(),
+      ":",
+      config
+    );
     if (ws && ws.readyState === WebSocket.OPEN) {
-      const deviceName = device.name.replace('Analyzer - ', '');
+      const deviceName = device.name.replace("Analyzer - ", "");
       const devicePath = devicePathMap[deviceName];
       if (devicePath) {
         // Send each config property as a separate message to backend (WDX expects one key at a time)
@@ -180,10 +299,16 @@ export const updateDeviceConfig = (idOrName: string, config: Device['config']) =
           }
         });
       } else {
-        console.log(`No device path found for device: ${deviceName} at`, new Date().toISOString());
+        console.log(
+          `No device path found for device: ${deviceName} at`,
+          new Date().toISOString()
+        );
       }
     } else {
-      console.log('WebSocket not connected, cannot send config update at', new Date().toISOString());
+      console.log(
+        "WebSocket not connected, cannot send config update at",
+        new Date().toISOString()
+      );
     }
     notifyListeners();
   } else {
@@ -223,26 +348,46 @@ export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device[
 };
 
 export const updateDeviceFromWDXData = (path: string, value: any) => {
-  console.log(`Updating device from WDX data, path: ${path}, value:`, value, 'at', new Date().toISOString());
-  const deviceName = path.split('.').pop() || '';
-  const device = devices.find(d => d.name === `Analyzer - ${deviceName}`);
+  console.log(
+    `Updating device from WDX data, path: ${path}, value:`,
+    value,
+    "at",
+    new Date().toISOString()
+  );
+  const deviceName = path.split(".").pop() || "";
+  const device = devices.find((d) => d.name === `Analyzer - ${deviceName}`);
   if (device && value) {
     const updatedConfig = { ...device.config };
     Object.entries(value).forEach(([key, val]) => {
-      if (typeof val === 'number') {
-        if (key === 'Addr1') updatedConfig.addr1 = val;
-        else if (key === 'Baud1') updatedConfig.baud1 = val;
-        else if (key === 'Check Digit 1') updatedConfig.check1 = val;
-        else if (key === 'Stop Bit 1') updatedConfig.stopBit1 = val;
-        else if (key === 'Baud2') updatedConfig.baud2 = val;
-        else if (key === 'Check Digit 2') updatedConfig.check2 = val;
-        else if (key === 'Stop Bit 2') updatedConfig.stopBit2 = val;
+      if (typeof val === "number") {
+        if (key === "Addr1") updatedConfig.addr1 = val;
+        else if (key === "Baud1") updatedConfig.baud1 = val;
+        else if (key === "Check Digit 1") updatedConfig.check1 = val;
+        else if (key === "Stop Bit 1") updatedConfig.stopBit1 = val;
+        else if (key === "Baud2") updatedConfig.baud2 = val;
+        else if (key === "Check Digit 2") updatedConfig.check2 = val;
+        else if (key === "Stop Bit 2") updatedConfig.stopBit2 = val;
       }
     });
     device.config = updatedConfig;
-    console.log(`Updated device ${device.name} config at`, new Date().toISOString(), ':', updatedConfig);
+    console.log(
+      `Updated device ${device.id} config at`,
+      new Date().toISOString(),
+      ":",
+      updatedConfig
+    );
     notifyListeners();
   } else {
-    console.log(`No device found or invalid data for path: ${path} at`, new Date().toISOString());
+    console.log(
+      `No device found or invalid data for path: ${path} at`,
+      new Date().toISOString()
+    );
   }
 };
+
+export const addDevice = (device:Device) => {
+  ws?.send(JSON.stringify({ type: "addDevice", path: `Virtual.${device.name}`,relative_path: "Virtual",  device }));
+  console.log("New device sent at", new Date().toISOString(), ":", device);
+  notifyListeners();
+};
+

@@ -7,6 +7,7 @@ import { RootParamList } from '../navigation/types';
 import tw from 'twrnc';
 
 const DevicesScreen = () => {
+
   const navigation = useNavigation<NativeStackNavigationProp<RootParamList>>();
 
   const renderDeviceItem = ({ item }: { item: typeof devices[0] }) => (
