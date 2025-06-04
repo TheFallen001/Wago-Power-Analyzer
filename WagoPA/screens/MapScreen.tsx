@@ -1,40 +1,47 @@
-// screens/MapScreen.tsx
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   StyleSheet,
   View,
-  Dimensions,
   Text,
   TouchableOpacity,
   Modal,
   Pressable,
   Animated,
-  ScrollView,
+  useWindowDimensions,
+  Dimensions,
 } from "react-native";
 import MapView, { Marker, Region, PROVIDER_GOOGLE } from "react-native-maps";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { devices } from "../utils/DeviceStore";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { devices, geocodeAddress, reverseGeocode, subscribeToDeviceUpdates } from "../utils/DeviceStore";
 import { RootParamList } from "../navigation/types";
-import tw from "twrnc";
 
 const MapScreen = () => {
   const mapRef = useRef<MapView>(null);
   const navigation = useNavigation<NativeStackNavigationProp<RootParamList>>();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [selectedDevice, setSelectedDevice] = useState<
     (typeof devices)[0] | null
   >(null);
-  const [modalPosition, setModalPosition] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  });
+  const [modalPosition, setModalPosition] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>({ x: 0, y: 0, width: 0, height: 0 });
   const [region, setRegion] = useState<Region>({
     latitude: 41.0082,
     longitude: 28.9784,
-    latitudeDelta: 0.5,
-    longitudeDelta: 0.5,
+    latitudeDelta: 0.2,
+    longitudeDelta: 0.2,
   });
+  const [deviceList, setDeviceList] = useState([...devices]);
   const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  // Fit map to device coordinates
   useEffect(() => {
     if (mapRef.current && devices.length > 0) {
       const coordinates = devices.map((device) => ({
@@ -42,34 +49,59 @@ const MapScreen = () => {
         longitude: device.longitude,
       }));
       mapRef.current.fitToCoordinates(coordinates, {
-        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+        edgePadding: {
+          top: insets.top + 30,
+          right: 30,
+          bottom: insets.bottom + 30,
+          left: 30,
+        },
         animated: true,
       });
     }
-  }, []);
+  }, [insets]);
 
+  // Animate modal
   useEffect(() => {
     if (selectedDevice) {
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
-      scaleAnim.setValue(0);
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-  }, [selectedDevice, scaleAnim]);
+  }, [selectedDevice, scaleAnim, opacityAnim]);
 
-  const handleConfigure = (deviceId: string) => {
-    console.log("Configure button pressed for device:", deviceId);
-    navigation.navigate("Configure", { deviceId });
-    setSelectedDevice(null);
-  };
+  const handleConfigure = useCallback(
+    (deviceId: string) => {
+      navigation.navigate("Configure", { deviceId });
+      setSelectedDevice(null);
+    },
+    [navigation]
+  );
 
   const handleMarkerPress = useCallback(
     (device: (typeof devices)[0]) => {
       const { latitude, longitude } = device;
-
       mapRef.current?.animateToRegion(
         {
           latitude,
@@ -80,97 +112,147 @@ const MapScreen = () => {
         300
       );
 
-      const { width, height } = Dimensions.get("window");
-      const modalX = width / 2 - 125;
-      const modalY = height / 2 - 160;
-
-      setModalPosition({ x: modalX, y: modalY });
-      setSelectedDevice(device);
+      setTimeout(async () => {
+        // Modal size: scale with device, but fixed aspect ratio
+        const modalWidth = Math.max(220, Math.min(0.8 * screenWidth, 360));
+        const modalHeight = Math.max(140, Math.min(0.3 * screenHeight, 240));
+        let modalX = 0;
+        let modalY = 0;
+        if (mapRef.current && mapRef.current.pointForCoordinate) {
+          try {
+            const point = await mapRef.current.pointForCoordinate({ latitude, longitude });
+            modalX = point.x - modalWidth / 2;
+            modalY = point.y - modalHeight - 35;
+            // Clamp to screen bounds
+            modalX = Math.max(8, Math.min(modalX, screenWidth - modalWidth - 8));
+            modalY = Math.max(8, Math.min(modalY, screenHeight - modalHeight - 8));
+          } catch (e) {
+            modalX = screenWidth / 2 - modalWidth / 2;
+            modalY = screenHeight / 2 - modalHeight / 2;
+          }
+        } else {
+          modalX = screenWidth / 2 - modalWidth / 2;
+          modalY = screenHeight / 2 - modalHeight / 2;
+        }
+        setModalPosition({ x: modalX, y: modalY, width: modalWidth, height: modalHeight });
+        setSelectedDevice(device);
+      }, 300);
     },
-    [region]
+    [region, screenWidth, screenHeight, insets, modalPosition.height]
   );
 
-  const handleRegionChange = (newRegion: Region) => {
+  const handleRegionChange = useCallback((newRegion: Region) => {
     setRegion(newRegion);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setSelectedDevice(null);
-  };
+  }, []);
+
+  const handleModalLayout = useCallback(
+    (event: any) => {
+      const { width, height } = event.nativeEvent.layout;
+      setModalPosition((prev) => ({ ...prev, width, height }));
+    },
+    []
+  );
+
+  // Keep device list in sync with DeviceStore
+  useEffect(() => {
+    const unsubscribe = subscribeToDeviceUpdates((updatedDevices) => {
+      setDeviceList([...updatedDevices]);
+    });
+    return unsubscribe;
+  }, []);
 
   return (
-    <View style={tw`flex-1 bg-white`}>
-      <ScrollView contentContainerStyle={tw`flex-grow`}>
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={PROVIDER_GOOGLE}
-          initialRegion={{
-            latitude: 41.0082,
-            longitude: 28.9784,
-            latitudeDelta: 0.5,
-            longitudeDelta: 0.5,
-          }}
-          onRegionChangeComplete={handleRegionChange}
-          onDoublePress={(e) => {
-            e.stopPropagation();
-          }}
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={{
+          latitude: 41.0082,
+          longitude: 28.9784,
+          latitudeDelta: 0.2,
+          longitudeDelta: 0.2,
+        }}
+        onRegionChangeComplete={handleRegionChange}
+        onDoublePress={(e) => e.stopPropagation()}
+      >
+        {deviceList.map((device) => (
+          <Marker
+            key={device.id}
+            coordinate={{
+              latitude: device.latitude,
+              longitude: device.longitude,
+            }}
+            onPress={() => handleMarkerPress(device)}
+            accessibilityLabel={`Marker for ${device.name}`}
+          >
+            <View style={styles.markerDot} />
+          </Marker>
+        ))}
+      </MapView>
+      <Modal
+        animationType="none" // Handled by Animated
+        transparent={true}
+        visible={selectedDevice !== null}
+        onRequestClose={closeModal}
+        accessible={true}
+        accessibilityLabel="Device details modal"
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={closeModal}
+          accessibilityRole="button"
+          accessibilityLabel="Close modal"
         >
-          {devices.map((device) => (
-            <Marker
-              key={device.id}
-              coordinate={{
-                latitude: device.latitude,
-                longitude: device.longitude,
-              }}
-              onPress={(e) => handleMarkerPress(device)}
+          {selectedDevice && (
+            <Animated.View
+              style={[
+                styles.modalContent,
+                {
+                  transform: [{ scale: scaleAnim }],
+                  opacity: opacityAnim,
+                  left: modalPosition.x,
+                  top: modalPosition.y,
+                  width: modalPosition.width,
+                },
+              ]}
+              onLayout={handleModalLayout}
             >
-              <View style={styles.markerDot} />
-            </Marker>
-          ))}
-        </MapView>
-        {/* Modal remains outside ScrollView for correct overlay behavior */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={selectedDevice !== null}
-          onRequestClose={closeModal}
-        >
-          <Pressable style={styles.modalOverlay} onPress={closeModal}>
-            {selectedDevice && (
-              <Animated.View
-                style={[
-                  styles.modalContent,
-                  {
-                    transform: [{ scale: scaleAnim }],
-                    left: modalPosition.x,
-                    top: modalPosition.y,
-                  },
-                ]}
-              >
-                <View style={styles.item}>
-                  <Text style={styles.name}>{selectedDevice.name}</Text>
-                  <Text>Latitude: {selectedDevice.latitude}</Text>
-                  <Text>Longitude: {selectedDevice.longitude}</Text>
-                  <Text>Voltage Range: {selectedDevice.voltageRange}</Text>
-                  <Text>Status: {selectedDevice.status}</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.configureButton,
-                      { backgroundColor: "#28a745" },
-                    ]}
-                    onPress={() => handleConfigure(selectedDevice.name)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.configureButtonText}>Configure</Text>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.pointer} />
-              </Animated.View>
-            )}
-          </Pressable>
-        </Modal>
-      </ScrollView>
+              <View style={styles.item}>
+                <Text
+                  style={styles.name}
+                  accessibilityLabel={`Device name ${selectedDevice.name}`}
+                >
+                  {selectedDevice.name}
+                </Text>
+                <Text style={styles.text}>
+                  Address: {selectedDevice.address || 'Unknown'}
+                </Text>
+                <Text style={styles.text}>
+                  Voltage Range: {selectedDevice.voltageRange}
+                </Text>
+                <Text style={styles.text}>
+                  Status: {selectedDevice.status}
+                </Text>
+                <TouchableOpacity
+                  style={styles.configureButton}
+                  onPress={() => handleConfigure(selectedDevice.id)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Configure ${selectedDevice.name}`}
+                >
+                  <Text style={styles.configureButtonText}>Configure</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.pointer} />
+            </Animated.View>
+          )}
+        </Pressable>
+      </Modal>
     </View>
   );
 };
@@ -178,71 +260,83 @@ const MapScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#fff",
   },
   map: {
-    width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height,
+    flex: 1,
   },
   markerDot: {
-    width: 20,
-    height: 20,
+    width: Math.min(Dimensions.get("window").width * 0.06, 24),
+    height: Math.min(Dimensions.get("window").width * 0.06, 24),
     backgroundColor: "#6CBB3C",
-    borderRadius: 10,
+    borderRadius: Math.min(Dimensions.get("window").width * 0.03, 12),
     borderWidth: 2,
     borderColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   modalContent: {
     position: "absolute",
     backgroundColor: "#fff",
-    borderRadius: 10,
-    width: 250,
-    elevation: 5,
+    borderRadius: 12,
+    overflow: "hidden",
+    elevation: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowRadius: 6,
+    width: Math.max(220, Math.min(0.8 * Dimensions.get("window").width, 360)),
+    minHeight: 140,
+    maxHeight: 240,
   },
   item: {
-    backgroundColor: "#f9f9f9",
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 15,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: Math.min(Dimensions.get("window").width * 0.05, 16),
   },
   name: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 5,
-    color: "#000",
+    fontSize: Math.min(Dimensions.get("window").width * 0.05, 18),
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#1a1a1a",
+  },
+  text: {
+    fontSize: Math.min(Dimensions.get("window").width * 0.04, 14),
+    marginBottom: 6,
+    color: "#333",
   },
   configureButton: {
-    padding: 5,
-    borderRadius: 5,
+    backgroundColor: "#28a745",
+    paddingVertical: Math.min(Dimensions.get("window").width * 0.03, 12),
+    paddingHorizontal: Math.min(Dimensions.get("window").width * 0.05, 20),
+    borderRadius: 8,
     marginTop: 10,
     alignItems: "center",
   },
   configureButtonText: {
     color: "#fff",
-    textAlign: "center",
-    fontSize: 14,
+    fontSize: Math.min(Dimensions.get("window").width * 0.04, 14),
+    fontWeight: "500",
   },
   pointer: {
     width: 0,
     height: 0,
     backgroundColor: "transparent",
     borderStyle: "solid",
-    borderLeftWidth: 10,
-    borderRightWidth: 10,
-    borderTopWidth: 10,
+    borderLeftWidth: 12,
+    borderRightWidth: 12,
+    borderTopWidth: 12,
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
-    borderTopColor: "#f9f9f9",
+    borderTopColor: "#fff",
     alignSelf: "center",
-    marginBottom: -10,
+    marginTop: -1,
   },
 });
 

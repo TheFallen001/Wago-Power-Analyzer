@@ -3,6 +3,7 @@ export type Device = {
   name: string;
   latitude: number;
   longitude: number;
+  address: string; // Added address field
   voltageRange: string;
   status: string;
   config: {
@@ -15,6 +16,46 @@ export type Device = {
     stopBit2: number;
   };
 };
+
+// Google Geocoding utility functions
+const GOOGLE_API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // <-- Replace with your API key
+
+export async function geocodeAddress(
+  address: string
+): Promise<{ latitude: number; longitude: number } | null> {
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+        address
+      )}&key=${GOOGLE_API_KEY}`
+    );
+    const data = await response.json();
+    if (data.status === "OK" && data.results.length > 0) {
+      const location = data.results[0].geometry.location;
+      return { latitude: location.lat, longitude: location.lng };
+    }
+    return null;
+  } catch (e) {
+    console.error("Geocoding error:", e);
+    return null;
+  }
+}
+
+export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`
+    );
+    const data = await response.json();
+    if (data.status === "OK" && data.results.length > 0) {
+      return data.results[0].formatted_address;
+    }
+    return null;
+  } catch (e) {
+    console.error("Reverse geocoding error:", e);
+    return null;
+  }
+}
 
 export const devices: Device[] = []; // Start with an empty array
 let devicePathMap: { [key: string]: string } = {};
@@ -80,7 +121,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://192.168.31.207:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.31.192:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -103,7 +144,6 @@ const initializeWebSocket = () => {
     );
     let message;
     try {
-      
       message = JSON.parse(event.data);
       console.log(
         "Parsed message successfully at",
@@ -221,9 +261,9 @@ const initializeWebSocket = () => {
       const config = message.config;
       updateDeviceFromWDXData(path, config);
       notifyListeners();
-    } else if (message.type === 'configUpdateError') {
+    } else if (message.type === "configUpdateError") {
       // Handle config update error from backend
-      console.error('Config update error from backend:', message);
+      console.error("Config update error from backend:", message);
       // Optionally, notify listeners or show an alert in the UI
     } else {
       console.log(
@@ -265,8 +305,11 @@ console.log("Starting WebSocket initialization at", new Date().toISOString());
 initializeWebSocket();
 
 // Send config update to backend
-export const updateDeviceConfig = (idOrName: string, config: Device['config']) => {
-  console.log(`Updating config for device ID or Name: ${idOrName} at`, new Date().toISOString());
+export const updateDeviceConfig = (idOrName: string, config: Device["config"]) => {
+  console.log(
+    `Updating config for device ID or Name: ${idOrName} at`,
+    new Date().toISOString()
+  );
   let device = devices.find((d) => d.id === idOrName);
   if (!device) {
     device = devices.find((d) => d.name === idOrName);
@@ -286,16 +329,22 @@ export const updateDeviceConfig = (idOrName: string, config: Device['config']) =
         // Send each config property as a separate message to backend (WDX expects one key at a time)
         Object.entries(config).forEach(([key, value]) => {
           let wdxKey = key;
-          if (key === 'addr1') wdxKey = 'addr1';
-          else if (key === 'baud1') wdxKey = 'baud1';
-          else if (key === 'check1') wdxKey = 'checkDigit 1';
-          else if (key === 'stopBit1') wdxKey = 'stopBit1';
-          else if (key === 'baud2') wdxKey = 'baud2';
-          else if (key === 'check2') wdxKey = 'check2';
-          else if (key === 'stopBit2') wdxKey = 'stopBit2';
+          if (key === "addr1") wdxKey = "addr1";
+          else if (key === "baud1") wdxKey = "baud1";
+          else if (key === "check1") wdxKey = "checkDigit 1";
+          else if (key === "stopBit1") wdxKey = "stopBit1";
+          else if (key === "baud2") wdxKey = "baud2";
+          else if (key === "check2") wdxKey = "check2";
+          else if (key === "stopBit2") wdxKey = "stopBit2";
           // WDX expects a single value, not an object, so send just the value
           if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: 'setConfig', path: devicePath, config: { [wdxKey]: value } }));
+            ws.send(
+              JSON.stringify({
+                type: "setConfig",
+                path: devicePath,
+                config: { [wdxKey]: value },
+              })
+            );
           }
         });
       } else {
@@ -312,17 +361,27 @@ export const updateDeviceConfig = (idOrName: string, config: Device['config']) =
     }
     notifyListeners();
   } else {
-    console.log(`Device with ID or Name ${idOrName} not found for config update at`, new Date().toISOString());
+    console.log(
+      `Device with ID or Name ${idOrName} not found for config update at`,
+      new Date().toISOString()
+    );
   }
 };
 
-export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device['config'] }[]) => {
-  console.log('Updating devices from WDX, incoming devices:', wdxDevices, 'at', new Date().toISOString());
+export const updateDevicesFromWDX = (
+  wdxDevices: { name: string; config: Device["config"] }[]
+) => {
+  console.log(
+    "Updating devices from WDX, incoming devices:",
+    wdxDevices,
+    "at",
+    new Date().toISOString()
+  );
   // Only update devices that are present in the incoming schema
   wdxDevices.forEach((wdxDevice, index) => {
     const deviceName = wdxDevice.name;
     const fullName = `Analyzer - ${deviceName}`;
-    let device = devices.find(d => d.name === fullName);
+    let device = devices.find((d) => d.name === fullName);
     if (!device) {
       // If device does not exist, add it
       device = {
@@ -330,11 +389,19 @@ export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device[
         name: fullName,
         latitude: 41.0 + index * 0.01,
         longitude: 29.0 + index * 0.01,
-        voltageRange: '230V',
-        status: 'Active',
-        config: wdxDevice.config || {
-          addr1: 1, baud1: 9600, check1: 0, stopBit1: 0, baud2: 9600, check2: 0, stopBit2: 0
-        },
+        address: '', // Initialize with empty address
+        voltageRange: "230V",
+        status: "Active",
+        config:
+          wdxDevice.config || {
+            addr1: 1,
+            baud1: 9600,
+            check1: 0,
+            stopBit1: 0,
+            baud2: 9600,
+            check2: 0,
+            stopBit2: 0,
+          },
       };
       devices.push(device);
     } else if (wdxDevice.config && Object.keys(wdxDevice.config).length > 0) {
@@ -344,7 +411,12 @@ export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device[
   });
   // Optionally, remove devices that are no longer in the schema
   // devices = devices.filter(d => wdxDevices.some(w => `Analyzer - ${w.name}` === d.name));
-  console.log('Devices updated from WDX at', new Date().toISOString(), ':', devices.map(d => ({ id: d.id, name: d.name })));
+  console.log(
+    "Devices updated from WDX at",
+    new Date().toISOString(),
+    ":",
+    devices.map((d) => ({ id: d.id, name: d.name }))
+  );
 };
 
 export const updateDeviceFromWDXData = (path: string, value: any) => {
@@ -385,9 +457,31 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
   }
 };
 
-export const addDevice = (device:Device) => {
-  ws?.send(JSON.stringify({ type: "addDevice", path: `Virtual.${device.name}`,relative_path: "Virtual",  device }));
-  console.log("New device sent at", new Date().toISOString(), ":", device);
+export const addDevice = async (device: Device) => {
+  let lat = device.latitude;
+  let lng = device.longitude;
+  let address = device.address;
+  if (address && (!lat || !lng)) {
+    const geo = await geocodeAddress(address);
+    if (geo) {
+      lat = geo.latitude;
+      lng = geo.longitude;
+    }
+  } else if ((!address || address === "") && lat && lng) {
+    const addr = await reverseGeocode(lat, lng);
+    if (addr) address = addr;
+  }
+  const newDevice = { ...device, latitude: lat, longitude: lng, address };
+  devices.push(newDevice);
+  ws?.send(
+    JSON.stringify({
+      type: "addDevice",
+      path: `Virtual.${newDevice.name}`,
+      relative_path: "Virtual",
+      device: newDevice,
+    })
+  );
+  console.log("New device sent at", new Date().toISOString(), ":", newDevice);
   notifyListeners();
 };
 

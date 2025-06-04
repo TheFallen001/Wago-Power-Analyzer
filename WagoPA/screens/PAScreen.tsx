@@ -13,8 +13,7 @@ const DevicesScreen = () => {
   const renderDeviceItem = ({ item }: { item: typeof devices[0] }) => (
     <View style={tw`bg-gray-100 p-4 mb-3 rounded`}>
       <Text style={tw`text-lg font-bold mb-1`}>{item.name}</Text>
-      <Text>Latitude: {item.latitude}</Text>
-      <Text>Longitude: {item.longitude}</Text>
+      <Text>Address: {item.address || 'Unknown'}</Text>
       <Text>Voltage Range: {item.voltageRange}</Text>
       <Text>Status: {item.status}</Text>
       <View style={tw`flex-row mt-2`}>
