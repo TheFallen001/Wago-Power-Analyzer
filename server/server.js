@@ -200,6 +200,7 @@ wss.on("connection", (ws) => {
           });
         }
       } else if (message.type === "addDevice") {
+        /* FIXME: wait for Slavomir to respond and do what he says */
         if (
           client &&
           client.instanceService &&
@@ -213,8 +214,8 @@ wss.on("connection", (ws) => {
             (relativePath = device.name),
             (metadata =
               new WDXSchema.WDX.Schema.Model.Data.MetaData.MetaDataVirtual()), // metadata of schema see WDXSchema.WDX.Schema.Model.Data.MetaData.MetaDataType enmuration
-            readonly = false, //readonly
-            subscribable = true, //subscribeable
+            (readonly = false), //readonly
+            (subscribable = true), //subscribeable
             true, //editable
             false, //extendable
             true, //removable
@@ -252,6 +253,19 @@ wss.on("connection", (ws) => {
             "InstanceService not available or save method not found"
           );
         }
+      } else if (message.type === "getLogs") {
+        // TODO: wait for SLavomir's response
+        if (client && client.runtimeService) {
+          response = client.runtimeService.monitorSubscribe().subscribe({
+            next: (logs) => {
+              console.log("Message Received after Next: ", logs);
+              broadcast({ type: "sendLogs", logs });
+            },
+            error: (message) => {
+              console.log("Message received after Error: ", message);
+            },
+          });
+        }
       }
     } catch (err) {
       console.error("Failed to process message from frontend:", err);
@@ -282,7 +296,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.192:7481/wdx/ws",
+      url: "ws://192.168.31.221:7081/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -294,9 +308,12 @@ const initializeWDXClient = async () => {
   client.instanceService =
     new WDXWSClient.WDX.WS.Client.JS.Service.InstanceService(client);
 
+  client.runtimeService =
+    new WDXWSClient.WDX.WS.Client.JS.Service.RuntimeService(client);
+
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.192:7481/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.31.221:7081/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();

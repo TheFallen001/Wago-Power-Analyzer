@@ -1,9 +1,15 @@
-import React, { useState } from "react";
+import React, { useState,  } from "react";
 import { View, Text, Switch, TouchableOpacity } from "react-native";
 import tw from "twrnc";
 import Icon from "react-native-vector-icons/FontAwesome";
+import { RootParamList } from "../navigation/types";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-const SettingsScreen = () => {
+type Props = NativeStackScreenProps<RootParamList, 'LogsScreen'>;
+
+
+
+const SettingsScreen = ({navigation}: Props) => {
   const [isEnabled, setIsEnabled] = useState(false);
 
   const toggleSwitch = () => setIsEnabled((previousState) => !previousState);
@@ -32,7 +38,7 @@ const SettingsScreen = () => {
         />
       </View>
       <TouchableOpacity style={tw`mt-5 px-5 py-3 bg-gray-100 rounded-2xl`}
-      onPress={() => alert("Navigate to Logs")}>
+      onPress={() => navigation.navigate("LogsScreen")}>
         <Text style={tw`text-md font-semibold my-2`}>Logs</Text>
         
       </TouchableOpacity>

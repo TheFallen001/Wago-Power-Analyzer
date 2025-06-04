@@ -58,6 +58,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
 }
 
 export const devices: Device[] = []; // Start with an empty array
+let logs = [];
 let devicePathMap: { [key: string]: string } = {};
 let ws: WebSocket | null = null;
 let isInitialized = false;
@@ -84,12 +85,15 @@ export const subscribeToDeviceUpdates = (
     "at",
     new Date().toISOString()
   );
+
   listeners.push(callback);
+
   if (isInitialized) {
     console.log(
       "Devices already initialized, sending to new subscriber at",
       new Date().toISOString()
     );
+
     callback(devices);
   } else {
     console.log(
@@ -121,7 +125,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://192.168.31.192:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.31.221:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -265,7 +269,11 @@ const initializeWebSocket = () => {
       // Handle config update error from backend
       console.error("Config update error from backend:", message);
       // Optionally, notify listeners or show an alert in the UI
-    } else {
+    } else if(message.type === "sendLogs") {
+
+      logs = message.logs;
+    } 
+    else {
       console.log(
         "Unknown message type received at",
         new Date().toISOString(),
@@ -485,3 +493,13 @@ export const addDevice = async (device: Device) => {
   notifyListeners();
 };
 
+export const getLogs = () => {
+  ws?.send(
+    JSON.stringify({
+      type: "getLogs",
+    })
+  );
+  console.log("Getting Logs...");
+
+  return logs;
+};

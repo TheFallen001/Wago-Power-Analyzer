@@ -5,6 +5,8 @@ import SplashScreen from '../screens/SplashScreen';
 import BottomTabNavigator from './BottomTabNavigator';
 import ConfigureScreen from '../screens/ConfigureScreen';
 import { RootParamList } from './types';
+import LogScreen from '../screens/LogsScreen';
+
 
 const Stack = createStackNavigator<RootParamList>();
 
@@ -23,6 +25,11 @@ const AppNavigator = () => {
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="LogsScreen"
+          component={LogScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="Configure"
           component={ConfigureScreen}
           options={{ headerShown: true, title: 'Configure Device' }}
@@ -32,6 +39,7 @@ const AppNavigator = () => {
           component={require('../screens/DeviceDetailScreen').default}
           options={{ headerShown: true, title: 'Device Details' }}
         />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );
