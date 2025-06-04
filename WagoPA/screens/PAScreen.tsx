@@ -17,12 +17,20 @@ const DevicesScreen = () => {
       <Text>Longitude: {item.longitude}</Text>
       <Text>Voltage Range: {item.voltageRange}</Text>
       <Text>Status: {item.status}</Text>
-      <TouchableOpacity
-        style={tw`bg-green-600 py-2 rounded mt-2 items-center`}
-        onPress={() => navigation.navigate('Configure', { deviceId: item.name })}
-      >
-        <Text style={tw`text-white`}>Configure</Text>
-      </TouchableOpacity>
+      <View style={tw`flex-row mt-2`}>
+        <TouchableOpacity
+          style={tw`bg-green-600 py-2 px-4 rounded items-center mr-2`}
+          onPress={() => navigation.navigate('DeviceDetail', { deviceId: item.name })}
+        >
+          <Text style={tw`text-white`}>View Details</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={tw`bg-green-600 py-2 px-4 rounded items-center`}
+          onPress={() => navigation.navigate('Configure', { deviceId: item.name })}
+        >
+          <Text style={tw`text-white`}>Configure</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
