@@ -6,7 +6,7 @@ const WDXWSClient = require("@wago/wdx-ws-client-js");
 const WebSocket = require("ws");
 const { DataService } = require("./services/DataService.js");
 const WDXWSClientConfiguration = require("@wago/wdx-ws-client-js");
-const Model = require("./dist");
+const Model = require("./utils");
 const Services = require("./NewServices");
 
 // Set up WebSocket server for React Native clients
@@ -205,10 +205,12 @@ wss.on("connection", (ws) => {
           client.instanceService &&
           typeof client.instanceService.save === "function"
         ) {
-          const name = "Virt3";
+
           const instance =
             Model.Instance.DataAdapter.VirtualDataAdapterInstance();
             instance.name = name;
+
+            // TODO: The "type" attribute wasn't created when the instance was created.
             instance.type = "Virtual";
             
           client.instanceService.save(instance).subscribe({
@@ -271,7 +273,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.0.101:7081/wdx/ws",
+      url: "ws://172.16.1.148:7081/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -287,7 +289,7 @@ const initializeWDXClient = async () => {
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.0.101:7081/wdx/ws at",
+      "Connecting to WDX server at ws://172.16.1.148:7081/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();
