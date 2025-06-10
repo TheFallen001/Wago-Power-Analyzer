@@ -1,9 +1,10 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
-**/server/node_modules/
+
 **/WagoPA/node_modules/
-**/dist/
+**/server/node_modules/
+
 
 # Expo
 **/.expo/

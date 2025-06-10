@@ -6,9 +6,8 @@ const WDXWSClient = require("@wago/wdx-ws-client-js");
 const WebSocket = require("ws");
 const { DataService } = require("./services/DataService.js");
 const WDXWSClientConfiguration = require("@wago/wdx-ws-client-js");
-const WDXSchema = require("@wago/wdx-schema");
-const MetaDataType =
-  require("@wago/wdx-schema").WDX.Schema.Model.Data.MetaData.MetaDataType;
+const Model = require("./dist");
+const Services = require("./NewServices");
 
 // Set up WebSocket server for React Native clients
 const wss = new WebSocket.Server({ port: 8080 });
@@ -206,47 +205,23 @@ wss.on("connection", (ws) => {
           client.instanceService &&
           typeof client.instanceService.save === "function"
         ) {
-          console.dir(client.instanceService);
-          const { path, device } = message;
-          let newPath = path;
-          const config = new WDXSchema.WDX.Schema.Model.Data.DataSchema(
-            newPath,
-            (relativePath = device.name),
-            (metadata =
-              new WDXSchema.WDX.Schema.Model.Data.MetaData.MetaDataVirtual()), // metadata of schema see WDXSchema.WDX.Schema.Model.Data.MetaData.MetaDataType enmuration
-            (readonly = false), //readonly
-            (subscribable = true), //subscribeable
-            true, //editable
-            false, //extendable
-            true, //removable
-            false //refreshable
-          );
+          const name = "Virt3";
           const instance =
-            new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.VirtualDataAdapterInstance(
-              path,
-              device.name || "Unnamed Device",
-              new WDXSchema.WDX.Schema.Model.Data.MetaData.MetaDataVirtual(),
-              config
-            );
-
+            Model.Instance.DataAdapter.VirtualDataAdapterInstance();
+            instance.name = name;
+            instance.type = "Virtual";
+            
           client.instanceService.save(instance).subscribe({
-            next: (response) => {
-              console.log("Response:");
-              console.log(JSON.stringify(response, null, 2));
+            next: (result) => {
+              console.log("DIsplaying the Next Function result: ", result);
             },
-            error: async (error) => {
-              console.error("Error Code: " + error.code);
-              console.error("Error Message: " + error.message);
-              console.log("Disconnecting");
-              await client.disconnect();
-              console.log("Disconnected successfully");
-            },
-            complete: async () => {
-              console.log("Completed");
-              console.log("Disconnecting");
-              await client.disconnect();
-              console.log("Disconnected successfully");
-            },
+            complete: (result) => {
+              console.log("On Complete: ", result);
+            }, 
+            error: (result) => {
+              console.log("The error encountered: ", result);
+              console.log("Instance used: ", instance);
+            }
           });
         } else {
           console.error(
@@ -296,7 +271,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.221:7081/wdx/ws",
+      url: "ws://192.168.0.101:7081/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -305,15 +280,14 @@ const initializeWDXClient = async () => {
 
   // Attach DataService to client for backend operations, passing the client instance
   client.dataService = new DataService(client);
-  client.instanceService =
-    new WDXWSClient.WDX.WS.Client.JS.Service.InstanceService(client);
+  client.instanceService = new Services.InstanceService(client);
 
   client.runtimeService =
     new WDXWSClient.WDX.WS.Client.JS.Service.RuntimeService(client);
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.221:7081/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.0.101:7081/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();
