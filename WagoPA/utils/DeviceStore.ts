@@ -402,6 +402,8 @@ export const updateDevicesFromWDX = (
         address: '', // Initialize with empty address
         voltageRange: "230V",
         status: "Active",
+        currentMax: 2.0, // Add a default value for currentMax
+        currentMin: 0,   // Add a default value for currentMin
         config:
           wdxDevice.config || {
             addr1: 1,
@@ -514,9 +516,9 @@ const CURRENT_RANGE = { min: 0, max: 2.0 };
 export const VOLTAGE_ALARM_RANGE = { min: 215, max: 235 };
 export const CURRENT_ALARM_RANGE = { min: 0, max: 1.5 };
 
-// Buffers for chart data
-export let voltageChartData: number[] = [];
-export let currentChartData: number[] = [];
+// Buffers for chart data (per device)
+export let voltageChartDataMap: { [deviceId: string]: number[] } = {};
+export let currentChartDataMap: { [deviceId: string]: number[] } = {};
 
 // Store latest simulated values
 let latestVolt = 220;
@@ -528,8 +530,9 @@ function randomInRange(min: number, max: number) {
 }
 
 // Alarm listeners
-const alarmListeners: Array<(alarm: { type: 'volt' | 'curr', value: number }) => void> = [];
-export const subscribeToAlarms = (cb: (alarm: { type: 'volt' | 'curr', value: number }) => void) => {
+interface AlarmEvent { type: 'volt' | 'curr'; value: number; deviceName: string; }
+const alarmListeners: Array<(alarm: AlarmEvent) => void> = [];
+export const subscribeToAlarms = (cb: (alarm: AlarmEvent) => void) => {
   alarmListeners.push(cb);
   return () => {
     const idx = alarmListeners.indexOf(cb);
@@ -539,10 +542,19 @@ export const subscribeToAlarms = (cb: (alarm: { type: 'volt' | 'curr', value: nu
 
 // Simulate and send volt/curr to WDX every second
 setInterval(() => {
-  latestVolt = Math.round(randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max));
-  latestCurr = Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) / 100;
+  devices.forEach((device, index) => {
+    // Generate different values for each device
+    const deviceVolt = Math.round(randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + (index * 2));
+    const deviceCurr = Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) / 100 + (index * 0.1);
 
-  devices.forEach((device) => {
+    // Store chart data per device
+    if (!voltageChartDataMap[device.id]) voltageChartDataMap[device.id] = [];
+    if (!currentChartDataMap[device.id]) currentChartDataMap[device.id] = [];
+    voltageChartDataMap[device.id].push(deviceVolt);
+    currentChartDataMap[device.id].push(deviceCurr);
+    if (voltageChartDataMap[device.id].length > 10) voltageChartDataMap[device.id].shift();
+    if (currentChartDataMap[device.id].length > 10) currentChartDataMap[device.id].shift();
+
     const deviceName = device.name.replace("Analyzer - ", "");
     const voltPath = `Virtual.${deviceName}.volt`;
     const currPath = `Virtual.${deviceName}.curr`;
@@ -551,38 +563,28 @@ setInterval(() => {
         JSON.stringify({
           type: "setConfig",
           path: voltPath,
-          config: { volt: latestVolt },
+          config: { volt: deviceVolt },
         })
       );
       ws.send(
         JSON.stringify({
           type: "setConfig",
           path: currPath,
-          config: { curr: latestCurr },
+          config: { curr: deviceCurr },
         })
       );
     }
     // Alarm check for both volt and curr
     let alarm = false;
-    if (latestVolt < VOLTAGE_ALARM_RANGE.min || latestVolt > VOLTAGE_ALARM_RANGE.max) {
-      alarmListeners.forEach((cb) => cb({ type: 'volt', value: latestVolt }));
+    if (deviceVolt < VOLTAGE_ALARM_RANGE.min || deviceVolt > VOLTAGE_ALARM_RANGE.max) {
+      alarmListeners.forEach((cb) => cb({ type: 'volt', value: deviceVolt, deviceName: device.name }));
       alarm = true;
     }
-    if (latestCurr < CURRENT_ALARM_RANGE.min || latestCurr > CURRENT_ALARM_RANGE.max) {
-      alarmListeners.forEach((cb) => cb({ type: 'curr', value: latestCurr }));
+    if (deviceCurr < CURRENT_ALARM_RANGE.min || deviceCurr > CURRENT_ALARM_RANGE.max) {
+      alarmListeners.forEach((cb) => cb({ type: 'curr', value: deviceCurr, deviceName: device.name }));
       alarm = true;
     }
     device.status = alarm ? 'ALARM' : 'Active';
   });
   notifyListeners();
 }, 1000);
-
-// Every 15 seconds, add current value to chart data
-setInterval(() => {
-  voltageChartData.push(latestVolt);
-  currentChartData.push(latestCurr);
-  // Keep only last 20 points
-  if (voltageChartData.length > 10) voltageChartData.shift();
-  if (currentChartData.length > 10) currentChartData.shift();
-  // Optionally notify listeners/UI for chart update
-}, 15000);

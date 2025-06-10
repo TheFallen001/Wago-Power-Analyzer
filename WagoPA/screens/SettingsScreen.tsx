@@ -48,6 +48,11 @@ const SettingsScreen = ({navigation}: Props) => {
         <Text style={tw`text-md font-semibold my-2`}>About Us</Text>
         
       </TouchableOpacity>
+      <TouchableOpacity style={tw`mt-5 px-5 py-3 bg-gray-100 rounded-2xl`}
+        onPress={() => navigation.navigate("AlarmScreen")}
+      >
+        <Text style={tw`text-md font-semibold my-2`}>Alarms</Text>
+      </TouchableOpacity>
     </View>
   );
 };

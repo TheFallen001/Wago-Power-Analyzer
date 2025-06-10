@@ -39,7 +39,11 @@ const AppNavigator = () => {
           component={require('../screens/DeviceDetailScreen').default}
           options={{ headerShown: true, title: 'Device Details' }}
         />
-        
+        <Stack.Screen
+          name="AlarmScreen"
+          component={require('../screens/AlarmScreen').default}
+          options={{ headerShown: true, title: 'Alarm History' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

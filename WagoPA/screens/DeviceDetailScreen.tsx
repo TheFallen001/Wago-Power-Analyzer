@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Dimensions } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { RootParamList } from '../navigation/types';
-import { devices, geocodeAddress, reverseGeocode, voltageChartData, currentChartData, subscribeToAlarms, VOLTAGE_ALARM_RANGE, CURRENT_ALARM_RANGE } from '../utils/DeviceStore';
+import { devices, geocodeAddress, reverseGeocode, voltageChartDataMap, currentChartDataMap, subscribeToAlarms, VOLTAGE_ALARM_RANGE, CURRENT_ALARM_RANGE } from '../utils/DeviceStore';
 import tw from 'twrnc';
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import Svg, { Polyline, Line, Circle, Defs, LinearGradient, Stop, Rect, Text as SvgText } from 'react-native-svg';
@@ -30,22 +30,24 @@ const DeviceDetailScreen = () => {
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   });
-  // Chart state from DeviceStore
-  const [voltageData, setVoltageData] = useState([...voltageChartData]);
-  const [consumptionData, setConsumptionData] = useState([...currentChartData]);
+  // Chart state from DeviceStore (per device)
+  const [voltageData, setVoltageData] = useState(device ? [...(voltageChartDataMap[device.id] || [])] : []);
+  const [consumptionData, setConsumptionData] = useState(device ? [...(currentChartDataMap[device.id] || [])] : []);
 
   // Alarm state
   const [alarmActive, setAlarmActive] = useState(false); // Default false, only set true when alarm triggers
   const [alarmTypes, setAlarmTypes] = useState<{ volt: boolean; curr: boolean }>({ volt: false, curr: false });
 
-  // Subscribe to chart data updates every 15s
+  // Subscribe to chart data updates every 2s
   React.useEffect(() => {
     const interval = setInterval(() => {
-      setVoltageData([...voltageChartData]);
-      setConsumptionData([...currentChartData]);
-    }, 2000); // Poll every 2s for UI update
+      if (device) {
+        setVoltageData([...(voltageChartDataMap[device.id] || [])]);
+        setConsumptionData([...(currentChartDataMap[device.id] || [])]);
+      }
+    }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [device]);
 
   // Subscribe to alarm updates
   React.useEffect(() => {

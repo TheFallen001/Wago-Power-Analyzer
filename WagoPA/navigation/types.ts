@@ -4,5 +4,5 @@ export type RootParamList = {
   Configure: { deviceId?: string }; // Make deviceId optional
   DeviceDetail: { deviceId: string }; // Add DeviceDetail route
   LogsScreen: undefined;
-  
+  AlarmScreen: undefined; // Add AlarmScreen route
 };
