@@ -34,8 +34,8 @@ const MapScreen = () => {
   const [region, setRegion] = useState<Region>({
     latitude: 41.0082,
     longitude: 28.9784,
-    latitudeDelta: 0.2,
-    longitudeDelta: 0.2,
+    latitudeDelta: 0.3,
+    longitudeDelta: 0.3,
   });
   const [deviceList, setDeviceList] = useState([...devices]);
   const scaleAnim = useRef(new Animated.Value(0)).current;

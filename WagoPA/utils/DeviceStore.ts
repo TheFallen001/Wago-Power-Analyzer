@@ -1,4 +1,6 @@
 export type Device = {
+  currentMax: number;
+  currentMin: number;
   id: string;
   name: string;
   latitude: number;
@@ -58,7 +60,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
 }
 
 export const devices: Device[] = []; // Start with an empty array
-let logs = [];
+let logs: never[] = [];
 let devicePathMap: { [key: string]: string } = {};
 let ws: WebSocket | null = null;
 let isInitialized = false;
@@ -125,7 +127,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://172.16.1.148:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.31.201:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -503,3 +505,84 @@ export const getLogs = () => {
 
   return logs;
 };
+
+// --- Simulation and Monitoring Logic ---
+
+// Ranges for simulation
+const VOLTAGE_RANGE = { min: 215, max: 240 };
+const CURRENT_RANGE = { min: 0, max: 2.0 };
+export const VOLTAGE_ALARM_RANGE = { min: 215, max: 235 };
+export const CURRENT_ALARM_RANGE = { min: 0, max: 1.5 };
+
+// Buffers for chart data
+export let voltageChartData: number[] = [];
+export let currentChartData: number[] = [];
+
+// Store latest simulated values
+let latestVolt = 220;
+let latestCurr = 5;
+
+// Helper to generate random value in range
+function randomInRange(min: number, max: number) {
+  return Math.random() * (max - min) + min;
+}
+
+// Alarm listeners
+const alarmListeners: Array<(alarm: { type: 'volt' | 'curr', value: number }) => void> = [];
+export const subscribeToAlarms = (cb: (alarm: { type: 'volt' | 'curr', value: number }) => void) => {
+  alarmListeners.push(cb);
+  return () => {
+    const idx = alarmListeners.indexOf(cb);
+    if (idx !== -1) alarmListeners.splice(idx, 1);
+  };
+};
+
+// Simulate and send volt/curr to WDX every second
+setInterval(() => {
+  latestVolt = Math.round(randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max));
+  latestCurr = Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) / 100;
+
+  devices.forEach((device) => {
+    const deviceName = device.name.replace("Analyzer - ", "");
+    const voltPath = `Virtual.${deviceName}.volt`;
+    const currPath = `Virtual.${deviceName}.curr`;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          type: "setConfig",
+          path: voltPath,
+          config: { volt: latestVolt },
+        })
+      );
+      ws.send(
+        JSON.stringify({
+          type: "setConfig",
+          path: currPath,
+          config: { curr: latestCurr },
+        })
+      );
+    }
+    // Alarm check for both volt and curr
+    let alarm = false;
+    if (latestVolt < VOLTAGE_ALARM_RANGE.min || latestVolt > VOLTAGE_ALARM_RANGE.max) {
+      alarmListeners.forEach((cb) => cb({ type: 'volt', value: latestVolt }));
+      alarm = true;
+    }
+    if (latestCurr < CURRENT_ALARM_RANGE.min || latestCurr > CURRENT_ALARM_RANGE.max) {
+      alarmListeners.forEach((cb) => cb({ type: 'curr', value: latestCurr }));
+      alarm = true;
+    }
+    device.status = alarm ? 'ALARM' : 'Active';
+  });
+  notifyListeners();
+}, 1000);
+
+// Every 15 seconds, add current value to chart data
+setInterval(() => {
+  voltageChartData.push(latestVolt);
+  currentChartData.push(latestCurr);
+  // Keep only last 20 points
+  if (voltageChartData.length > 10) voltageChartData.shift();
+  if (currentChartData.length > 10) currentChartData.shift();
+  // Optionally notify listeners/UI for chart update
+}, 15000);
