@@ -209,36 +209,120 @@ wss.on("connection", (ws) => {
           });
         }
       } else if (message.type === "addDevice") {
-        /* FIXME: wait for Slavomir to respond and do what he says */
         if (
           client &&
           client.instanceService &&
           typeof client.instanceService.save === "function"
         ) {
+          const instance = Model.Instance.DataAdapter.VirtualDataAdapterInstance();
+          instance.name = message.device && message.device.name ? message.device.name : "Random";
+          instance.type = "Virtual";
 
-          const instance =
-            Model.Instance.DataAdapter.VirtualDataAdapterInstance();
-            instance.name = "Random";
-
-            // TODO: The "type" attribute wasn't created when the instance was created.
-            instance.type = "Virtual";
-            
           client.instanceService.save(instance).subscribe({
             next: (result) => {
-              console.log("DIsplaying the Next Function result: ", result);
+              if (result && result.uuid) {
+                client.instanceService.start(result.uuid).subscribe({
+                  next: () => {
+                    // Build schema with children
+                    const schema = {
+                      path: `Virtual.${instance.name}`,
+                      type: "object",
+                      children: [
+                        { path: `Virtual.${instance.name}.curr`, type: "number", value: 0 },
+                        { path: `Virtual.${instance.name}.volt`, type: "number", value: 0 },
+                        { path: `Virtual.${instance.name}.addr1`, type: "number", value: 0 },
+                        { path: `Virtual.${instance.name}.baud1`, type: "number", value: 0 },
+                        { path: `Virtual.${instance.name}.baud2`, type: "number", value: 0 },
+                        { path: `Virtual.${instance.name}.check1`, type: "number", value: 0 },
+                        { path: `Virtual.${instance.name}.check2`, type: "number", value: 0 },
+                        { path: `Virtual.${instance.name}.stopBit1`, type: "number", value: 0 },
+                        { path: `Virtual.${instance.name}.stopBit2`, type: "number", value: 0 },
+                      ],
+                    };
+
+                    // Set the schema
+                    client.dataService.setSchema(schema).subscribe({
+                      next: () => {
+                        console.log(`Schema set for instance ${instance.name}`);
+                        // Broadcast updated schema to clients
+                        client.dataService.getSchema("Virtual", 1).subscribe({
+                          next: (updatedSchema) => {
+                            const children = updatedSchema.children || [];
+                            const devicePromises = children.map((child) => {
+                              return new Promise((resolve) => {
+                                client.dataService.register(child.path).subscribe({
+                                  next: (data) => {
+                                    const deviceName = child.path.split(".").pop() || child.path;
+                                    resolve({
+                                      name: deviceName,
+                                      config: {
+                                        addr1: data?.value?.addr1 ?? 0,
+                                        baud1: data?.value?.baud1 ?? 0,
+                                        check1: data?.value?.check1 ?? 0,
+                                        stopBit1: data?.value?.stopBit1 ?? 0,
+                                        baud2: data?.value?.baud2 ?? 0,
+                                        check2: data?.value?.check2 ?? 0,
+                                        stopBit2: data?.value?.stopBit2 ?? 0,
+                                      },
+                                      path: child.path,
+                                    });
+                                  },
+                                  error: () => {
+                                    const deviceName = child.path.split(".").pop() || child.path;
+                                    resolve({
+                                      name: deviceName,
+                                      config: {
+                                        addr1: 0,
+                                        baud1: 0,
+                                        check1: 0,
+                                        stopBit1: 0,
+                                        baud2: 0,
+                                        check2: 0,
+                                        stopBit2: 0,
+                                      },
+                                      path: child.path,
+                                    });
+                                  },
+                                });
+                              });
+                            });
+                            Promise.all(devicePromises).then((devices) => {
+                              latestSchemaDevices = devices.map(({ name, config }) => ({
+                                name,
+                                config,
+                              }));
+                              broadcast({
+                                type: "schema",
+                                devices: latestSchemaDevices,
+                              });
+                            });
+                          },
+                          error: (err) => {
+                            console.error("[WDX getSchema ERROR after setSchema]", err);
+                          },
+                        });
+                      },
+                      error: (err) => {
+                        console.error(`Failed to set schema for instance ${instance.name}:`, err);
+                      },
+                    });
+                  },
+                  error: (err) => {
+                    console.error("Failed to start instance after save:", err);
+                  },
+                });
+              }
             },
             complete: (result) => {
               console.log("On Complete: ", result);
-            }, 
+            },
             error: (result) => {
               console.log("The error encountered: ", result);
               console.log("Instance used: ", instance);
-            }
+            },
           });
         } else {
-          console.error(
-            "InstanceService not available or save method not found"
-          );
+          console.error("InstanceService not available or save method not found");
         }
       } else if (message.type === "getLogs") {
         // TODO: wait for SLavomir's response
