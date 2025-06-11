@@ -383,16 +383,16 @@ wss.on("connection", (ws) => {
       } else if (message.type === "getLogs") {
         // TODO: wait for SLavomir's response
         if (client && client.instanceService) {
-          
           response = client.instanceService
             .whois(message.deviceName)
             .subscribe({
               next: (response) => {
-                
                 client.instanceService.logSubscribe(response.uuid).subscribe({
                   next: (response) => {
-                    
-                    console.log("Response: ",JSON.stringify(response, null, 2));
+                    console.log(
+                      "Response: ",
+                      JSON.stringify(response, null, 2)
+                    );
                     ws.send(
                       JSON.stringify({
                         type: "updateLogs",
@@ -407,10 +407,8 @@ wss.on("connection", (ws) => {
                     console.log("Got all logs");
                   },
                 });
-             
               },
               error: (error) => {
-                
                 console.error("Error: ", error);
               },
             });
