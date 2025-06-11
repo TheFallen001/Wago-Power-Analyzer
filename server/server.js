@@ -214,8 +214,12 @@ wss.on("connection", (ws) => {
           client.instanceService &&
           typeof client.instanceService.save === "function"
         ) {
-          const instance = Model.Instance.DataAdapter.VirtualDataAdapterInstance();
-          instance.name = message.device && message.device.name ? message.device.name : "Random";
+          const instance =
+            Model.Instance.DataAdapter.VirtualDataAdapterInstance();
+          instance.name =
+            message.device && message.device.name
+              ? message.device.name
+              : "Random";
           instance.type = "Virtual";
 
           client.instanceService.save(instance).subscribe({
@@ -228,15 +232,51 @@ wss.on("connection", (ws) => {
                       path: `Virtual.${instance.name}`,
                       type: "object",
                       children: [
-                        { path: `Virtual.${instance.name}.curr`, type: "number", value: 0 },
-                        { path: `Virtual.${instance.name}.volt`, type: "number", value: 0 },
-                        { path: `Virtual.${instance.name}.addr1`, type: "number", value: 0 },
-                        { path: `Virtual.${instance.name}.baud1`, type: "number", value: 0 },
-                        { path: `Virtual.${instance.name}.baud2`, type: "number", value: 0 },
-                        { path: `Virtual.${instance.name}.check1`, type: "number", value: 0 },
-                        { path: `Virtual.${instance.name}.check2`, type: "number", value: 0 },
-                        { path: `Virtual.${instance.name}.stopBit1`, type: "number", value: 0 },
-                        { path: `Virtual.${instance.name}.stopBit2`, type: "number", value: 0 },
+                        {
+                          path: `Virtual.${instance.name}.curr`,
+                          type: "number",
+                          value: 0,
+                        },
+                        {
+                          path: `Virtual.${instance.name}.volt`,
+                          type: "number",
+                          value: 0,
+                        },
+                        {
+                          path: `Virtual.${instance.name}.addr1`,
+                          type: "number",
+                          value: 0,
+                        },
+                        {
+                          path: `Virtual.${instance.name}.baud1`,
+                          type: "number",
+                          value: 0,
+                        },
+                        {
+                          path: `Virtual.${instance.name}.baud2`,
+                          type: "number",
+                          value: 0,
+                        },
+                        {
+                          path: `Virtual.${instance.name}.check1`,
+                          type: "number",
+                          value: 0,
+                        },
+                        {
+                          path: `Virtual.${instance.name}.check2`,
+                          type: "number",
+                          value: 0,
+                        },
+                        {
+                          path: `Virtual.${instance.name}.stopBit1`,
+                          type: "number",
+                          value: 0,
+                        },
+                        {
+                          path: `Virtual.${instance.name}.stopBit2`,
+                          type: "number",
+                          value: 0,
+                        },
                       ],
                     };
 
@@ -250,47 +290,55 @@ wss.on("connection", (ws) => {
                             const children = updatedSchema.children || [];
                             const devicePromises = children.map((child) => {
                               return new Promise((resolve) => {
-                                client.dataService.register(child.path).subscribe({
-                                  next: (data) => {
-                                    const deviceName = child.path.split(".").pop() || child.path;
-                                    resolve({
-                                      name: deviceName,
-                                      config: {
-                                        addr1: data?.value?.addr1 ?? 0,
-                                        baud1: data?.value?.baud1 ?? 0,
-                                        check1: data?.value?.check1 ?? 0,
-                                        stopBit1: data?.value?.stopBit1 ?? 0,
-                                        baud2: data?.value?.baud2 ?? 0,
-                                        check2: data?.value?.check2 ?? 0,
-                                        stopBit2: data?.value?.stopBit2 ?? 0,
-                                      },
-                                      path: child.path,
-                                    });
-                                  },
-                                  error: () => {
-                                    const deviceName = child.path.split(".").pop() || child.path;
-                                    resolve({
-                                      name: deviceName,
-                                      config: {
-                                        addr1: 0,
-                                        baud1: 0,
-                                        check1: 0,
-                                        stopBit1: 0,
-                                        baud2: 0,
-                                        check2: 0,
-                                        stopBit2: 0,
-                                      },
-                                      path: child.path,
-                                    });
-                                  },
-                                });
+                                client.dataService
+                                  .register(child.path)
+                                  .subscribe({
+                                    next: (data) => {
+                                      const deviceName =
+                                        child.path.split(".").pop() ||
+                                        child.path;
+                                      resolve({
+                                        name: deviceName,
+                                        config: {
+                                          addr1: data?.value?.addr1 ?? 0,
+                                          baud1: data?.value?.baud1 ?? 0,
+                                          check1: data?.value?.check1 ?? 0,
+                                          stopBit1: data?.value?.stopBit1 ?? 0,
+                                          baud2: data?.value?.baud2 ?? 0,
+                                          check2: data?.value?.check2 ?? 0,
+                                          stopBit2: data?.value?.stopBit2 ?? 0,
+                                        },
+                                        path: child.path,
+                                      });
+                                    },
+                                    error: () => {
+                                      const deviceName =
+                                        child.path.split(".").pop() ||
+                                        child.path;
+                                      resolve({
+                                        name: deviceName,
+                                        config: {
+                                          addr1: 0,
+                                          baud1: 0,
+                                          check1: 0,
+                                          stopBit1: 0,
+                                          baud2: 0,
+                                          check2: 0,
+                                          stopBit2: 0,
+                                        },
+                                        path: child.path,
+                                      });
+                                    },
+                                  });
                               });
                             });
                             Promise.all(devicePromises).then((devices) => {
-                              latestSchemaDevices = devices.map(({ name, config }) => ({
-                                name,
-                                config,
-                              }));
+                              latestSchemaDevices = devices.map(
+                                ({ name, config }) => ({
+                                  name,
+                                  config,
+                                })
+                              );
                               broadcast({
                                 type: "schema",
                                 devices: latestSchemaDevices,
@@ -298,12 +346,18 @@ wss.on("connection", (ws) => {
                             });
                           },
                           error: (err) => {
-                            console.error("[WDX getSchema ERROR after setSchema]", err);
+                            console.error(
+                              "[WDX getSchema ERROR after setSchema]",
+                              err
+                            );
                           },
                         });
                       },
                       error: (err) => {
-                        console.error(`Failed to set schema for instance ${instance.name}:`, err);
+                        console.error(
+                          `Failed to set schema for instance ${instance.name}:`,
+                          err
+                        );
                       },
                     });
                   },
@@ -322,20 +376,44 @@ wss.on("connection", (ws) => {
             },
           });
         } else {
-          console.error("InstanceService not available or save method not found");
+          console.error(
+            "InstanceService not available or save method not found"
+          );
         }
       } else if (message.type === "getLogs") {
         // TODO: wait for SLavomir's response
-        if (client && client.runtimeService) {
-          response = client.runtimeService.monitorSubscribe().subscribe({
-            next: (logs) => {
-              console.log("Message Received after Next: ", logs);
-              broadcast({ type: "sendLogs", logs });
-            },
-            error: (message) => {
-              console.log("Message received after Error: ", message);
-            },
-          });
+        if (client && client.instanceService) {
+          
+          response = client.instanceService
+            .whois(message.deviceName)
+            .subscribe({
+              next: (response) => {
+                
+                client.instanceService.logSubscribe(response.uuid).subscribe({
+                  next: (response) => {
+                    
+                    console.log("Response: ",JSON.stringify(response, null, 2));
+                    ws.send(
+                      JSON.stringify({
+                        type: "updateLogs",
+                        logs: JSON.stringify(response),
+                      })
+                    );
+                  },
+                  error: async (error) => {
+                    console.log("Error encountered: ", error);
+                  },
+                  complete: async () => {
+                    console.log("Got all logs");
+                  },
+                });
+             
+              },
+              error: (error) => {
+                
+                console.error("Error: ", error);
+              },
+            });
         }
       }
     } catch (err) {
@@ -367,7 +445,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.209:7481/wdx/ws",
+      url: "ws://192.168.31.239:7081/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -383,7 +461,7 @@ const initializeWDXClient = async () => {
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.209:7481/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.31.239:7081/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();

@@ -43,7 +43,10 @@ export async function geocodeAddress(
   }
 }
 
-export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+export async function reverseGeocode(
+  lat: number,
+  lng: number
+): Promise<string | null> {
   try {
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`
@@ -60,7 +63,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
 }
 
 export const devices: Device[] = []; // Start with an empty array
-let logs: never[] = [];
+export let logData = [];
 let devicePathMap: { [key: string]: string } = {};
 let ws: WebSocket | null = null;
 let isInitialized = false;
@@ -130,7 +133,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://192.168.31.209:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.31.239:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -275,11 +278,9 @@ const initializeWebSocket = () => {
       // Handle config update error from backend
       console.error("Config update error from backend:", message);
       // Optionally, notify listeners or show an alert in the UI
-    } else if(message.type === "sendLogs") {
-
-      logs = message.logs;
-    } 
-    else {
+    } else if (message.type === "updateLogs") {
+      logData = message.logs;
+    } else {
       console.log(
         "Unknown message type received at",
         new Date().toISOString(),
@@ -319,7 +320,10 @@ console.log("Starting WebSocket initialization at", new Date().toISOString());
 initializeWebSocket();
 
 // Send config update to backend
-export const updateDeviceConfig = (idOrName: string, config: Device["config"]) => {
+export const updateDeviceConfig = (
+  idOrName: string,
+  config: Device["config"]
+) => {
   console.log(
     `Updating config for device ID or Name: ${idOrName} at`,
     new Date().toISOString()
@@ -403,21 +407,20 @@ export const updateDevicesFromWDX = (
         name: fullName,
         latitude: 41.0 + index * 0.01,
         longitude: 29.0 + index * 0.01,
-        address: '', // Initialize with empty address
+        address: "", // Initialize with empty address
         voltageRange: "230V",
         status: "Active",
         currentMax: 2.0, // Add a default value for currentMax
-        currentMin: 0,   // Add a default value for currentMin
-        config:
-          wdxDevice.config || {
-            addr1: 1,
-            baud1: 9600,
-            check1: 0,
-            stopBit1: 0,
-            baud2: 9600,
-            check2: 0,
-            stopBit2: 0,
-          },
+        currentMin: 0, // Add a default value for currentMin
+        config: wdxDevice.config || {
+          addr1: 1,
+          baud1: 9600,
+          check1: 0,
+          stopBit1: 0,
+          baud2: 9600,
+          check2: 0,
+          stopBit2: 0,
+        },
       };
       devices.push(device);
     } else if (wdxDevice.config && Object.keys(wdxDevice.config).length > 0) {
@@ -492,7 +495,7 @@ export const addDevice = async (device: Device) => {
   ws?.send(
     JSON.stringify({
       type: "addDevice",
-      path: `Virtual.${newDevice.name}`,
+      path: newDevice.name,
       relative_path: "Virtual",
       device: newDevice,
     })
@@ -501,15 +504,17 @@ export const addDevice = async (device: Device) => {
   notifyListeners();
 };
 
-export const getLogs = () => {
+export const getLogs = (deviceName: string) => {
+  let result = deviceName.startsWith("Analyzer")
+    ? deviceName.split(" - ")[1]?.trim()
+    : deviceName;
+
   ws?.send(
     JSON.stringify({
       type: "getLogs",
+      deviceName: result,
     })
   );
-  console.log("Getting Logs...");
-
-  return logs;
 };
 
 // --- Simulation and Monitoring Logic ---
@@ -534,7 +539,11 @@ function randomInRange(min: number, max: number) {
 }
 
 // Alarm listeners
-interface AlarmEvent { type: 'volt' | 'curr'; value: number; deviceName: string; }
+interface AlarmEvent {
+  type: "volt" | "curr";
+  value: number;
+  deviceName: string;
+}
 const alarmListeners: Array<(alarm: AlarmEvent) => void> = [];
 export const subscribeToAlarms = (cb: (alarm: AlarmEvent) => void) => {
   alarmListeners.push(cb);
@@ -548,16 +557,23 @@ export const subscribeToAlarms = (cb: (alarm: AlarmEvent) => void) => {
 setInterval(() => {
   devices.forEach((device, index) => {
     // Generate different values for each device
-    const deviceVolt = Math.round(randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + (index * 2));
-    const deviceCurr = Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) / 100 + (index * 0.1);
+    const deviceVolt = Math.round(
+      randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + index * 2
+    );
+    const deviceCurr =
+      Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) /
+        100 +
+      index * 0.1;
 
     // Store chart data per device
     if (!voltageChartDataMap[device.id]) voltageChartDataMap[device.id] = [];
     if (!currentChartDataMap[device.id]) currentChartDataMap[device.id] = [];
     voltageChartDataMap[device.id].push(deviceVolt);
     currentChartDataMap[device.id].push(deviceCurr);
-    if (voltageChartDataMap[device.id].length > 10) voltageChartDataMap[device.id].shift();
-    if (currentChartDataMap[device.id].length > 10) currentChartDataMap[device.id].shift();
+    if (voltageChartDataMap[device.id].length > 10)
+      voltageChartDataMap[device.id].shift();
+    if (currentChartDataMap[device.id].length > 10)
+      currentChartDataMap[device.id].shift();
 
     const deviceName = device.name.replace("Analyzer - ", "");
     const voltPath = `Virtual.${deviceName}.volt`;
@@ -583,15 +599,25 @@ setInterval(() => {
     }
     // Alarm check for both volt and curr
     let alarm = false;
-    if (deviceVolt < VOLTAGE_ALARM_RANGE.min || deviceVolt > VOLTAGE_ALARM_RANGE.max) {
-      alarmListeners.forEach((cb) => cb({ type: 'volt', value: deviceVolt, deviceName: device.name }));
+    if (
+      deviceVolt < VOLTAGE_ALARM_RANGE.min ||
+      deviceVolt > VOLTAGE_ALARM_RANGE.max
+    ) {
+      alarmListeners.forEach((cb) =>
+        cb({ type: "volt", value: deviceVolt, deviceName: device.name })
+      );
       alarm = true;
     }
-    if (deviceCurr < CURRENT_ALARM_RANGE.min || deviceCurr > CURRENT_ALARM_RANGE.max) {
-      alarmListeners.forEach((cb) => cb({ type: 'curr', value: deviceCurr, deviceName: device.name }));
+    if (
+      deviceCurr < CURRENT_ALARM_RANGE.min ||
+      deviceCurr > CURRENT_ALARM_RANGE.max
+    ) {
+      alarmListeners.forEach((cb) =>
+        cb({ type: "curr", value: deviceCurr, deviceName: device.name })
+      );
       alarm = true;
     }
-    device.status = alarm ? 'ALARM' : 'Active';
+    device.status = alarm ? "ALARM" : "Active";
   });
   notifyListeners();
 }, 1000);
