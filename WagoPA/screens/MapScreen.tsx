@@ -182,7 +182,7 @@ const MapScreen = () => {
       >
         {deviceList.map((device) => (
           <Marker
-            key={device.id}
+            key={device.name} // Use device.name for uniqueness
             coordinate={{
               latitude: device.latitude,
               longitude: device.longitude,

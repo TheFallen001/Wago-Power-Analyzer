@@ -47,6 +47,7 @@ class DataService {
         return response.asObservable();
     }
     setSchema(schema) {
+        
         const request = new WDXSchema.WDX.Schema.Message.Data.SetSchemaRequest(schema);
         const response = new rxjs_1.Subject();
         const subscription = this._clientService.incommingMessages.subscribe((message) => {

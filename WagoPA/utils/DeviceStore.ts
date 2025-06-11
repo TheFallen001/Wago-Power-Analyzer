@@ -66,6 +66,9 @@ let ws: WebSocket | null = null;
 let isInitialized = false;
 const listeners: Array<(devices: Device[]) => void> = [];
 
+// Declare validDevicePaths at the module level
+let validDevicePaths: Set<string> = new Set();
+
 // Notify listeners when devices are updated
 const notifyListeners = () => {
   console.log(
@@ -127,7 +130,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://192.168.31.201:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.31.209:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -181,19 +184,20 @@ const initializeWebSocket = () => {
         return;
       }
 
-      console.log(
-        "Schema devices at",
-        new Date().toISOString(),
-        ":",
-        wdxDevices
-      );
-      if (wdxDevices.length === 0) {
-        console.log(
-          "Schema devices array is empty, no devices to initialize at",
-          new Date().toISOString()
-        );
-      }
-
+      // Build a set of valid device paths for quick lookup
+      validDevicePaths = new Set();
+      wdxDevices.forEach((device) => {
+        const deviceName = device.name;
+        validDevicePaths.add(`Virtual.${deviceName}.volt`);
+        validDevicePaths.add(`Virtual.${deviceName}.curr`);
+        validDevicePaths.add(`Virtual.${deviceName}.addr1`);
+        validDevicePaths.add(`Virtual.${deviceName}.baud1`);
+        validDevicePaths.add(`Virtual.${deviceName}.baud2`);
+        validDevicePaths.add(`Virtual.${deviceName}.check1`);
+        validDevicePaths.add(`Virtual.${deviceName}.check2`);
+        validDevicePaths.add(`Virtual.${deviceName}.stopBit1`);
+        validDevicePaths.add(`Virtual.${deviceName}.stopBit2`);
+      });
       devicePathMap = {};
       wdxDevices.forEach((device) => {
         const deviceName = device.name;
@@ -558,7 +562,8 @@ setInterval(() => {
     const deviceName = device.name.replace("Analyzer - ", "");
     const voltPath = `Virtual.${deviceName}.volt`;
     const currPath = `Virtual.${deviceName}.curr`;
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    // Only send if path exists in validDevicePaths
+    if (ws && ws.readyState === WebSocket.OPEN && validDevicePaths.has(voltPath)) {
       ws.send(
         JSON.stringify({
           type: "setConfig",
@@ -566,6 +571,8 @@ setInterval(() => {
           config: { volt: deviceVolt },
         })
       );
+    }
+    if (ws && ws.readyState === WebSocket.OPEN && validDevicePaths.has(currPath)) {
       ws.send(
         JSON.stringify({
           type: "setConfig",

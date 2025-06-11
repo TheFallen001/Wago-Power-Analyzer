@@ -367,7 +367,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.201:7481/wdx/ws",
+      url: "ws://192.168.31.209:7481/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -383,7 +383,7 @@ const initializeWDXClient = async () => {
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.201:7481/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.31.209:7481/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();
@@ -470,7 +470,7 @@ const initializeWDXClient = async () => {
           "Schema Error at",
           new Date().toISOString(),
           ":",
-          error.message
+          error && error.message ? error.message : error
         );
         await client.disconnect();
         setTimeout(initializeWDXClient, 5000); // Retry after 5 seconds
