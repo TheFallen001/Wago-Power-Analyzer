@@ -24,7 +24,7 @@ export type Device = {
 };
 
 // --- Singleton State ---
-let devices: Device[] = [];
+const devices: Device[] = [];
 let logData: any[] = [];
 let devicePathMap: { [key: string]: string } = {};
 let ws: WebSocket | null = null;
@@ -60,7 +60,7 @@ function notifySchemaListeners() {
 // --- WebSocket Logic ---
 function initializeWebSocket() {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  ws = new WebSocket("ws://localhost:8080");
+  ws = new WebSocket("ws://172.17.176.1:7081");
   ws.onopen = () => {};
   ws.onmessage = (event) => {
     let message;

@@ -1,20 +1,48 @@
-// Web version of MapScreen using Tailwind CSS
-"use client";
-import React from "react";
+// app/map/page.tsx or wherever your MapScreen lives
+'use client';
+import React from 'react';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
 const devices = [
-  { id: "1", name: "Device 1", latitude: 41.0082, longitude: 28.9784 },
-  { id: "2", name: "Device 2", latitude: 41.02, longitude: 28.99 },
+  { id: '1', name: 'Device 1', latitude: 41.0082, longitude: 28.9784 },
+  { id: '2', name: 'Device 2', latitude: 41.02, longitude: 28.99 },
 ];
+
+// Set map container style
+const containerStyle = {
+  width: '100%',
+  height: '100%',
+};
+
+const center = {
+  lat: 41.0082,
+  lng: 28.9784,
+};
+
+const API_KEY = 'AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo'; // 🔁 Replace with your actual API key
 
 export default function MapScreen() {
   return (
     <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center p-4">
       <div style={{ background: '#fff', border: '1px solid #E5E7EB' }} className="p-8 rounded shadow-md w-full max-w-3xl">
         <h1 style={{ color: '#0057B8' }} className="text-2xl font-bold text-center mb-6">Device Map</h1>
-        <div style={{ background: '#F3F4F6', color: '#6B7280', border: '1px solid #E5E7EB' }} className="w-full h-96 rounded flex items-center justify-center mb-4">
-          Map Placeholder (Istanbul)
+        
+        {/* Google Map */}
+        <div className="w-full h-96 rounded overflow-hidden mb-4" style={{ border: '1px solid #E5E7EB' }}>
+          <LoadScript googleMapsApiKey={API_KEY}>
+            <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={12}>
+              {devices.map(device => (
+                <Marker
+                  key={device.id}
+                  position={{ lat: device.latitude, lng: device.longitude }}
+                  title={device.name}
+                />
+              ))}
+            </GoogleMap>
+          </LoadScript>
         </div>
+
+        {/* Device List */}
         <div className="space-y-2">
           {devices.map(device => (
             <div key={device.id} style={{ background: '#F3F4F6', border: '1px solid #E5E7EB' }} className="flex justify-between items-center p-3 rounded">
