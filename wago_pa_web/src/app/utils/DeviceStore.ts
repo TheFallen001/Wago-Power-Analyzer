@@ -1,6 +1,5 @@
 // DeviceStore singleton for web, ported from React Native app
 import { useEffect, useState } from "react";
-import { useWagoWebSocket } from "./useWagoWebSocket";
 
 export type Device = {
   currentMax: number;
