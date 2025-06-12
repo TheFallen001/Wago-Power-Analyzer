@@ -1,7 +1,6 @@
 // Web version of ConfigureScreen with custom colors and device selection
 "use client";
 import React, { useEffect, useState } from "react";
-import ConfigurePage from "../ConfigurePage";
 import { updateDeviceConfig, subscribeToDeviceUpdates, Device } from "../utils/DeviceStore";
 
 const BAUD_OPTIONS = ["1200", "2400", "4800", "9600", "19200", "38400", "57600"];
@@ -108,13 +107,13 @@ export default function Configure() {
 
   return (
     <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center p-4">
-      <form onSubmit={handleApply} style={{ background: '#fff', border: '2px solid #0057B8' }} className="p-8 rounded shadow-md w-full max-w-lg">
-        <h1 style={{ color: '#0057B8' }} className="text-3xl font-bold text-center mb-8">Power Analyzer Configuration</h1>
+      <form onSubmit={handleApply} style={{ background: '#fff', border: '2px solid #28a745' }} className="p-8 rounded shadow-md w-full max-w-lg">
+        <h1 style={{ color: '#28a745' }} className="text-3xl font-bold text-center mb-8">Power Analyzer Configuration</h1>
         <div className="mb-6">
-          <label className="block font-semibold mb-2" style={{ color: '#0057B8' }}>Device</label>
+          <label className="block font-semibold mb-2" style={{ color: '#28a745' }}>Device</label>
           <select
             className="w-full border rounded px-3 py-2 text-lg"
-            style={{ borderColor: '#0057B8', color: '#22223B', background: '#F3F4F6' }}
+            style={{ borderColor: '#28a745', color: '#22223B', background: '#F3F4F6' }}
             value={selected?.name || ""}
             onChange={handleDeviceChange}
             disabled={devices.length === 0}
@@ -128,59 +127,59 @@ export default function Configure() {
         </div>
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="block mb-1 font-medium" style={{ color: '#22223B' }}>Address (Addr1)</label>
-            <input type="number" name="addr1" min={1} max={247} className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #0057B8', color: '#22223B' }} value={form.addr1} onChange={handleChange} required />
+            <label className="block mb-1 font-medium" style={{ color: '#28a745' }}>Address (Addr1)</label>
+            <input type="number" name="addr1" min={1} max={247} className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #28a745', color: '#22223B' }} value={form.addr1} onChange={handleChange} required />
           </div>
           <div>
-            <label className="block mb-1 font-medium" style={{ color: '#22223B' }}>Baud Rate 1 (Baud1)</label>
-            <select name="baud1" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #0057B8', color: '#22223B' }} value={form.baud1} onChange={handleChange} required>
+            <label className="block mb-1 font-medium" style={{ color: '#28a745' }}>Baud Rate 1 (Baud1)</label>
+            <select name="baud1" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #28a745', color: '#22223B' }} value={form.baud1} onChange={handleChange} required>
               {BAUD_OPTIONS.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block mb-1 font-medium" style={{ color: '#22223B' }}>Check Digit 1 (Check1)</label>
-            <select name="check1" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #0057B8', color: '#22223B' }} value={form.check1} onChange={handleChange} required>
+            <label className="block mb-1 font-medium" style={{ color: '#28a745' }}>Check Digit 1 (Check1)</label>
+            <select name="check1" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #28a745', color: '#22223B' }} value={form.check1} onChange={handleChange} required>
               {CHECK_OPTIONS.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block mb-1 font-medium" style={{ color: '#22223B' }}>Stop Bit (StopBit1)</label>
-            <select name="stopBit1" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #0057B8', color: '#22223B' }} value={form.stopBit1} onChange={handleChange} required>
+            <label className="block mb-1 font-medium" style={{ color: '#28a745' }}>Stop Bit (StopBit1)</label>
+            <select name="stopBit1" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #28a745', color: '#22223B' }} value={form.stopBit1} onChange={handleChange} required>
               {STOPBIT_OPTIONS.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block mb-1 font-medium" style={{ color: '#22223B' }}>Baud Rate 2 (Baud2)</label>
-            <select name="baud2" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #0057B8', color: '#22223B' }} value={form.baud2} onChange={handleChange} required>
+            <label className="block mb-1 font-medium" style={{ color: '#28a745' }}>Baud Rate 2 (Baud2)</label>
+            <select name="baud2" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #28a745', color: '#22223B' }} value={form.baud2} onChange={handleChange} required>
               {BAUD_OPTIONS.map((b) => (
                 <option key={b} value={b}>{b}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block mb-1 font-medium" style={{ color: '#22223B' }}>Check Digit 2 (Check2)</label>
-            <select name="check2" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #0057B8', color: '#22223B' }} value={form.check2} onChange={handleChange} required>
+            <label className="block mb-1 font-medium" style={{ color: '#28a745' }}>Check Digit 2 (Check2)</label>
+            <select name="check2" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #28a745', color: '#22223B' }} value={form.check2} onChange={handleChange} required>
               {CHECK_OPTIONS.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block mb-1 font-medium" style={{ color: '#22223B' }}>Stop Bit (StopBit2)</label>
-            <select name="stopBit2" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #0057B8', color: '#22223B' }} value={form.stopBit2} onChange={handleChange} required>
+            <label className="block mb-1 font-medium" style={{ color: '#28a745' }}>Stop Bit (StopBit2)</label>
+            <select name="stopBit2" className="w-full rounded px-3 py-2 text-lg" style={{ background: '#F3F4F6', border: '1px solid #28a745', color: '#22223B' }} value={form.stopBit2} onChange={handleChange} required>
               {STOPBIT_OPTIONS.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
           </div>
         </div>
-        <button type="submit" style={{ background: '#0057B8', color: '#fff', fontWeight: 700, fontSize: '1.2rem' }} className="w-full py-3 rounded hover:bg-[#FFB800] transition mb-2">
+        <button type="submit" style={{ background: '#28a745', color: '#fff', fontWeight: 700, fontSize: '1.2rem' }} className="w-full py-3 rounded hover:bg-[#FFB800] transition mb-2">
           Apply Configuration
         </button>
         {status && (

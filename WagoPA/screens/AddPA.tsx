@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
-import { addDevice } from "../utils/DeviceStore";
+import { addDevice, geocodeAddress, reverseGeocode } from "../utils/DeviceStore";
 import MapView, {
   MapPressEvent,
   Marker,
@@ -9,8 +9,7 @@ import MapView, {
 
 const AddDeviceScreen = () => {
   const [name, setName] = useState("");
-  // const [latitude, setLatitude] = useState('');
-  // const [longitude, setLongitude] = useState('');
+  const [address, setAddress] = useState("");
   const [status, setStatus] = useState("Active");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -19,16 +18,34 @@ const AddDeviceScreen = () => {
     longitude: number;
   } | null>(null);
 
-  const handleMapPress = (event: MapPressEvent) => {
+  // When address changes, geocode and update marker
+  React.useEffect(() => {
+    const timeout = setTimeout(async () => {
+      if (address) {
+        const geo = await geocodeAddress(address);
+        if (geo) {
+          setLocation({ latitude: geo.latitude, longitude: geo.longitude });
+        }
+      }
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [address]);
+
+  // When user presses on the map, reverse geocode and update address
+  const handleMapPress = async (event: MapPressEvent) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLocation({ latitude, longitude });
+    const addr = await reverseGeocode(latitude, longitude);
+    if (addr) {
+      setAddress(addr);
+    }
   };
 
   const handleAddDevice = () => {
-    if (!name || !location?.latitude || !location.longitude) {
+    if (!name || !location?.latitude || !location.longitude || !address) {
       Alert.alert(
         "Error",
-        "Please fill in all required fields (Name, Latitude, Longitude)."
+        "Please fill in all required fields (Name, Address, Latitude, Longitude)."
       );
       return;
     }
@@ -38,7 +55,11 @@ const AddDeviceScreen = () => {
       name,
       latitude: location.latitude,
       longitude: location.longitude,
+      address,
       status,
+      voltageRange: "230V", // Default value
+      currentMax: 2.0, // Default value
+      currentMin: 0, // Default value
       config: {
         addr1: 1, // Default value
         baud1: 9600, // Default value
@@ -55,7 +76,8 @@ const AddDeviceScreen = () => {
 
     // Reset form
     setName("");
-
+    setAddress("");
+    setLocation(null);
     setStatus("Active");
   };
 
@@ -71,11 +93,24 @@ const AddDeviceScreen = () => {
         placeholder="Enter device name"
       />
 
+      <Text style={styles.label}>Address *</Text>
+      <TextInput
+        style={styles.input}
+        value={address}
+        onChangeText={setAddress}
+        placeholder="Enter address"
+      />
+
       <Text style={styles.label}>Location *</Text>
       <MapView
         provider={PROVIDER_GOOGLE}
         style={{ height: 300, width: "100%" }}
-        region={{
+        region={location ? {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        } : {
           latitude: 41.0082,
           longitude: 28.9784,
           latitudeDelta: 0.0922,

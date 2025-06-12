@@ -33,7 +33,7 @@ import {
 import "chartjs-adapter-date-fns";
 import { Line } from "react-chartjs-2";
 import { useDevices, voltageChartDataMap, currentChartDataMap, VOLTAGE_ALARM_RANGE, CURRENT_ALARM_RANGE } from '../utils/DeviceStore';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import type { ScriptableContext, PointStyle } from "chart.js";
 
 ChartJS.register(
@@ -68,6 +68,7 @@ export default function DeviceDetail() {
   const deviceId = searchParams.get('id');
   const { devices } = useDevices();
   const device = devices.find(d => d.id === deviceId);
+  const router = useRouter();
 
   if (!device) {
     return (
@@ -182,18 +183,18 @@ export default function DeviceDetail() {
         </h1>
         <section className="flex flex-wrap gap-4 mb-6">
           <div className="bg-white p-4 rounded shadow flex-1 min-w-[180px] text-center metric-card">
-            <h3 className="font-semibold text-gray-700 mb-1">Voltage</h3>
-            <p className="text-xl font-bold" data-testid="voltageLevel">{voltageLevel} V</p>
+            <h3 className="font-semibold text-black mb-1">Voltage</h3>
+            <p className="text-xl font-bold text-gray-700" data-testid="voltageLevel">{voltageLevel} V</p>
           </div>
           <div className="bg-white p-4 rounded shadow flex-1 min-w-[180px] text-center metric-card">
-            <h3 className="font-semibold text-gray-700 mb-1">Current</h3>
-            <p className="text-xl font-bold" data-testid="currentLevel">{currentLevel} A</p>
+            <h3 className="font-semibold text-black mb-1">Current</h3>
+            <p className="text-xl font-bold text-gray-700" data-testid="currentLevel">{currentLevel} A</p>
           </div>
         </section>
-        <h2 className="text-xl font-semibold mb-2 mt-4">Live Monitoring</h2>
+        <h2 className="text-xl text-black font-semibold mb-2 mt-4">Live Monitoring</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 charts-grid">
           <div className="bg-white p-4 rounded shadow chart-container">
-            <h3 className="font-semibold mb-2">Voltage (V)</h3>
+            <h3 className="font-semibold text-gray-700 mb-2 ">Voltage (V)</h3>
             <Line
               data={{
                 labels,
@@ -223,7 +224,7 @@ export default function DeviceDetail() {
             />
           </div>
           <div className="bg-white p-4 rounded shadow chart-container">
-            <h3 className="font-semibold mb-2">Current (A)</h3>
+            <h3 className="font-semibold text-gray-700 mb-2">Current (A)</h3>
             <Line
               data={{
                 labels,
@@ -256,7 +257,7 @@ export default function DeviceDetail() {
         <div className="flex gap-4 justify-center button-group mt-6">
           <button
             className="px-6 py-2 rounded bg-[#005792] text-white hover:bg-[#6ec800] transition"
-            onClick={() => alert('Go to Configuration (not implemented)')}
+            onClick={() => router.push(`/configure?id=${encodeURIComponent(device.name)}`)}
           >
             Go to Configuration
           </button>

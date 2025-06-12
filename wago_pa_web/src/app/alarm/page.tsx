@@ -43,7 +43,7 @@ export default function Alarm() {
   return (
     <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center p-4">
       <div style={{ background: '#fff', border: '1px solid #E5E7EB' }} className="p-8 rounded shadow-md w-full max-w-2xl">
-        <h1 style={{ color: '#0057B8' }} className="text-2xl font-bold text-center mb-6">Alarm History</h1>
+        <h1 style={{ color: '#28a745' }} className="text-2xl font-bold text-center mb-6">Alarm History</h1>
         <div className="overflow-y-auto max-h-96 divide-y">
           {alarmHistory.length === 0 ? (
             <div style={{ color: '#6B7280' }} className="text-center">No alarms yet.</div>
