@@ -14,9 +14,15 @@ const Drawer = ({
 }) => {
   const router = useRouter();
   const navItems = [
-    { name: "Map", path: "/" },
-    { name: "Add PA", path: "/add_pa" },
-    { name: "Devices", path: "/devices" },
+    { name: "Splash", path: "/splash" },
+    { name: "Map", path: "/map" },
+    { name: "Web Map", path: "/webmap" },
+    { name: "Power Analyzers", path: "/pa" },
+    { name: "Add PA", path: "/add-pa" },
+    { name: "Alarms", path: "/alarm" },
+    { name: "Logs", path: "/logs" },
+    { name: "Configure", path: "/configure" },
+    { name: "Device Detail", path: "/device-detail" },
     { name: "Settings", path: "/settings" },
   ];
 
@@ -52,28 +58,28 @@ const Drawer = ({
   );
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-100 flex flex-row">
-        <div>
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="m-4 px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            <Menu />
-          </button>
-
-          {/* Always render the Drawer but control visibility with isOpen */}
-          <Drawer
-            isOpen={isDrawerOpen}
-            onClose={() => setIsDrawerOpen(false)}
-          />
-
-          <div>{children}</div>
-        </div>
+        {/* Sidebar toggle button */}
+        <button
+          onClick={() => setIsDrawerOpen(true)}
+          className="fixed top-4 left-4 z-50 px-4 py-2 bg-blue-600 text-white rounded shadow-lg"
+        >
+          <Menu />
+        </button>
+        {/* Sidebar Drawer */}
+        <Drawer
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+        />
+        {/* Main content, with left margin for sidebar when open */}
+        <main className="flex-1 ml-0 md:ml-0 transition-all duration-300">
+          {children}
+        </main>
       </body>
     </html>
   );

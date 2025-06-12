@@ -1,0 +1,53 @@
+// Web version of AlarmScreen using Tailwind CSS
+"use client";
+import React, { useEffect, useState } from "react";
+
+interface AlarmHistoryItem {
+  id: string;
+  device: string;
+  message: string;
+  timestamp: string;
+}
+
+export default function Alarm() {
+  const [alarmHistory, setAlarmHistory] = useState<AlarmHistoryItem[]>([]);
+
+  // Simulate alarm subscription
+  useEffect(() => {
+    // Example: Add a fake alarm every 5 seconds
+    const interval = setInterval(() => {
+      const now = new Date();
+      setAlarmHistory(prev => [
+        {
+          id: now.getTime().toString() + Math.random().toString(36).slice(2),
+          device: "Device 1",
+          message: Math.random() > 0.5 ? "Voltage out of range: 230V" : "Current out of range: 10A",
+          timestamp: now.toLocaleString(),
+        },
+        ...prev,
+      ]);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center p-4">
+      <div style={{ background: '#fff', border: '1px solid #E5E7EB' }} className="p-8 rounded shadow-md w-full max-w-2xl">
+        <h1 style={{ color: '#0057B8' }} className="text-2xl font-bold text-center mb-6">Alarm History</h1>
+        <div className="overflow-y-auto max-h-96 divide-y">
+          {alarmHistory.length === 0 ? (
+            <div style={{ color: '#6B7280' }} className="text-center">No alarms yet.</div>
+          ) : (
+            alarmHistory.map(item => (
+              <div key={item.id} className="py-3 flex flex-col">
+                <span style={{ color: '#22223B' }} className="font-semibold">{item.device}</span>
+                <span style={{ color: '#FFB800' }} className="">{item.message}</span>
+                <span style={{ color: '#6B7280' }} className="text-xs">{item.timestamp}</span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
