@@ -52,18 +52,10 @@ export const subscribeToDeviceUpdates = (cb: (devices: Device[]) => void) => {
 };
 const notifyListeners = () => listeners.forEach((cb) => cb(devices));
 
-export interface AlarmEvent {
-  type: "volt" | "curr";
-  value: number;
-  deviceName: string;
+// Only notify listeners for schema changes or device add/remove, not for config/data updates
+function notifySchemaListeners() {
+  listeners.forEach((cb) => cb(devices));
 }
-export const subscribeToAlarms = (cb: (alarm: AlarmEvent) => void) => {
-  alarmListeners.push(cb);
-  return () => {
-    const idx = alarmListeners.indexOf(cb);
-    if (idx !== -1) alarmListeners.splice(idx, 1);
-  };
-};
 
 // --- WebSocket Logic ---
 function initializeWebSocket() {
@@ -104,14 +96,16 @@ function initializeWebSocket() {
         );
         lastSchemaDevices = (wdxDevices as Array<{ name: string; config: Device["config"] }> ).map((d) => ({ name: d.name, config: d.config }));
         isInitialized = true;
-        notifyListeners();
+        notifySchemaListeners(); // Only notify on schema change
       }
     } else if (message.type === "data") {
       updateDeviceFromWDXData(message.path, message.value);
+      // Do NOT call notifyListeners();
     } else if (message.type === "set") {
       // set request from client
     } else if (message.type === "configUpdated") {
       updateDeviceFromWDXData(message.path, message.config);
+      // Do NOT call notifyListeners();
     } else if (message.type === "configUpdateError") {
       // handle config update error
     } else if (message.type === "updateLogs") {
@@ -182,20 +176,37 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
   const deviceName = path.split(".").pop() || "";
   const device = devices.find((d) => d.name === `Analyzer - ${deviceName}`);
   if (device && value) {
+    // Only update config fields, ignore volt/curr updates
+    let hasConfigChange = false;
     const updatedConfig = { ...device.config };
     Object.entries(value).forEach(([key, val]) => {
       if (typeof val === "number") {
-        if (key === "Addr1") updatedConfig.addr1 = val;
-        else if (key === "Baud1") updatedConfig.baud1 = val;
-        else if (key === "Check Digit 1") updatedConfig.check1 = val;
-        else if (key === "Stop Bit 1") updatedConfig.stopBit1 = val;
-        else if (key === "Baud2") updatedConfig.baud2 = val;
-        else if (key === "Check Digit 2") updatedConfig.check2 = val;
-        else if (key === "Stop Bit 2") updatedConfig.stopBit2 = val;
+        // Only update if not volt/curr and not a redundant update
+        if (
+          key === "Addr1" || key === "addr1" ||
+          key === "Baud1" || key === "baud1" ||
+          key === "Check Digit 1" || key === "check1" ||
+          key === "Stop Bit 1" || key === "stopBit1" ||
+          key === "Baud2" || key === "baud2" ||
+          key === "Check Digit 2" || key === "check2" ||
+          key === "Stop Bit 2" || key === "stopBit2"
+        ) {
+          if (key === "Addr1" || key === "addr1") { if (updatedConfig.addr1 !== val) { updatedConfig.addr1 = val; hasConfigChange = true; } }
+          else if (key === "Baud1" || key === "baud1") { if (updatedConfig.baud1 !== val) { updatedConfig.baud1 = val; hasConfigChange = true; } }
+          else if (key === "Check Digit 1" || key === "check1") { if (updatedConfig.check1 !== val) { updatedConfig.check1 = val; hasConfigChange = true; } }
+          else if (key === "Stop Bit 1" || key === "stopBit1") { if (updatedConfig.stopBit1 !== val) { updatedConfig.stopBit1 = val; hasConfigChange = true; } }
+          else if (key === "Baud2" || key === "baud2") { if (updatedConfig.baud2 !== val) { updatedConfig.baud2 = val; hasConfigChange = true; } }
+          else if (key === "Check Digit 2" || key === "check2") { if (updatedConfig.check2 !== val) { updatedConfig.check2 = val; hasConfigChange = true; } }
+          else if (key === "Stop Bit 2" || key === "stopBit2") { if (updatedConfig.stopBit2 !== val) { updatedConfig.stopBit2 = val; hasConfigChange = true; } }
+        }
+        // Ignore volt/curr updates for config
       }
     });
-    device.config = updatedConfig;
-    notifyListeners();
+    // Only update and notify if the update is not a volt/curr and not redundant
+    if (hasConfigChange) {
+      device.config = updatedConfig;
+      notifyListeners();
+    }
   }
 };
 
@@ -273,7 +284,7 @@ if (typeof window !== "undefined") {
       }
       device.status = alarm ? "ALARM" : "Active";
     });
-    notifyListeners();
+    // Do NOT call notifyListeners();
   }, 1000);
 }
 
