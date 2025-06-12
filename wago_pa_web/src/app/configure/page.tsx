@@ -1,7 +1,6 @@
 // Web version of ConfigureScreen with custom colors and device selection
 "use client";
 import React, { useEffect, useState } from "react";
-import ConfigurePage from "../ConfigurePage";
 import { updateDeviceConfig, subscribeToDeviceUpdates, Device } from "../utils/DeviceStore";
 
 const BAUD_OPTIONS = ["1200", "2400", "4800", "9600", "19200", "38400", "57600"];
