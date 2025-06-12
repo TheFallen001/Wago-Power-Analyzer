@@ -22,6 +22,7 @@ const Drawer = ({
     { name: "Alarms", path: "/alarm" },
     { name: "Logs", path: "/logs" },
     { name: "Configure", path: "/configure" },
+    { name: "Devices", path: "/devices" },
     { name: "Device Detail", path: "/device-detail" },
     { name: "Settings", path: "/settings" },
   ];
