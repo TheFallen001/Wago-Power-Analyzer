@@ -14,16 +14,10 @@ const Drawer = ({
 }) => {
   const router = useRouter();
   const navItems = [
-    { name: "Splash", path: "/splash" },
     { name: "Map", path: "/map" },
-    { name: "Web Map", path: "/webmap" },
-    { name: "Power Analyzers", path: "/pa" },
     { name: "Add PA", path: "/add-pa" },
-    { name: "Alarms", path: "/alarm" },
-    { name: "Logs", path: "/logs" },
     { name: "Configure", path: "/configure" },
     { name: "Devices", path: "/devices" },
-    { name: "Device Detail", path: "/device-detail" },
     { name: "Settings", path: "/settings" },
   ];
 

@@ -29,6 +29,11 @@ export default function Settings() {
           </button>
         </div>
         <a href="/logs" style={{ background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#22223B' }} className="block mt-5 px-5 py-3 rounded-2xl text-center font-semibold hover:bg-[#E5E7EB] transition">Logs</a>
+        <a href="/alarm" style={{ background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#22223B' }} 
+            className="block mt-5 px-5 py-3 rounded-2xl text-center font-semibold hover:bg-[#E5E7EB] transition">
+            Alarms
+        </a>
+
         <button
           style={{ background: '#F3F4F6', border: '1px solid #E5E7EB', color: '#22223B' }}
           className="block w-full mt-5 px-5 py-3 rounded-2xl font-semibold hover:bg-[#E5E7EB] transition"
