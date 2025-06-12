@@ -10,7 +10,7 @@ export function useWagoWebSocket({ onSchema, onData, onLogs }:{
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8080");
+    const ws = new WebSocket("ws://192.168.31.214:8080");
     wsRef.current = ws;
     ws.onopen = () => {
       // console.log("WebSocket connected");

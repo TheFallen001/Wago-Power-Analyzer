@@ -1,6 +1,7 @@
 // Web version of AlarmScreen using Tailwind CSS
 "use client";
 import React, { useEffect, useState } from "react";
+import { subscribeToAlarms } from '../utils/DeviceStore';
 
 interface AlarmHistoryItem {
   id: string;
@@ -12,22 +13,31 @@ interface AlarmHistoryItem {
 export default function Alarm() {
   const [alarmHistory, setAlarmHistory] = useState<AlarmHistoryItem[]>([]);
 
-  // Simulate alarm subscription
   useEffect(() => {
-    // Example: Add a fake alarm every 5 seconds
-    const interval = setInterval(() => {
-      const now = new Date();
-      setAlarmHistory(prev => [
-        {
-          id: now.getTime().toString() + Math.random().toString(36).slice(2),
-          device: "Device 1",
-          message: Math.random() > 0.5 ? "Voltage out of range: 230V" : "Current out of range: 10A",
-          timestamp: now.toLocaleString(),
-        },
-        ...prev,
-      ]);
-    }, 5000);
-    return () => clearInterval(interval);
+    // Listen for alarms and add to history only if value or type changed for the device
+    let lastAlarmMap: { [key: string]: { type: string; value: number } } = {};
+    const unsub = subscribeToAlarms((alarm) => {
+      const key = alarm.deviceName + '-' + alarm.type;
+      const last = lastAlarmMap[key];
+      // Only add to history if value or type changed
+      if (!last || last.value !== alarm.value) {
+        lastAlarmMap[key] = { type: alarm.type, value: alarm.value };
+        const now = new Date();
+        setAlarmHistory((prev) => [
+          {
+            id: now.getTime().toString() + Math.random().toString(36).slice(2),
+            device: alarm.deviceName || 'Unknown Device',
+            message:
+              alarm.type === 'volt'
+                ? `Voltage out of range: ${alarm.value}`
+                : `Current out of range: ${alarm.value}`,
+            timestamp: now.toLocaleString(),
+          },
+          ...prev,
+        ]);
+      }
+    });
+    return () => unsub();
   }, []);
 
   return (

@@ -1,6 +1,24 @@
 // Web version of DeviceDetailScreen using Tailwind CSS and Chart.js
 "use client";
 import React from "react";
+// Define Alarm type locally since it's not exported from DeviceStore
+type Alarm = {
+  id: string;
+  device: string;
+  message: string;
+  timestamp: string;
+  type: string;
+  value: number;
+  index: number;
+};
+
+declare global {
+  interface Window {
+    _webAlarmHistory?: Alarm[];
+    _webAddAlarm?: (alarm: Alarm) => void;
+  }
+}
+
 import {
   Chart as ChartJS,
   LineElement,
@@ -14,8 +32,9 @@ import {
 } from "chart.js";
 import "chartjs-adapter-date-fns";
 import { Line } from "react-chartjs-2";
-import { useDevices, voltageChartDataMap, currentChartDataMap } from '../utils/DeviceStore';
+import { useDevices, voltageChartDataMap, currentChartDataMap, VOLTAGE_ALARM_RANGE, CURRENT_ALARM_RANGE } from '../utils/DeviceStore';
 import { useSearchParams } from 'next/navigation';
+import type { ScriptableContext, PointStyle } from "chart.js";
 
 ChartJS.register(
   LineElement,
@@ -27,6 +46,22 @@ ChartJS.register(
   Legend,
   CategoryScale
 );
+
+// --- Alarm state for web ---
+function useAlarmHistory() {
+  const [alarmHistory, setAlarmHistory] = React.useState<Alarm[]>([]);
+  React.useEffect(() => {
+    // Listen for alarms (simulate DeviceStore alarmListeners)
+    if (typeof window !== 'undefined') {
+      if (!window._webAlarmHistory) window._webAlarmHistory = [];
+      window._webAddAlarm = (alarm: Alarm) => {
+        (window._webAlarmHistory ??= []).unshift(alarm);
+        setAlarmHistory([...(window._webAlarmHistory ?? [])]);
+      };
+    }
+  }, []);
+  return alarmHistory;
+}
 
 export default function DeviceDetail() {
   const searchParams = useSearchParams();
@@ -62,6 +97,83 @@ export default function DeviceDetail() {
     return () => clearInterval(interval);
   }, []);
 
+  // --- Custom dot rendering for alarm points ---
+  function pointStyleRenderer(ctx: ScriptableContext<"line">): PointStyle {
+    return "circle";
+  }
+
+  function pointRadiusRenderer(ctx: ScriptableContext<"line">) {
+    const { dataset, parsed } = ctx;
+    if (dataset.label === "Voltage (V)") {
+      const v = parsed.y;
+      if (v < VOLTAGE_ALARM_RANGE.min || v > VOLTAGE_ALARM_RANGE.max) {
+        return 7;
+      }
+    }
+    if (dataset.label === "Current (A)") {
+      const c = parsed.y;
+      if (c < CURRENT_ALARM_RANGE.min || c > CURRENT_ALARM_RANGE.max) {
+        return 7;
+      }
+    }
+    return 3;
+  }
+
+  function pointBackgroundColorRenderer(ctx: ScriptableContext<"line">) {
+    const { dataset, parsed } = ctx;
+    if (dataset.label === "Voltage (V)") {
+      const v = parsed.y;
+      if (v < VOLTAGE_ALARM_RANGE.min || v > VOLTAGE_ALARM_RANGE.max) {
+        return "#dc2626";
+      }
+    }
+    if (dataset.label === "Current (A)") {
+      const c = parsed.y;
+      if (c < CURRENT_ALARM_RANGE.min || c > CURRENT_ALARM_RANGE.max) {
+        return "#dc2626";
+      }
+    }
+    return "#fff";
+  }
+
+  function pointBorderColorRenderer(ctx: ScriptableContext<"line">) {
+    const { dataset, parsed } = ctx;
+    if (dataset.label === "Voltage (V)") {
+      const v = parsed.y;
+      if (v < VOLTAGE_ALARM_RANGE.min || v > VOLTAGE_ALARM_RANGE.max) {
+        return "#dc2626";
+      }
+      return "#005792";
+    }
+    if (dataset.label === "Current (A)") {
+      const c = parsed.y;
+      if (c < CURRENT_ALARM_RANGE.min || c > CURRENT_ALARM_RANGE.max) {
+        return "#dc2626";
+      }
+      return "#f57c00";
+    }
+    return "#fff";
+  }
+
+  function pointBorderWidthRenderer(ctx: ScriptableContext<"line">) {
+    const { dataset, parsed } = ctx;
+    if (dataset.label === "Voltage (V)") {
+      const v = parsed.y;
+      if (v < VOLTAGE_ALARM_RANGE.min || v > VOLTAGE_ALARM_RANGE.max) {
+        return 2;
+      }
+      return 1;
+    }
+    if (dataset.label === "Current (A)") {
+      const c = parsed.y;
+      if (c < CURRENT_ALARM_RANGE.min || c > CURRENT_ALARM_RANGE.max) {
+        return 2;
+      }
+      return 1;
+    }
+    return 1;
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F7FA] flex flex-col items-center p-4">
       <div className="w-full max-w-3xl bg-white border border-gray-200 p-8 rounded shadow-md">
@@ -91,15 +203,19 @@ export default function DeviceDetail() {
                   borderColor: '#005792',
                   backgroundColor: 'rgba(0,87,146,0.1)',
                   fill: false,
+                  pointStyle: pointStyleRenderer,
+                  pointRadius: pointRadiusRenderer,
+                  pointBackgroundColor: pointBackgroundColorRenderer,
+                  pointBorderColor: pointBorderColorRenderer,
+                  pointBorderWidth: pointBorderWidthRenderer,
                 }],
               }}
-              // Inline minimal options for live chart
               options={{
                 responsive: true,
                 plugins: { legend: { display: false }, title: { display: false } },
                 scales: {
                   x: { type: 'time', time: { unit: 'second' }, grid: { display: false } },
-                  y: { beginAtZero: true, grid: { display: true } },
+                  y: { min: 210, max: 240, beginAtZero: false, grid: { display: true } },
                 },
                 elements: { point: { radius: 0 }, line: { tension: 0.3 } },
                 animation: false,
@@ -117,6 +233,11 @@ export default function DeviceDetail() {
                   borderColor: '#f57c00',
                   backgroundColor: 'rgba(245,124,0,0.1)',
                   fill: false,
+                  pointStyle: pointStyleRenderer,
+                  pointRadius: pointRadiusRenderer,
+                  pointBackgroundColor: pointBackgroundColorRenderer,
+                  pointBorderColor: pointBorderColorRenderer,
+                  pointBorderWidth: pointBorderWidthRenderer,
                 }],
               }}
               options={{
@@ -124,7 +245,7 @@ export default function DeviceDetail() {
                 plugins: { legend: { display: false }, title: { display: false } },
                 scales: {
                   x: { type: 'time', time: { unit: 'second' }, grid: { display: false } },
-                  y: { beginAtZero: true, grid: { display: true } },
+                  y: { min: 0, max: 2, beginAtZero: true, grid: { display: true } },
                 },
                 elements: { point: { radius: 0 }, line: { tension: 0.3 } },
                 animation: false,

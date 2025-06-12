@@ -38,6 +38,26 @@ export let voltageChartDataMap: { [deviceId: string]: number[] } = {};
 export let currentChartDataMap: { [deviceId: string]: number[] } = {};
 const alarmListeners: Array<(alarm: AlarmEvent) => void> = [];
 
+// --- Alarm Subscription for Web (shared for all pages) ---
+interface AlarmEvent {
+  type: 'volt' | 'curr';
+  value: number;
+  deviceName: string;
+}
+
+const alarmHistoryListeners: Array<(alarm: AlarmEvent) => void> = [];
+
+export const subscribeToAlarms = (cb: (alarm: AlarmEvent) => void) => {
+  alarmListeners.push(cb);
+  alarmHistoryListeners.push(cb);
+  return () => {
+    const idx = alarmListeners.indexOf(cb);
+    if (idx !== -1) alarmListeners.splice(idx, 1);
+    const idx2 = alarmHistoryListeners.indexOf(cb);
+    if (idx2 !== -1) alarmHistoryListeners.splice(idx2, 1);
+  };
+};
+
 export const VOLTAGE_ALARM_RANGE = { min: 215, max: 236 };
 export const CURRENT_ALARM_RANGE = { min: 0, max: 1.6 };
 
@@ -60,7 +80,7 @@ function notifySchemaListeners() {
 // --- WebSocket Logic ---
 function initializeWebSocket() {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  ws = new WebSocket("ws://172.17.176.1:7081");
+  ws = new WebSocket("ws://192.168.31.214:8080");
   ws.onopen = () => {};
   ws.onmessage = (event) => {
     let message;
@@ -276,10 +296,12 @@ if (typeof window !== "undefined") {
       let alarm = false;
       if (deviceVolt < VOLTAGE_ALARM_RANGE.min || deviceVolt > VOLTAGE_ALARM_RANGE.max) {
         alarmListeners.forEach((cb) => cb({ type: "volt", value: deviceVolt, deviceName: device.name }));
+        alarmHistoryListeners.forEach((cb) => cb({ type: "volt", value: deviceVolt, deviceName: device.name }));
         alarm = true;
       }
       if (deviceCurr < CURRENT_ALARM_RANGE.min || deviceCurr > CURRENT_ALARM_RANGE.max) {
         alarmListeners.forEach((cb) => cb({ type: "curr", value: deviceCurr, deviceName: device.name }));
+        alarmHistoryListeners.forEach((cb) => cb({ type: "curr", value: deviceCurr, deviceName: device.name }));
         alarm = true;
       }
       device.status = alarm ? "ALARM" : "Active";
