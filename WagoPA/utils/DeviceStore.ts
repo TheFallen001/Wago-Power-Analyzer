@@ -87,41 +87,20 @@ const notifyListeners = () => {
 export const subscribeToDeviceUpdates = (
   callback: (devices: Device[]) => void
 ) => {
-  console.log(
-    "New subscriber added, current listeners:",
-    listeners.length + 1,
-    "at",
-    new Date().toISOString()
-  );
-
   listeners.push(callback);
-
   if (isInitialized) {
-    console.log(
-      "Devices already initialized, sending to new subscriber at",
-      new Date().toISOString()
-    );
-
     callback(devices);
-  } else {
-    console.log(
-      "Devices not yet initialized, subscriber will wait at",
-      new Date().toISOString()
-    );
   }
   return () => {
     const index = listeners.indexOf(callback);
-    if (index !== -1) {
-      listeners.splice(index, 1);
-      console.log(
-        "Subscriber removed, current listeners:",
-        listeners.length,
-        "at",
-        new Date().toISOString()
-      );
-    }
+    if (index !== -1) listeners.splice(index, 1);
   };
 };
+
+// Only notify listeners for schema changes or device add/remove, not for config/data updates
+function notifySchemaListeners() {
+  listeners.forEach((listener) => listener(devices));
+}
 
 // Initialize WebSocket connection to intermediary server
 const initializeWebSocket = () => {
@@ -133,7 +112,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://172.17.176.1:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.31.214:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -243,7 +222,7 @@ const initializeWebSocket = () => {
             "Devices successfully initialized, notifying listeners at",
             new Date().toISOString()
           );
-          notifyListeners();
+          notifySchemaListeners();
         } else {
           console.log(
             "No devices initialized from schema at",
@@ -259,15 +238,7 @@ const initializeWebSocket = () => {
       const path = message.path;
       const value = message.value;
       updateDeviceFromWDXData(path, value);
-      console.log(
-        "Processed data update for path:",
-        path,
-        "value:",
-        value,
-        "at",
-        new Date().toISOString()
-      );
-      notifyListeners();
+      // Do NOT call notifyListeners();
     } else if (message.type === "set") {
       console.log(
         "Received set request from client at",
@@ -280,7 +251,7 @@ const initializeWebSocket = () => {
       const path = message.path;
       const config = message.config;
       updateDeviceFromWDXData(path, config);
-      notifyListeners();
+      // Do NOT call notifyListeners();
     } else if (message.type === "configUpdateError") {
       // Handle config update error from backend
       console.error("Config update error from backend:", message);
