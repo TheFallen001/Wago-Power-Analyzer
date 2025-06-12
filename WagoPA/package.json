@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.27.1",
+    "@expo/metro-runtime": "~5.0.4",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-community/datetimepicker": "^8.3.0",
     "@react-native-picker/picker": "^2.11.0",
@@ -31,7 +32,7 @@
     "@react-navigation/stack": "^7.3.2",
     "@wago/wdx-schema": "^24.0.0",
     "@wago/wdx-ws-client-js": "^24.0.0",
-    "expo": "53.0.9",
+    "expo": "53.0.11",
     "expo-barcode-scanner": "~12.7.0",
     "expo-camera": "~16.1.6",
     "expo-dev-client": "~5.1.8",
@@ -44,7 +45,8 @@
     "npm": "^11.3.0",
     "npx": "^10.2.2",
     "react": "19.0.0",
-    "react-native": "0.79.2",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.3",
     "react-native-calendars": "^1.1312.0",
     "react-native-chart-kit": "^6.12.0",
     "react-native-gesture-handler": "~2.24.0",
@@ -55,14 +57,12 @@
     "react-native-screens": "~4.10.0",
     "react-native-svg": "^15.12.0",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-web": "^0.20.0",
     "react-native-websocket": "^1.0.2",
     "rxjs": "^7.8.2",
     "twrnc": "^4.8.0",
     "uuid": "^9.0.1",
-    "websocket": "^1.0.35",
-    "react-dom": "19.0.0",
-    "react-native-web": "^0.20.0",
-    "@expo/metro-runtime": "~5.0.4"
+    "websocket": "^1.0.35"
   },
   "devDependencies": {
     "@babel/core": "^7.27.1",

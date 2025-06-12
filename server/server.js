@@ -24,6 +24,10 @@ let latestSchemaDevices = [];
 // Move client to a higher scope so it is accessible in the WebSocket connection handler
 let client;
 
+// Throttle volt/curr data broadcasts per device/key
+const lastDataBroadcastTime = {};
+const DATA_BROADCAST_INTERVAL = 5000; // ms
+
 wss.on("connection", (ws) => {
   console.log("New React Native client connected at", new Date().toISOString());
   clients.add(ws);
@@ -109,86 +113,104 @@ wss.on("connection", (ws) => {
                   })
                 );
                 // Broadcast to all clients so all UIs update immediately
-                broadcast({
-                  type: "data",
-                  path: valuePath,
-                  value: { [wdxKey]: value },
-                });
-                // After a successful update, restart the schema subscription to get fresh values from WDX
-                client.dataService.getSchema("Virtual", 1).subscribe({
-                  next: (schema) => {
-                    const children = schema.children || [];
-                    // For each device, subscribe to its value and update config with the actual value
-                    const devicePromises = children.map((child) => {
-                      return new Promise((resolve) => {
-                        client.dataService.register(child.path).subscribe({
-                          next: (data) => {
-                            const deviceName =
-                              child.path.split(".").pop() || child.path;
-                            resolve({
-                              name: deviceName,
-                              config: {
-                                addr1:
-                                  data?.value?.addr1 ?? data?.value?.Addr1 ?? 0,
-                                baud1:
-                                  data?.value?.baud1 ?? data?.value?.Baud1 ?? 0,
-                                check1:
-                                  data?.value?.check1 ??
-                                  data?.value?.["Check Digit 1"] ??
-                                  0,
-                                stopBit1:
-                                  data?.value?.stopBit1 ??
-                                  data?.value?.["Stop Bit 1"] ??
-                                  0,
-                                baud2:
-                                  data?.value?.baud2 ?? data?.value?.Baud2 ?? 0,
-                                check2:
-                                  data?.value?.check2 ??
-                                  data?.value?.["Check Digit 2"] ??
-                                  0,
-                                stopBit2:
-                                  data?.value?.stopBit2 ??
-                                  data?.value?.["Stop Bit 2"] ??
-                                  0,
-                              },
-                              path: child.path,
-                            });
-                          },
-                          error: () => {
-                            const deviceName =
-                              child.path.split(".").pop() || child.path;
-                            resolve({
-                              name: deviceName,
-                              config: {
-                                addr1: 0,
-                                baud1: 0,
-                                check1: 0,
-                                stopBit1: 0,
-                                baud2: 0,
-                                check2: 0,
-                                stopBit2: 0,
-                              },
-                              path: child.path,
-                            });
-                          },
+                let shouldBroadcast = true;
+                if (wdxKey === "volt" || wdxKey === "curr") {
+                  // Throttle volt/curr broadcasts
+                  const deviceKey = `${valuePath}`;
+                  const now = Date.now();
+                  if (
+                    lastDataBroadcastTime[deviceKey] &&
+                    now - lastDataBroadcastTime[deviceKey] < DATA_BROADCAST_INTERVAL
+                  ) {
+                    shouldBroadcast = false;
+                  } else {
+                    lastDataBroadcastTime[deviceKey] = now;
+                  }
+                }
+                if (shouldBroadcast) {
+                  broadcast({
+                    type: "data",
+                    path: valuePath,
+                    value: { [wdxKey]: value },
+                  });
+                }
+                // Only refresh and broadcast schema if not volt/curr
+                if (wdxKey !== "volt" && wdxKey !== "curr") {
+                  client.dataService.getSchema("Virtual", 1).subscribe({
+                    next: (schema) => {
+                      const children = schema.children || [];
+                      // For each device, subscribe to its value and update config with the actual value
+                      const devicePromises = children.map((child) => {
+                        return new Promise((resolve) => {
+                          client.dataService.register(child.path).subscribe({
+                            next: (data) => {
+                              const deviceName =
+                                child.path.split(".").pop() || child.path;
+                              resolve({
+                                name: deviceName,
+                                config: {
+                                  addr1:
+                                    data?.value?.addr1 ?? data?.value?.Addr1 ?? 0,
+                                  baud1:
+                                    data?.value?.baud1 ?? data?.value?.Baud1 ?? 0,
+                                  check1:
+                                    data?.value?.check1 ??
+                                    data?.value?.["Check Digit 1"] ??
+                                    0,
+                                  stopBit1:
+                                    data?.value?.stopBit1 ??
+                                    data?.value?.["Stop Bit 1"] ??
+                                    0,
+                                  baud2:
+                                    data?.value?.baud2 ?? data?.value?.Baud2 ?? 0,
+                                  check2:
+                                    data?.value?.check2 ??
+                                    data?.value?.["Check Digit 2"] ??
+                                    0,
+                                  stopBit2:
+                                    data?.value?.stopBit2 ??
+                                    data?.value?.["Stop Bit 2"] ??
+                                    0,
+                                },
+                                path: child.path,
+                              });
+                            },
+                            error: () => {
+                              const deviceName =
+                                child.path.split(".").pop() || child.path;
+                              resolve({
+                                name: deviceName,
+                                config: {
+                                  addr1: 0,
+                                  baud1: 0,
+                                  check1: 0,
+                                  stopBit1: 0,
+                                  baud2: 0,
+                                  check2: 0,
+                                  stopBit2: 0,
+                                },
+                                path: child.path,
+                              });
+                            },
+                          });
                         });
                       });
-                    });
-                    Promise.all(devicePromises).then((devices) => {
-                      latestSchemaDevices = devices.map(({ name, config }) => ({
-                        name,
-                        config,
-                      }));
-                      broadcast({
-                        type: "schema",
-                        devices: latestSchemaDevices,
+                      Promise.all(devicePromises).then((devices) => {
+                        latestSchemaDevices = devices.map(({ name, config }) => ({
+                          name,
+                          config,
+                        }));
+                        broadcast({
+                          type: "schema",
+                          devices: latestSchemaDevices,
+                        });
                       });
-                    });
-                  },
-                  error: (err) => {
-                    console.error("[WDX getSchema ERROR after setValue]", err);
-                  },
-                });
+                    },
+                    error: (err) => {
+                      console.error("[WDX getSchema ERROR after setValue]", err);
+                    },
+                  });
+                }
               },
               error: (err) => {
                 console.error("[WDX setValue ERROR]", {
@@ -214,12 +236,14 @@ wss.on("connection", (ws) => {
           client.instanceService &&
           typeof client.instanceService.save === "function"
         ) {
-          const instance =
-            Model.Instance.DataAdapter.VirtualDataAdapterInstance();
-          instance.name =
-            message.device && message.device.name
-              ? message.device.name
-              : "Random";
+          // Use the correct classes for schema and metadata
+          const { Data } = Model;
+          const { MetaData } = Data;
+          const { DataSchema } = Data;
+          const { MetaDataVirtualAdapter, MetaDataVirtual } = MetaData;
+
+          const instance = Model.Instance.DataAdapter.VirtualDataAdapterInstance();
+          instance.name = message.device && message.device.name ? message.device.name : "Random";
           instance.type = "Virtual";
 
           client.instanceService.save(instance).subscribe({
@@ -227,64 +251,54 @@ wss.on("connection", (ws) => {
               if (result && result.uuid) {
                 client.instanceService.start(result.uuid).subscribe({
                   next: () => {
-                    // Build schema with children
-                    const schema = {
-                      path: `Virtual.${instance.name}`,
-                      type: "object",
-                      children: [
-                        {
-                          path: `Virtual.${instance.name}.curr`,
-                          type: "number",
-                          value: 0,
-                        },
-                        {
-                          path: `Virtual.${instance.name}.volt`,
-                          type: "number",
-                          value: 0,
-                        },
-                        {
-                          path: `Virtual.${instance.name}.addr1`,
-                          type: "number",
-                          value: 0,
-                        },
-                        {
-                          path: `Virtual.${instance.name}.baud1`,
-                          type: "number",
-                          value: 0,
-                        },
-                        {
-                          path: `Virtual.${instance.name}.baud2`,
-                          type: "number",
-                          value: 0,
-                        },
-                        {
-                          path: `Virtual.${instance.name}.check1`,
-                          type: "number",
-                          value: 0,
-                        },
-                        {
-                          path: `Virtual.${instance.name}.check2`,
-                          type: "number",
-                          value: 0,
-                        },
-                        {
-                          path: `Virtual.${instance.name}.stopBit1`,
-                          type: "number",
-                          value: 0,
-                        },
-                        {
-                          path: `Virtual.${instance.name}.stopBit2`,
-                          type: "number",
-                          value: 0,
-                        },
-                      ],
-                    };
+                    // Build schema with correct metadata objects
+                    const children = [
+                      { key: "curr", type: "number" },
+                      { key: "volt", type: "number" },
+                      { key: "addr1", type: "number" },
+                      { key: "baud1", type: "number" },
+                      { key: "baud2", type: "number" },
+                      { key: "check1", type: "number" },
+                      { key: "check2", type: "number" },
+                      { key: "stopBit1", type: "number" },
+                      { key: "stopBit2", type: "number" },
+                    ];
 
-                    // Set the schema
-                    client.dataService.setSchema(schema).subscribe({
+                    // Create children schemas with MetaDataVirtual
+                    const childSchemas = children.map(({ key, type }) => {
+                      return new DataSchema(
+                        `Virtual.${instance.name}.${key}`,
+                        key,
+                        key,
+                        undefined,
+                        new MetaDataVirtual(),
+                        false, // readonly
+                        true,  // subscribeable
+                        true,  // editable
+                        false, // extendable
+                        true,  // removable
+                        false  // refreshable
+                      );
+                    });
+
+                    // Create parent schema with MetaDataVirtualAdapter
+                    const parentSchema = new DataSchema(
+                      `Virtual.${instance.name}`,
+                      instance.name,
+                      instance.name,
+                      childSchemas,
+                      new MetaDataVirtualAdapter(),
+                      false, // readonly
+                      true,  // subscribeable
+                      true,  // editable
+                      true,  // extendable
+                      true,  // removable
+                      false  // refreshable
+                    );
+
+                    client.dataService.setSchema(parentSchema).subscribe({
                       next: () => {
                         console.log(`Schema set for instance ${instance.name}`);
-                        // Broadcast updated schema to clients
                         client.dataService.getSchema("Virtual", 1).subscribe({
                           next: (updatedSchema) => {
                             const children = updatedSchema.children || [];
@@ -294,9 +308,7 @@ wss.on("connection", (ws) => {
                                   .register(child.path)
                                   .subscribe({
                                     next: (data) => {
-                                      const deviceName =
-                                        child.path.split(".").pop() ||
-                                        child.path;
+                                      const deviceName = child.path.split(".").pop() || child.path;
                                       resolve({
                                         name: deviceName,
                                         config: {
@@ -312,9 +324,7 @@ wss.on("connection", (ws) => {
                                       });
                                     },
                                     error: () => {
-                                      const deviceName =
-                                        child.path.split(".").pop() ||
-                                        child.path;
+                                      const deviceName = child.path.split(".").pop() || child.path;
                                       resolve({
                                         name: deviceName,
                                         config: {
@@ -333,12 +343,10 @@ wss.on("connection", (ws) => {
                               });
                             });
                             Promise.all(devicePromises).then((devices) => {
-                              latestSchemaDevices = devices.map(
-                                ({ name, config }) => ({
-                                  name,
-                                  config,
-                                })
-                              );
+                              latestSchemaDevices = devices.map(({ name, config }) => ({
+                                name,
+                                config,
+                              }));
                               broadcast({
                                 type: "schema",
                                 devices: latestSchemaDevices,
@@ -346,18 +354,12 @@ wss.on("connection", (ws) => {
                             });
                           },
                           error: (err) => {
-                            console.error(
-                              "[WDX getSchema ERROR after setSchema]",
-                              err
-                            );
+                            console.error("[WDX getSchema ERROR after setSchema]", err);
                           },
                         });
                       },
                       error: (err) => {
-                        console.error(
-                          `Failed to set schema for instance ${instance.name}:`,
-                          err
-                        );
+                        console.error(`Failed to set schema for instance ${instance.name}:`, err);
                       },
                     });
                   },
@@ -376,9 +378,7 @@ wss.on("connection", (ws) => {
             },
           });
         } else {
-          console.error(
-            "InstanceService not available or save method not found"
-          );
+          console.error("InstanceService not available or save method not found");
         }
       } else if (message.type === "getLogs") {
         // TODO: wait for SLavomir's response
@@ -443,7 +443,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.239:7081/wdx/ws",
+      url: "ws://192.168.31.214:7481/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -459,7 +459,7 @@ const initializeWDXClient = async () => {
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.239:7081/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.31.214:7481/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();

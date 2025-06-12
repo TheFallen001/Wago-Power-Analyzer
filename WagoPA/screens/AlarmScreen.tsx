@@ -15,21 +15,28 @@ const AlarmScreen = () => {
   const [alarmHistory, setAlarmHistory] = useState<AlarmHistoryItem[]>([]);
 
   useEffect(() => {
-    // Listen for alarms and add to history
+    // Listen for alarms and add to history only if value or type changed for the device
+    let lastAlarmMap: { [key: string]: { type: string; value: number } } = {};
     const unsub = subscribeToAlarms((alarm) => {
-      const now = new Date();
-      setAlarmHistory((prev) => [
-        {
-          id: now.getTime().toString() + Math.random().toString(36).slice(2), // Ensure unique key
-          device: alarm.deviceName || "Unknown Device",
-          message:
-            alarm.type === "volt"
-              ? `Voltage out of range: ${alarm.value}`
-              : `Current out of range: ${alarm.value}`,
-          timestamp: now.toLocaleString(),
-        },
-        ...prev,
-      ]);
+      const key = alarm.deviceName + "-" + alarm.type;
+      const last = lastAlarmMap[key];
+      // Only add to history if value or type changed
+      if (!last || last.value !== alarm.value) {
+        lastAlarmMap[key] = { type: alarm.type, value: alarm.value };
+        const now = new Date();
+        setAlarmHistory((prev) => [
+          {
+            id: now.getTime().toString() + Math.random().toString(36).slice(2), // Ensure unique key
+            device: alarm.deviceName || "Unknown Device",
+            message:
+              alarm.type === "volt"
+                ? `Voltage out of range: ${alarm.value}`
+                : `Current out of range: ${alarm.value}`,
+            timestamp: now.toLocaleString(),
+          },
+          ...prev,
+        ]);
+      }
     });
     return () => unsub();
   }, []);

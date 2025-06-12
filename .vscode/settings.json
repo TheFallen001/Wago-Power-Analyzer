@@ -9,5 +9,7 @@
             "tw\\(\"([^\"]*)",
             1
         ]
-    ]
+    ],
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.compile.nullAnalysis.mode": "automatic"
 }

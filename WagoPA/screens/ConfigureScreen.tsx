@@ -47,21 +47,18 @@ const ConfigureScreen = () => {
   useEffect(() => {
     const unsubscribe = subscribeToDeviceUpdates((updatedDevices) => {
       setIsLoading(false);
-      // Always select the device from navigation if deviceId changes
-      const initial =
+      // Only update the device and form if the device list changes (e.g. device added/removed)
+      // Do NOT update config fields if config changes from the server
+      const selected =
         updatedDevices.find((d) => d.name === deviceId) ||
         updatedDevices.find((d) => d.id === deviceId) ||
         updatedDevices[0];
-      // Only update if device is not set or deviceId changed
-      if (!device || (deviceId && (device.name !== deviceId && device.id !== deviceId))) {
-        setDevice(initial);
-        updateFormWithDevice(initial);
-      } else {
-        // If device is set, update its config if it changed (by name)
-        const found = updatedDevices.find((d) => d.name === device.name);
-        setDevice(found);
-        updateFormWithDevice(found);
+      // Only update if device is not set or deviceId changed (e.g. user selects a different device)
+      if (!device || (selected && device.name !== selected.name)) {
+        setDevice(selected);
+        updateFormWithDevice(selected);
       }
+      // Do NOT update config fields if config changes from the server
     });
     return () => unsubscribe();
   }, [deviceId]);
@@ -190,9 +187,9 @@ const ConfigureScreen = () => {
             label="Check Digit 2 (Check2)"
             value={check2}
             options={[
-              { label: 'No check', value: '0' },
-              { label: 'Odd parity', value: '1' },
-              { label: 'Parity', value: '2' },
+              { label: '0 No check', value: '0' },
+              { label: '1 Odd parity', value: '1' },
+              { label: '2 Parity', value: '2' },
             ]}
             onChange={setCheck2}
             disabled={false}

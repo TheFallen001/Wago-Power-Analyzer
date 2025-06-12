@@ -27,7 +27,6 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.CAMERA",
         "android.permission.CAMERA"
       ],
       "package": "com.anonymous.WagoPA"
@@ -37,6 +36,11 @@
     },
     "plugins": [
       "expo-barcode-scanner"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8458c336-9ec6-4115-9956-67ada7bd80fb"
+      }
+    }
   }
 }

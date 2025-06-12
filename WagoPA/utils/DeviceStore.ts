@@ -133,7 +133,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://192.168.31.239:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.31.214:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -187,65 +187,72 @@ const initializeWebSocket = () => {
         return;
       }
 
-      // Build a set of valid device paths for quick lookup
-      validDevicePaths = new Set();
-      wdxDevices.forEach((device) => {
-        const deviceName = device.name;
-        validDevicePaths.add(`Virtual.${deviceName}.volt`);
-        validDevicePaths.add(`Virtual.${deviceName}.curr`);
-        validDevicePaths.add(`Virtual.${deviceName}.addr1`);
-        validDevicePaths.add(`Virtual.${deviceName}.baud1`);
-        validDevicePaths.add(`Virtual.${deviceName}.baud2`);
-        validDevicePaths.add(`Virtual.${deviceName}.check1`);
-        validDevicePaths.add(`Virtual.${deviceName}.check2`);
-        validDevicePaths.add(`Virtual.${deviceName}.stopBit1`);
-        validDevicePaths.add(`Virtual.${deviceName}.stopBit2`);
-      });
-      devicePathMap = {};
-      wdxDevices.forEach((device) => {
-        const deviceName = device.name;
-        devicePathMap[deviceName] = `Virtual.${deviceName}`;
-      });
-      console.log(
-        "Device path map updated at",
-        new Date().toISOString(),
-        ":",
-        devicePathMap
-      );
-
-      updateDevicesFromWDX(
-        wdxDevices.map((device) => ({
-          name: device.name,
-          config: device.config || {
-            addr1: 0,
-            baud1: 0,
-            check1: 0,
-            stopBit1: 0,
-            baud2: 0,
-            check2: 0,
-            stopBit2: 0,
-          },
-        }))
-      );
-      console.log(
-        "Devices initialized from schema at",
-        new Date().toISOString(),
-        ":",
-        devices.map((d) => ({ id: d.id, name: d.name }))
-      );
-
-      if (devices.length > 0) {
-        isInitialized = true;
+      // Only update devices if schema structure changed
+      if (isSchemaChanged(wdxDevices)) {
+        // Build a set of valid device paths for quick lookup
+        validDevicePaths = new Set();
+        wdxDevices.forEach((device) => {
+          const deviceName = device.name;
+          validDevicePaths.add(`Virtual.${deviceName}.volt`);
+          validDevicePaths.add(`Virtual.${deviceName}.curr`);
+          validDevicePaths.add(`Virtual.${deviceName}.addr1`);
+          validDevicePaths.add(`Virtual.${deviceName}.baud1`);
+          validDevicePaths.add(`Virtual.${deviceName}.baud2`);
+          validDevicePaths.add(`Virtual.${deviceName}.check1`);
+          validDevicePaths.add(`Virtual.${deviceName}.check2`);
+          validDevicePaths.add(`Virtual.${deviceName}.stopBit1`);
+          validDevicePaths.add(`Virtual.${deviceName}.stopBit2`);
+        });
+        devicePathMap = {};
+        wdxDevices.forEach((device) => {
+          const deviceName = device.name;
+          devicePathMap[deviceName] = `Virtual.${deviceName}`;
+        });
         console.log(
-          "Devices successfully initialized, notifying listeners at",
-          new Date().toISOString()
+          "Device path map updated at",
+          new Date().toISOString(),
+          ":",
+          devicePathMap
         );
-        notifyListeners();
+
+        updateDevicesFromWDX(
+          wdxDevices.map((device) => ({
+            name: device.name,
+            config: device.config || {
+              addr1: 0,
+              baud1: 0,
+              check1: 0,
+              stopBit1: 0,
+              baud2: 0,
+              check2: 0,
+              stopBit2: 0,
+            },
+          }))
+        );
+        lastSchemaDevices = wdxDevices.map((d) => ({ name: d.name, config: d.config }));
+        console.log(
+          "Devices initialized from schema at",
+          new Date().toISOString(),
+          ":",
+          devices.map((d) => ({ id: d.id, name: d.name }))
+        );
+
+        if (devices.length > 0) {
+          isInitialized = true;
+          console.log(
+            "Devices successfully initialized, notifying listeners at",
+            new Date().toISOString()
+          );
+          notifyListeners();
+        } else {
+          console.log(
+            "No devices initialized from schema at",
+            new Date().toISOString()
+          );
+        }
       } else {
-        console.log(
-          "No devices initialized from schema at",
-          new Date().toISOString()
-        );
+        // Schema structure did not change, do not update device list or notify listeners
+        console.log("Schema received but no structural change, skipping device update.");
       }
     } else if (message.type === "data") {
       console.log("Processing data message at", new Date().toISOString());
@@ -349,7 +356,7 @@ export const updateDeviceConfig = (
           let wdxKey = key;
           if (key === "addr1") wdxKey = "addr1";
           else if (key === "baud1") wdxKey = "baud1";
-          else if (key === "check1") wdxKey = "checkDigit 1";
+          else if (key === "check1") wdxKey = "check1";
           else if (key === "stopBit1") wdxKey = "stopBit1";
           else if (key === "baud2") wdxKey = "baud2";
           else if (key === "check2") wdxKey = "check2";
@@ -522,8 +529,8 @@ export const getLogs = (deviceName: string) => {
 // Ranges for simulation
 const VOLTAGE_RANGE = { min: 215, max: 240 };
 const CURRENT_RANGE = { min: 0, max: 2.0 };
-export const VOLTAGE_ALARM_RANGE = { min: 215, max: 235 };
-export const CURRENT_ALARM_RANGE = { min: 0, max: 1.5 };
+export const VOLTAGE_ALARM_RANGE = { min: 215, max: 236 };
+export const CURRENT_ALARM_RANGE = { min: 0, max: 1.6 };
 
 // Buffers for chart data (per device)
 export let voltageChartDataMap: { [deviceId: string]: number[] } = {};
@@ -553,33 +560,54 @@ export const subscribeToAlarms = (cb: (alarm: AlarmEvent) => void) => {
   };
 };
 
-// Simulate and send volt/curr to WDX every second
+// Throttle chart updates: store last sent time per device
+const lastChartUpdateTime: { [deviceId: string]: number } = {};
+const CHART_UPDATE_INTERVAL = 5000; // ms
+
+// Store last generated values for each device
+const lastGeneratedValues: { [deviceId: string]: { volt: number; curr: number } } = {};
+
 setInterval(() => {
   devices.forEach((device, index) => {
-    // Generate different values for each device
-    const deviceVolt = Math.round(
-      randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + index * 2
-    );
-    const deviceCurr =
-      Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) /
-        100 +
-      index * 0.1;
-
-    // Store chart data per device
-    if (!voltageChartDataMap[device.id]) voltageChartDataMap[device.id] = [];
-    if (!currentChartDataMap[device.id]) currentChartDataMap[device.id] = [];
-    voltageChartDataMap[device.id].push(deviceVolt);
-    currentChartDataMap[device.id].push(deviceCurr);
-    if (voltageChartDataMap[device.id].length > 10)
-      voltageChartDataMap[device.id].shift();
-    if (currentChartDataMap[device.id].length > 10)
-      currentChartDataMap[device.id].shift();
+    const now = Date.now();
+    // Only generate new values and send if enough time has passed
+    let deviceVolt: number, deviceCurr: number;
+    let shouldSend = false;
+    if (
+      !lastChartUpdateTime[device.id] ||
+      now - lastChartUpdateTime[device.id] >= CHART_UPDATE_INTERVAL
+    ) {
+      deviceVolt = Math.round(
+        randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + index * 2
+      );
+      deviceCurr =
+        Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) /
+          100 +
+        index * 0.1;
+      lastGeneratedValues[device.id] = { volt: deviceVolt, curr: deviceCurr };
+      lastChartUpdateTime[device.id] = now;
+      shouldSend = true;
+      // Only push to chart arrays when a new value is generated
+      if (!voltageChartDataMap[device.id]) voltageChartDataMap[device.id] = [];
+      if (!currentChartDataMap[device.id]) currentChartDataMap[device.id] = [];
+      voltageChartDataMap[device.id].push(deviceVolt);
+      currentChartDataMap[device.id].push(deviceCurr);
+      if (voltageChartDataMap[device.id].length > 10)
+        voltageChartDataMap[device.id].shift();
+      if (currentChartDataMap[device.id].length > 10)
+        currentChartDataMap[device.id].shift();
+    } else {
+      // Use last generated values, but do NOT push to chart arrays
+      const last = lastGeneratedValues[device.id];
+      deviceVolt = last ? last.volt : 220;
+      deviceCurr = last ? last.curr : 1.0;
+    }
 
     const deviceName = device.name.replace("Analyzer - ", "");
     const voltPath = `Virtual.${deviceName}.volt`;
     const currPath = `Virtual.${deviceName}.curr`;
-    // Only send if path exists in validDevicePaths
-    if (ws && ws.readyState === WebSocket.OPEN && validDevicePaths.has(voltPath)) {
+    // Only send if path exists in validDevicePaths and only when new value is generated
+    if (shouldSend && ws && ws.readyState === WebSocket.OPEN && validDevicePaths.has(voltPath)) {
       ws.send(
         JSON.stringify({
           type: "setConfig",
@@ -588,7 +616,7 @@ setInterval(() => {
         })
       );
     }
-    if (ws && ws.readyState === WebSocket.OPEN && validDevicePaths.has(currPath)) {
+    if (shouldSend && ws && ws.readyState === WebSocket.OPEN && validDevicePaths.has(currPath)) {
       ws.send(
         JSON.stringify({
           type: "setConfig",
@@ -621,3 +649,16 @@ setInterval(() => {
   });
   notifyListeners();
 }, 1000);
+
+// Store the last received schema for comparison
+let lastSchemaDevices: { name: string; config: Device["config"] }[] = [];
+
+// Helper to compare schemas (ignores volt/curr values, only structure)
+function isSchemaChanged(newSchema: { name: string; config: Device["config"] }[]) {
+  if (lastSchemaDevices.length !== newSchema.length) return true;
+  for (let i = 0; i < newSchema.length; i++) {
+    if (lastSchemaDevices[i].name !== newSchema[i].name) return true;
+    // Optionally, compare config keys if needed
+  }
+  return false;
+}
