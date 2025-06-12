@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import "./globals.css";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
+import WagoLogo from "../../public/WAGO.svg";
 
 const Drawer = ({
   isOpen,
@@ -12,7 +14,7 @@ const Drawer = ({
   isOpen: boolean;
   onClose: () => void;
 }) => {
-  const router = useRouter();
+ 
   const navItems = [
     { name: "Map", path: "/map" },
     { name: "Add PA", path: "/add-pa" },
@@ -37,10 +39,7 @@ const Drawer = ({
             {navItems.map((item) => (
               <li key={item.path} className="mb-2">
                 <Link href={item.path}>
-                  <div
-                    className={`block p-2 rounded `}
-                    onClick={onClose}
-                  >
+                  <div className={`block p-2 rounded `} onClick={onClose}>
                     {item.name}
                   </div>
                 </Link>
@@ -53,26 +52,40 @@ const Drawer = ({
   );
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+const Header = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const router = useRouter();
 
+  const handleRedirect = () => {
+    router.push("/");
+  };
+  return (
+    <div className="relative top-0 w-full h-fit px-10 bg-white ">
+      <div className="justify-between bg- flex flex-row p-6 ">
+        <button
+          onClick={() => setIsDrawerOpen(true)}
+          className="fixed top-10 z-50 px-4 py-2 bg-[#6EC800] text-white rounded shadow-lg"
+        >
+          <Menu size={30} />
+        </button>
+
+        <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+        <Image src={WagoLogo} alt="WAGO Logo" className="w-50 h-30 ml-30" onClick={() => handleRedirect()} />
+      </div>
+    </div>
+  );
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-100 flex flex-row">
-        {/* Sidebar toggle button */}
-        <button
-          onClick={() => setIsDrawerOpen(true)}
-          className="fixed top-4 left-4 z-50 px-4 py-2 bg-blue-600 text-white rounded shadow-lg"
-        >
-          <Menu />
-        </button>
-        {/* Sidebar Drawer */}
-        <Drawer
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-        />
-        {/* Main content, with left margin for sidebar when open */}
         <main className="flex-1 ml-0 md:ml-0 transition-all duration-300">
+          <Header />
           {children}
         </main>
       </body>

@@ -71,24 +71,6 @@ const AddDeviceScreen = () => {
         placeholder="Enter device name"
       />
 
-      {/* <Text style={styles.label}>Latitude *</Text>
-      <TextInput
-        style={styles.input}
-        value={latitude}
-        onChangeText={setLatitude}
-        placeholder="e.g., 41.0082 (Istanbul)"
-        keyboardType="numeric"
-      />
-
-      <Text style={styles.label}>Longitude *</Text>
-      <TextInput
-        style={styles.input}
-        value={longitude}
-        onChangeText={setLongitude}
-        placeholder="e.g., 28.9784 (Istanbul)"
-        keyboardType="numeric"
-      /> */}
-
       <Text style={styles.label}>Location *</Text>
       <MapView
         provider={PROVIDER_GOOGLE}
