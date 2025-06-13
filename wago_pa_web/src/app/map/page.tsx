@@ -7,11 +7,9 @@ import {
   Marker,
 } from "@react-google-maps/api";
 import DeviceInfoPopup from "./DeviceInfoPopup";
+import { useDevices } from "../utils/DeviceStore"; // Import your device data
 
-const devices = [
-  { id: "1", name: "Device 1", latitude: 41.0082, longitude: 28.9784 },
-  { id: "2", name: "Device 2", latitude: 41.02, longitude: 28.99 },
-];
+
 
 // Set map container style
 const containerStyle = {
@@ -24,12 +22,14 @@ const center = {
   lng: 28.9784,
 };
 
-const API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // 🔁 Replace with your actual API key
+export const API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // 🔁 Replace with your actual API key
 
 type Device = { id: string; name: string; latitude: number; longitude: number };
 
 export default function MapScreen() {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+
+  const { devices } = useDevices(); // Fetch devices from your store
 
   return (
     <div

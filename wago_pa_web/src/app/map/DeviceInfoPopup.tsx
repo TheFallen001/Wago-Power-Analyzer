@@ -38,13 +38,14 @@ export default function DeviceInfoPopup({
       className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-30 backdrop-blur-sm"
     >
       <div className="bg-white p-6 rounded-lg shadow-lg w-80">
-        <h2 className="text-xl font-bold mb-2">{device.name}</h2>
+        <h2 className="text-xl font-bold mb-2 text-[#6EC800]">{device.name}</h2>
         <p className="text-sm text-gray-600">ID: {device.id}</p>
         <p className="text-sm text-gray-600">Latitude: {device.latitude}</p>
         <p className="text-sm text-gray-600">Longitude: {device.longitude}</p>
         <button
           // onClick={onClose}
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-[#6EC800] transition-colors duration-300"
+
           onClick={() => {handleRouting()}}
         >
           Configure

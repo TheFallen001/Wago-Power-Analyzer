@@ -112,7 +112,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://192.168.1.36:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.31.244:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()

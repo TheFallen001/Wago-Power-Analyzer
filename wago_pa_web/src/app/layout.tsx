@@ -28,7 +28,7 @@ const Drawer = ({
 
   return (
     <div
-      className={`fixed inset-y-0 left-0 w-120 bg-gray-800 text-white transform ${
+      className={`fixed inset-y-0 left-0 w-120 bg-[#6EC800] text-white transform ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       } transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-50`}
     >
@@ -44,7 +44,7 @@ const Drawer = ({
                 <Link href={item.path}>
                   <div
                     className={`block p-2 rounded ${
-                      currentPage === item.name ? "bg-gray-700" : ""
+                      currentPage === item.name ? "bg-[#e7ece0]" : ""
                     }`}
                     onClick={() => {
                       setCurrentPage(item.name);
@@ -117,7 +117,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-100 flex flex-row">
-        <main className="flex-1 ml-0 md:ml-0 transition-all duration-300">
+        <main className="flex-1 ml-0 md:ml-0 transition-all duration-300 ">
           <Header currentPage={currentPage} setCurrentPage={setCurrentPage} />
           {children}
         </main>

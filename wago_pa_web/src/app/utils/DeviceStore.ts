@@ -79,7 +79,7 @@ function notifySchemaListeners() {
 // --- WebSocket Logic ---
 function initializeWebSocket() {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  ws = new WebSocket("ws://192.168.1.36:8080");
+  ws = new WebSocket("ws://192.168.31.244:8080");
   ws.onopen = () => {};
   ws.onmessage = (event) => {
     let message;
@@ -242,6 +242,26 @@ export const addDevice = async (device: Device) => {
   notifyListeners();
 };
 
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+  GOOGLE_API_KEY: string
+): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`
+    );
+    const data = await response.json();
+    if (data.status === "OK" && data.results.length > 0) {
+      return data.results[0].formatted_address;
+    }
+    return null;
+  } catch (e) {
+    console.error("Reverse geocoding error:", e);
+    return null;
+  }
+}
+
 export const getLogs = (deviceName: string) => {
   const result = deviceName.startsWith("Analyzer")
     ? deviceName.split(" - ")[1]?.trim()
@@ -328,3 +348,5 @@ export function useLogs() {
   }, []);
   return logs;
 }
+
+initializeWebSocket();
