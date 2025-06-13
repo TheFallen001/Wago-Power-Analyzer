@@ -112,7 +112,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://192.168.31.214:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.1.36:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -426,26 +426,37 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
   const deviceName = path.split(".").pop() || "";
   const device = devices.find((d) => d.name === `Analyzer - ${deviceName}`);
   if (device && value) {
+    // Only update config fields, ignore volt/curr updates
+    let hasConfigChange = false;
     const updatedConfig = { ...device.config };
     Object.entries(value).forEach(([key, val]) => {
       if (typeof val === "number") {
-        if (key === "Addr1") updatedConfig.addr1 = val;
-        else if (key === "Baud1") updatedConfig.baud1 = val;
-        else if (key === "Check Digit 1") updatedConfig.check1 = val;
-        else if (key === "Stop Bit 1") updatedConfig.stopBit1 = val;
-        else if (key === "Baud2") updatedConfig.baud2 = val;
-        else if (key === "Check Digit 2") updatedConfig.check2 = val;
-        else if (key === "Stop Bit 2") updatedConfig.stopBit2 = val;
+        // Only update if not volt/curr and not a redundant update
+        if (
+          key === "Addr1" || key === "addr1" ||
+          key === "Baud1" || key === "baud1" ||
+          key === "Check Digit 1" || key === "check1" ||
+          key === "Stop Bit 1" || key === "stopBit1" ||
+          key === "Baud2" || key === "baud2" ||
+          key === "Check Digit 2" || key === "check2" ||
+          key === "Stop Bit 2" || key === "stopBit2"
+        ) {
+          if (key === "Addr1" || key === "addr1") { if (updatedConfig.addr1 !== val) { updatedConfig.addr1 = val; hasConfigChange = true; } }
+          else if (key === "Baud1" || key === "baud1") { if (updatedConfig.baud1 !== val) { updatedConfig.baud1 = val; hasConfigChange = true; } }
+          else if (key === "Check Digit 1" || key === "check1") { if (updatedConfig.check1 !== val) { updatedConfig.check1 = val; hasConfigChange = true; } }
+          else if (key === "Stop Bit 1" || key === "stopBit1") { if (updatedConfig.stopBit1 !== val) { updatedConfig.stopBit1 = val; hasConfigChange = true; } }
+          else if (key === "Baud2" || key === "baud2") { if (updatedConfig.baud2 !== val) { updatedConfig.baud2 = val; hasConfigChange = true; } }
+          else if (key === "Check Digit 2" || key === "check2") { if (updatedConfig.check2 !== val) { updatedConfig.check2 = val; hasConfigChange = true; } }
+          else if (key === "Stop Bit 2" || key === "stopBit2") { if (updatedConfig.stopBit2 !== val) { updatedConfig.stopBit2 = val; hasConfigChange = true; } }
+        }
+        // Ignore volt/curr updates for config
       }
     });
-    device.config = updatedConfig;
-    console.log(
-      `Updated device ${device.id} config at`,
-      new Date().toISOString(),
-      ":",
-      updatedConfig
-    );
-    notifyListeners();
+    // Only update and notify if the update is not a volt/curr and not redundant
+    if (hasConfigChange) {
+      device.config = updatedConfig;
+      notifyListeners();
+    }
   } else {
     console.log(
       `No device found or invalid data for path: ${path} at`,

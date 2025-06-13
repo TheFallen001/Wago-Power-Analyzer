@@ -443,7 +443,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.244:7081/wdx/ws",
+      url: "ws://192.168.1.36:7481/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -459,7 +459,7 @@ const initializeWDXClient = async () => {
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.244:7081/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.1.36:7481/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();
