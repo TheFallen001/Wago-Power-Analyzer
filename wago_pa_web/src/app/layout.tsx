@@ -10,11 +10,14 @@ import WagoLogo from "../../public/WAGO.svg";
 const Drawer = ({
   isOpen,
   onClose,
+  currentPage,
+  setCurrentPage,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  currentPage: string;
+  setCurrentPage: (page: string) => void;
 }) => {
- 
   const navItems = [
     { name: "Map", path: "/map" },
     { name: "Add PA", path: "/add-pa" },
@@ -39,7 +42,15 @@ const Drawer = ({
             {navItems.map((item) => (
               <li key={item.path} className="mb-2">
                 <Link href={item.path}>
-                  <div className={`block p-2 rounded `} onClick={onClose}>
+                  <div
+                    className={`block p-2 rounded ${
+                      currentPage === item.name ? "bg-gray-700" : ""
+                    }`}
+                    onClick={() => {
+                      setCurrentPage(item.name);
+                      onClose();
+                    }}
+                  >
                     {item.name}
                   </div>
                 </Link>
@@ -52,7 +63,13 @@ const Drawer = ({
   );
 };
 
-const Header = () => {
+const Header = ({
+  currentPage,
+  setCurrentPage,
+}: {
+  currentPage: string;
+  setCurrentPage: (page: string) => void;
+}) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const router = useRouter();
 
@@ -60,18 +77,32 @@ const Header = () => {
     router.push("/");
   };
   return (
-    <div className="relative top-0 w-full h-fit px-10 bg-white ">
-      <div className="justify-between bg- flex flex-row p-6 ">
+    <div className="relative top-0 w-full px-5 h-fit bg-white ">
+      <div className="flex flex-row p-6">
         <button
           onClick={() => setIsDrawerOpen(true)}
-          className="fixed top-10 z-50 px-4 py-2 bg-[#6EC800] text-white rounded shadow-lg"
+          className="text-gray-900 hover:text-gray-700 focus:outline-none mr-4 relative"
         >
-          <Menu size={30} />
+          <Menu width={30} height={30} />
         </button>
 
-        <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
-        <Image src={WagoLogo} alt="WAGO Logo" className="w-50 h-30 ml-30" onClick={() => handleRedirect()} />
+        <Drawer
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+        />
+        <Image
+          src={WagoLogo}
+          alt="WAGO Logo"
+          className="w-40 h-30 ml-10"
+          onClick={() => handleRedirect()}
+        />
+      <div className="relative  w-full flex items-center justify-center">
+        <h1 className="text-4xl font-bold text-gray-900">{currentPage}</h1>
       </div>
+      </div>
+
     </div>
   );
 };
@@ -81,11 +112,13 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [currentPage, setCurrentPage] = useState("Map");
+
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-100 flex flex-row">
         <main className="flex-1 ml-0 md:ml-0 transition-all duration-300">
-          <Header />
+          <Header currentPage={currentPage} setCurrentPage={setCurrentPage} />
           {children}
         </main>
       </body>

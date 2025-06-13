@@ -24,7 +24,7 @@ export type Device = {
 
 // --- Singleton State ---
 const devices: Device[] = [];
-let logData: any[] = [];
+let logData: object[] = [];
 let devicePathMap: { [key: string]: string } = {};
 let ws: WebSocket | null = null;
 let isInitialized = false;
@@ -33,8 +33,8 @@ let validDevicePaths: Set<string> = new Set();
 let lastSchemaDevices: { name: string; config: Device["config"] }[] = [];
 
 // Chart/Alarm simulation
-export let voltageChartDataMap: { [deviceId: string]: number[] } = {};
-export let currentChartDataMap: { [deviceId: string]: number[] } = {};
+export const voltageChartDataMap: { [deviceId: string]: number[] } = {};
+export const currentChartDataMap: { [deviceId: string]: number[] } = {};
 const alarmListeners: Array<(alarm: AlarmEvent) => void> = [];
 
 // --- Alarm Subscription for Web (shared for all pages) ---
@@ -146,7 +146,7 @@ function isSchemaChanged(newSchema: { name: string; config: Device["config"] }[]
 
 // --- Device CRUD/Config ---
 export const updateDeviceConfig = (idOrName: string, config: Device["config"]) => {
-  let device = devices.find((d) => d.id === idOrName) || devices.find((d) => d.name === idOrName);
+  const device = devices.find((d) => d.id === idOrName) || devices.find((d) => d.name === idOrName);
   if (device) {
     device.config = config;
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -191,7 +191,7 @@ export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device[
   });
 };
 
-export const updateDeviceFromWDXData = (path: string, value: any) => {
+export const updateDeviceFromWDXData = (path: string, value: Record<string, number>) => {
   const deviceName = path.split(".").pop() || "";
   const device = devices.find((d) => d.name === `Analyzer - ${deviceName}`);
   if (device && value) {
@@ -243,7 +243,7 @@ export const addDevice = async (device: Device) => {
 };
 
 export const getLogs = (deviceName: string) => {
-  let result = deviceName.startsWith("Analyzer")
+  const result = deviceName.startsWith("Analyzer")
     ? deviceName.split(" - ")[1]?.trim()
     : deviceName;
   ws?.send(
@@ -321,7 +321,7 @@ export function useDevices() {
 
 // --- Logs Accessor ---
 export function useLogs() {
-  const [logs, setLogs] = useState<any[]>(logData);
+  const [logs, setLogs] = useState<object[]>(logData);
   useEffect(() => {
     const interval = setInterval(() => setLogs([...logData]), 1000);
     return () => clearInterval(interval);
