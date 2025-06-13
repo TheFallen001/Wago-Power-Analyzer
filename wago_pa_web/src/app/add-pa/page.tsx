@@ -27,7 +27,7 @@ export default function AddPA() {
   };
 
   return (
-    <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center justify-center p-4">
+    <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center p-4">
       <form onSubmit={handleAddDevice} style={{ background: '#fff', border: '1px solid #E5E7EB' }} className="p-8 rounded shadow-md w-full max-w-md">
         <h1 style={{ color: '#28a745' }} className="text-2xl font-bold mb-6 text-center">Add Device</h1>
         <div className="mb-4">

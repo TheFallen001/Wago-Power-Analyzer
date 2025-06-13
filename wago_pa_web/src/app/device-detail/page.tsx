@@ -74,9 +74,9 @@ export default function DeviceDetail() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F7FA]">
         <div className="bg-white p-8 rounded shadow text-center">
-          <h2 className="text-xl font-bold mb-2 text-[#0057B8]">Device Not Found</h2>
+          <h2 className="text-xl font-bold mb-2 text-[#28a745]">Device Not Found</h2>
           <p className="mb-4">No device found with ID: {deviceId}</p>
-          <a href="/devices" className="text-[#0057B8] underline">Back to Devices</a>
+          <a href="/devices" className="text-[#28a745] underline">Back to Devices</a>
         </div>
       </div>
     );
@@ -178,7 +178,7 @@ export default function DeviceDetail() {
   return (
     <div className="min-h-screen bg-[#F5F7FA] flex flex-col items-center p-4">
       <div className="w-full max-w-3xl bg-white border border-gray-200 p-8 rounded shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-4 text-[#0057B8]">
+        <h1 className="text-2xl font-bold text-center mb-4 text-[#28a745]">
           Device Detail: <span className="text-black">{device.name}</span>
         </h1>
         <section className="flex flex-wrap gap-4 mb-6">
@@ -256,7 +256,7 @@ export default function DeviceDetail() {
         </div>
         <div className="flex gap-4 justify-center button-group mt-6">
           <button
-            className="px-6 py-2 rounded bg-[#005792] text-white hover:bg-[#6ec800] transition"
+            className="px-6 py-2 rounded bg-[#28a745] text-white hover:bg-[#6ec800] transition"
             onClick={() => router.push(`/configure?id=${encodeURIComponent(device.name)}`)}
           >
             Go to Configuration

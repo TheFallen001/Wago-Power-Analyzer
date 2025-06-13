@@ -7,7 +7,7 @@ export default function Settings() {
   return (
     <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center p-4">
       <div style={{ background: '#fff', border: '1px solid #E5E7EB' }} className="p-8 rounded shadow-md w-full max-w-md">
-        <h1 style={{ color: '#0057B8' }} className="text-2xl font-bold text-center mb-6">Settings</h1>
+        <h1 style={{ color: '#28a745' }} className="text-2xl font-bold text-center mb-6">Settings</h1>
         <div className="flex flex-col items-center mt-10">
           <div style={{ background: '#F3F4F6', border: '1px solid #E5E7EB' }} className="w-16 h-16 rounded-full flex items-center justify-center mb-2">
             <span style={{ color: '#22223B' }} className="text-3xl"></span>
@@ -17,7 +17,7 @@ export default function Settings() {
         <div style={{ background: '#F3F4F6', border: '1px solid #E5E7EB' }} className="flex items-center justify-between mt-10 px-5 py-3 rounded-2xl">
           <span style={{ color: '#22223B' }} className="font-semibold">{isLightMode ? "Light Mode" : "Dark Mode"}</span>
           <button
-            style={{ background: isLightMode ? '#0057B8' : '#6B7280' }}
+            style={{ background: isLightMode ? '#28a745' : '#6B7280' }}
             className={`w-12 h-6 flex items-center rounded-full p-1`}
             onClick={() => setIsLightMode(m => !m)}
             aria-label="Toggle light/dark mode"
