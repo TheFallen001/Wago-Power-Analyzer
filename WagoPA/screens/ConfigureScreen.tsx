@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { devices, updateDeviceConfig, subscribeToDeviceUpdates } from '../utils/DeviceStore';
+import { devices, updateDeviceConfig, subscribeToDeviceUpdates, setConfigEditing } from '../utils/DeviceStore';
 import { RootParamList } from '../navigation/types';
 import ConfigCard from '../components/ConfigCard';
 import tw from 'twrnc';
@@ -45,6 +45,7 @@ const ConfigureScreen = () => {
 
   // Subscribe to DeviceStore updates
   useEffect(() => {
+    setConfigEditing(true);
     const unsubscribe = subscribeToDeviceUpdates((updatedDevices) => {
       setIsLoading(false);
       // Only update the device and form if the device list changes (e.g. device added/removed)
@@ -60,7 +61,10 @@ const ConfigureScreen = () => {
       }
       // Do NOT update config fields if config changes from the server
     });
-    return () => unsubscribe();
+    return () => {
+      setConfigEditing(false);
+      unsubscribe();
+    };
   }, [deviceId]);
 
   // Update form when device changes
@@ -76,6 +80,7 @@ const ConfigureScreen = () => {
   };
 
   const handleApply = () => {
+    setConfigEditing(false);
     if (!device) {
       Alert.alert('Error', 'Device not found.');
       return;

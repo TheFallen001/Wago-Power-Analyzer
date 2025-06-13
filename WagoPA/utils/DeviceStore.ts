@@ -112,7 +112,7 @@ const initializeWebSocket = () => {
     return;
   }
 
-  const serverUrl = "ws://192.168.31.244:8080"; // Update this to your Node.js server IP if not running locally
+  const serverUrl = "ws://192.168.1.36:8080"; // Update this to your Node.js server IP if not running locally
   console.log(
     `Attempting to connect to intermediary server at ${serverUrl} at`,
     new Date().toISOString()
@@ -419,6 +419,7 @@ export const updateDevicesFromWDX = (
 export const updateDeviceFromWDXData = (path: string, value: any) => {
   console.log(
     `Updating device from WDX data, path: ${path}, value:`,
+
     value,
     "at",
     new Date().toISOString()
@@ -455,7 +456,11 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
     // Only update and notify if the update is not a volt/curr and not redundant
     if (hasConfigChange) {
       device.config = updatedConfig;
-      notifyListeners();
+      if (!getEditingFlag()) {
+        notifyListeners();
+      } else {
+        console.log("Config update suppressed due to user editing");
+      }
     }
   } else {
     console.log(
@@ -464,6 +469,16 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
     );
   }
 };
+
+// --- Editing flag helpers for config screens ---
+// Use a symbol to avoid TS errors and polluting globalThis
+const WAGO_EDITING_KEY = Symbol.for('WAGO_IS_EDITING_CONFIG');
+function getEditingFlag() {
+  return Boolean((globalThis as any)[WAGO_EDITING_KEY]);
+}
+export function setConfigEditing(isEditing: boolean) {
+  (globalThis as any)[WAGO_EDITING_KEY] = isEditing;
+}
 
 export const addDevice = async (device: Device) => {
   let lat = device.latitude;
@@ -629,7 +644,7 @@ setInterval(() => {
     }
     device.status = alarm ? "ALARM" : "Active";
   });
-  notifyListeners();
+  // Do NOT call notifyListeners();
 }, 1000);
 
 // Store the last received schema for comparison
