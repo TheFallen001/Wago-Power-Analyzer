@@ -28,7 +28,7 @@ const Drawer = ({
 
   return (
     <div
-      className={`fixed inset-y-0 left-0 w-120 bg-[#6EC800] text-white transform ${
+      className={`fixed inset-y-0 left-0 w-120 bg-[#28a745] text-gray-900 transform ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       } transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-50`}
     >
@@ -44,7 +44,7 @@ const Drawer = ({
                 <Link href={item.path}>
                   <div
                     className={`block p-2 rounded ${
-                      currentPage === item.name ? "bg-[#e7ece0]" : ""
+                      currentPage === item.name ? "bg-gray-100" : ""
                     }`}
                     onClick={() => {
                       setCurrentPage(item.name);
@@ -77,7 +77,7 @@ const Header = ({
     router.push("/");
   };
   return (
-    <div className="relative top-0 w-full px-5 h-fit bg-white ">
+    <div className="relative top-0 w-full px-5 h-flex bg-white ">
       <div className="flex flex-row p-6">
         <button
           onClick={() => setIsDrawerOpen(true)}
@@ -98,9 +98,7 @@ const Header = ({
           className="w-40 h-30 ml-10"
           onClick={() => handleRedirect()}
         />
-      <div className="relative  w-full flex items-center justify-center">
-        <h1 className="text-4xl font-bold text-gray-900">{currentPage}</h1>
-      </div>
+      
       </div>
 
     </div>

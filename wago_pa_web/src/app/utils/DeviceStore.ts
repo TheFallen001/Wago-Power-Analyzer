@@ -79,7 +79,7 @@ function notifySchemaListeners() {
 // --- WebSocket Logic ---
 function initializeWebSocket() {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  ws = new WebSocket("ws://192.168.31.244:8080");
+  ws = new WebSocket("ws://192.168.1.36:8080");
   ws.onopen = () => {};
   ws.onmessage = (event) => {
     let message;

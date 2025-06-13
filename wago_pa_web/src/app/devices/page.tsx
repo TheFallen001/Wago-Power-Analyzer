@@ -8,7 +8,7 @@ export default function DevicesPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] flex flex-col items-center p-6">
-    
+      <h1 className="text-2xl font-bold text-[#28a745] mb-6">Devices</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
         {devices.length === 0 && (
           <div className="col-span-full text-center text-gray-500">
@@ -43,7 +43,7 @@ export default function DevicesPage() {
                 pathname: "/device-detail",
                 query: { id: device.id },
               }}
-              className="mt-2 px-4 py-2 rounded bg-[#005792] text-white hover:bg-[#6ec800] transition text-center"
+              className="mt-2 px-4 py-2 rounded bg-[#28a745] text-white hover:bg-[#6ec800] transition text-center"
             >
               View Details
             </Link>
