@@ -10,6 +10,8 @@ const { AlarmService } = require("./services/AlarmService.js");
 const WDXWSClientConfiguration = require("@wago/wdx-ws-client-js");
 const Model = require("./utils");
 const Services = require("./NewServices");
+const { VirtualDeviceService } = require("./services/VirtualDeviceService.js");
+const { ModbusDeviceService } = require("./services/ModbusDeviceService.js");
 
 // Set up WebSocket server for React Native clients
 const wss = new WebSocket.Server({ port: 8080 });
@@ -66,320 +68,15 @@ wss.on("connection", (ws) => {
   ws.on("message", (data) => {
     try {
       const message = JSON.parse(data);
-      if (message.type === "setConfig" && message.path && message.config) {
-        if (
-          client &&
-          client.dataService &&
-          typeof client.dataService.setValue === "function"
-        ) {
-          // For each config key, use the correct WDX key mapping and update the value at the correct path
-          Object.entries(message.config).forEach(([key, value]) => {
-            let wdxKey = key;
-            if (key === "addr1") wdxKey = "addr1";
-            else if (key === "baud1") wdxKey = "baud1";
-            else if (key === "check1") wdxKey = "check1";
-            else if (key === "stopBit1") wdxKey = "stopBit1";
-            else if (key === "baud2") wdxKey = "baud2";
-            else if (key === "check2") wdxKey = "check2";
-            else if (key === "stopBit2") wdxKey = "stopBit2";
-
-            // For volt/curr, do NOT append key to path
-            let valuePath;
-            if (key === "volt" || key === "curr") {
-              valuePath = message.path; // Use as-is
-            } else {
-              valuePath = `${message.path}.${wdxKey}`;
-            }
-
-            // Remove noisy logs for volt/curr updates
-            // console.log(`[WDX setValue] Attempting to set`, {
-            //   path: valuePath,
-            //   key: wdxKey,
-            //   value,
-            // });
-            client.dataService.setValue(valuePath, value).subscribe({
-              next: (result) => {
-                console.log("[WDX setValue SUCCESS]", {
-                  path: valuePath,
-                  key: wdxKey,
-                  value,
-                  result: JSON.stringify(result),
-                });
-                ws.send(
-                  JSON.stringify({
-                    type: "configUpdated",
-                    path: valuePath,
-                    config: { [wdxKey]: value },
-                  })
-                );
-                // Broadcast to all clients so all UIs update immediately
-                let shouldBroadcast = true;
-                if (wdxKey === "volt" || wdxKey === "curr") {
-                  // Throttle volt/curr broadcasts
-                  const deviceKey = `${valuePath}`;
-                  const now = Date.now();
-                  if (
-                    lastDataBroadcastTime[deviceKey] &&
-                    now - lastDataBroadcastTime[deviceKey] < DATA_BROADCAST_INTERVAL
-                  ) {
-                    shouldBroadcast = false;
-                  } else {
-                    lastDataBroadcastTime[deviceKey] = now;
-                  }
-                }
-                if (shouldBroadcast) {
-                  broadcast({
-                    type: "data",
-                    path: valuePath,
-                    value: { [wdxKey]: value },
-                  });
-                }
-                // Only refresh and broadcast schema if not volt/curr
-                if (wdxKey !== "volt" && wdxKey !== "curr") {
-                  client.dataService.getSchema("Virtual", 1).subscribe({
-                    next: (schema) => {
-                      const children = schema.children || [];
-                      // For each device, subscribe to its value and update config with the actual value
-                      const devicePromises = children.map((child) => {
-                        return new Promise((resolve) => {
-                          client.dataService.register(child.path).subscribe({
-                            next: (data) => {
-                              const deviceName =
-                                child.path.split(".").pop() || child.path;
-                              resolve({
-                                name: deviceName,
-                                config: {
-                                  addr1:
-                                    data?.value?.addr1 ?? data?.value?.Addr1 ?? 0,
-                                  baud1:
-                                    data?.value?.baud1 ?? data?.value?.Baud1 ?? 0,
-                                  check1:
-                                    data?.value?.check1 ??
-                                    data?.value?.["Check Digit 1"] ??
-                                    0,
-                                  stopBit1:
-                                    data?.value?.stopBit1 ??
-                                    data?.value?.["Stop Bit 1"] ??
-                                    0,
-                                  baud2:
-                                    data?.value?.baud2 ?? data?.value?.Baud2 ?? 0,
-                                  check2:
-                                    data?.value?.check2 ??
-                                    data?.value?.["Check Digit 2"] ??
-                                    0,
-                                  stopBit2:
-                                    data?.value?.stopBit2 ??
-                                    data?.value?.["Stop Bit 2"] ??
-                                    0,
-                                },
-                                path: child.path,
-                              });
-                            },
-                            error: () => {
-                              const deviceName =
-                                child.path.split(".").pop() || child.path;
-                              resolve({
-                                name: deviceName,
-                                config: {
-                                  addr1: 0,
-                                  baud1: 0,
-                                  check1: 0,
-                                  stopBit1: 0,
-                                  baud2: 0,
-                                  check2: 0,
-                                  stopBit2: 0,
-                                },
-                                path: child.path,
-                              });
-                            },
-                          });
-                        });
-                      });
-                      Promise.all(devicePromises).then((devices) => {
-                        latestSchemaDevices = devices.map(({ name, config }) => ({
-                          name,
-                          config,
-                        }));
-                        broadcast({
-                          type: "schema",
-                          devices: latestSchemaDevices,
-                        });
-                      });
-                    },
-                    error: (err) => {
-                      console.error("[WDX getSchema ERROR after setValue]", err);
-                    },
-                  });
-                }
-              },
-              error: (err) => {
-                console.error("[WDX setValue ERROR]", {
-                  path: valuePath,
-                  key: wdxKey,
-                  value,
-                  error: err && err.message ? err.message : err,
-                });
-                ws.send(
-                  JSON.stringify({
-                    type: "configUpdateError",
-                    path: valuePath,
-                    error: err && err.message ? err.message : err,
-                  })
-                );
-              },
-            });
-          });
-        }
-      } else if (message.type === "addDevice") {
-        if (
-          client &&
-          client.instanceService &&
-          typeof client.instanceService.save === "function"
-        ) {
-          // Use the correct classes for schema and metadata
-          const { Data } = Model;
-          const { MetaData } = Data;
-          const { DataSchema } = Data;
-          const { MetaDataVirtualAdapter, MetaDataVirtual } = MetaData;
-
-          const instance = Model.Instance.DataAdapter.VirtualDataAdapterInstance();
-          instance.name = message.device && message.device.name ? message.device.name : "Random";
-          instance.type = "Virtual";
-
-          client.instanceService.save(instance).subscribe({
-            next: (result) => {
-              if (result && result.uuid) {
-                client.instanceService.start(result.uuid).subscribe({
-                  next: () => {
-                    // Build schema with correct metadata objects
-                    const children = [
-                      { key: "curr", type: "number" },
-                      { key: "volt", type: "number" },
-                      { key: "addr1", type: "number" },
-                      { key: "baud1", type: "number" },
-                      { key: "baud2", type: "number" },
-                      { key: "check1", type: "number" },
-                      { key: "check2", type: "number" },
-                      { key: "stopBit1", type: "number" },
-                      { key: "stopBit2", type: "number" },
-                    ];
-
-                    // Create children schemas with MetaDataVirtual
-                    const childSchemas = children.map(({ key, type }) => {
-                      return new DataSchema(
-                        `Virtual.${instance.name}.${key}`,
-                        key,
-                        key,
-                        undefined,
-                        new MetaDataVirtual(),
-                        false, // readonly
-                        true,  // subscribeable
-                        true,  // editable
-                        false, // extendable
-                        true,  // removable
-                        false  // refreshable
-                      );
-                    });
-
-                    // Create parent schema with MetaDataVirtualAdapter
-                    const parentSchema = new DataSchema(
-                      `Virtual.${instance.name}`,
-                      instance.name,
-                      instance.name,
-                      childSchemas,
-                      new MetaDataVirtualAdapter(),
-                      false, // readonly
-                      true,  // subscribeable
-                      true,  // editable
-                      true,  // extendable
-                      true,  // removable
-                      false  // refreshable
-                    );
-
-                    client.dataService.setSchema(parentSchema).subscribe({
-                      next: () => {
-                        console.log(`Schema set for instance ${instance.name}`);
-                        client.dataService.getSchema("Virtual", 1).subscribe({
-                          next: (updatedSchema) => {
-                            const children = updatedSchema.children || [];
-                            const devicePromises = children.map((child) => {
-                              return new Promise((resolve) => {
-                                client.dataService
-                                  .register(child.path)
-                                  .subscribe({
-                                    next: (data) => {
-                                      const deviceName = child.path.split(".").pop() || child.path;
-                                      resolve({
-                                        name: deviceName,
-                                        config: {
-                                          addr1: data?.value?.addr1 ?? 0,
-                                          baud1: data?.value?.baud1 ?? 0,
-                                          check1: data?.value?.check1 ?? 0,
-                                          stopBit1: data?.value?.stopBit1 ?? 0,
-                                          baud2: data?.value?.baud2 ?? 0,
-                                          check2: data?.value?.check2 ?? 0,
-                                          stopBit2: data?.value?.stopBit2 ?? 0,
-                                        },
-                                        path: child.path,
-                                      });
-                                    },
-                                    error: () => {
-                                      const deviceName = child.path.split(".").pop() || child.path;
-                                      resolve({
-                                        name: deviceName,
-                                        config: {
-                                          addr1: 0,
-                                          baud1: 0,
-                                          check1: 0,
-                                          stopBit1: 0,
-                                          baud2: 0,
-                                          check2: 0,
-                                          stopBit2: 0,
-                                        },
-                                        path: child.path,
-                                      });
-                                    },
-                                  });
-                              });
-                            });
-                            Promise.all(devicePromises).then((devices) => {
-                              latestSchemaDevices = devices.map(({ name, config }) => ({
-                                name,
-                                config,
-                              }));
-                              broadcast({
-                                type: "schema",
-                                devices: latestSchemaDevices,
-                              });
-                            });
-                          },
-                          error: (err) => {
-                            console.error("[WDX getSchema ERROR after setSchema]", err);
-                          },
-                        });
-                      },
-                      error: (err) => {
-                        console.error(`Failed to set schema for instance ${instance.name}:`, err);
-                      },
-                    });
-                  },
-                  error: (err) => {
-                    console.error("Failed to start instance after save:", err);
-                  },
-                });
-              }
-            },
-            complete: (result) => {
-              console.log("On Complete: ", result);
-            },
-            error: (result) => {
-              console.log("The error encountered: ", result);
-              console.log("Instance used: ", instance);
-            },
-          });
-        } else {
-          console.error("InstanceService not available or save method not found");
-        }
+      // Delegate to Virtual or Modbus service based on message
+      if (message.path && message.path.startsWith("Virtual.")) {
+        VirtualDeviceService.handleMessage(message, ws, client, broadcast);
+      } else if (message.path && message.path.startsWith("Modbus.")) {
+        ModbusDeviceService.handleMessage(message, ws, client, broadcast);
+      } else if (message.device && message.device.type === "Virtual") {
+        VirtualDeviceService.handleMessage(message, ws, client, broadcast);
+      } else if (message.device && message.device.type === "Modbus") {
+        ModbusDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.type === "getLogs") {
         // TODO: wait for SLavomir's response
         if (client && client.instanceService) {
@@ -572,3 +269,18 @@ const initializeWDXClient = async () => {
 
 // Start the WDX client
 initializeWDXClient();
+
+// Example usage: Replace direct Virtual logic with VirtualDeviceService where appropriate
+// For instance, when adding a device of type 'Virtual', use:
+// VirtualDeviceService.addDevice(device);
+// When adding a device of type 'Modbus', use:
+// ModbusDeviceService.addDevice(device);
+
+// In the WebSocket message handler, you can now route logic based on device type:
+// if (message.type === "addDevice") {
+//   if (message.device && message.device.type === "Virtual") {
+//     VirtualDeviceService.addDevice(message.device);
+//   } else if (message.device && message.device.type === "Modbus") {
+//     ModbusDeviceService.addDevice(message.device);
+//   }
+// }
