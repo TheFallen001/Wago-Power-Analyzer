@@ -110,8 +110,8 @@ class ModbusDeviceService {
           if (result && result.uuid) {
             client.instanceService.start(result.uuid).subscribe({
               next: () => {
-                // Only include config variables for Modbus config page
-                const children = [
+                // Config variables for Modbus config page
+                const configChildren = [
                   { key: "Addr1", type: "number" },
                   { key: "Baud1", type: "number" },
                   { key: "Check1", type: "number" },
@@ -120,16 +120,26 @@ class ModbusDeviceService {
                   { key: "645Addr", type: "number" },
                   { key: "Language", type: "number" },
                 ];
-                const childSchemas = children.map(({ key, type }) =>
+                // Read-only variables for graphs
+                const graphChildren = [
+                  { key: "F", type: "number" },
+                  { key: "PF", type: "number" },
+                  { key: "QT", type: "number" },
+                  { key: "PT", type: "number" },
+                  { key: "UA", type: "number" },
+                  { key: "IA", type: "number" },
+                ];
+                const allChildren = [...configChildren, ...graphChildren];
+                const childSchemas = allChildren.map(({ key, type }) =>
                   new DataSchema(
                     `Modbus.${instance.name}.${key}`,
                     key,
                     key,
                     undefined,
                     new MetaDataVirtual(), // TODO: Replace with Modbus metadata
-                    false,
+                    graphChildren.some((g) => g.key === key), // readonly true for graph variables
                     true,
-                    true,
+                    !graphChildren.some((g) => g.key === key), // editable false for graph variables
                     false,
                     true,
                     false
