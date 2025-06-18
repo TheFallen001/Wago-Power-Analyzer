@@ -14,7 +14,7 @@ import MapView, { Marker, Region, PROVIDER_GOOGLE } from "react-native-maps";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { devices, geocodeAddress, reverseGeocode, subscribeToDeviceUpdates } from "../utils/DeviceStore";
+import { devices, subscribeToDeviceUpdates } from "../utils/VirtualDeviceStore";
 import { RootParamList } from "../navigation/types";
 
 const MapScreen = () => {

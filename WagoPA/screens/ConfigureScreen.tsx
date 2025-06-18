@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { devices, updateDeviceConfig, subscribeToDeviceUpdates, setConfigEditing } from '../utils/DeviceStore';
+import { devices, updateDeviceConfig, subscribeToDeviceUpdates,  } from '../utils/VirtualDeviceStore';
 import { RootParamList } from '../navigation/types';
 import ConfigCard from '../components/ConfigCard';
 import tw from 'twrnc';

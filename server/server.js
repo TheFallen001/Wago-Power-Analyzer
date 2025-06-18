@@ -10,7 +10,7 @@ const { AlarmService } = require("./services/AlarmService.js");
 const WDXWSClientConfiguration = require("@wago/wdx-ws-client-js");
 const Model = require("./utils");
 const Services = require("./NewServices");
-const { VirtualDeviceService } = require("./services/VirtualDeviceService.js");
+const virtualDeviceService  = require("./services/VirtualDeviceService.js");
 const { ModbusDeviceService } = require("./services/ModbusDeviceService.js");
 
 // Set up WebSocket server for React Native clients
@@ -68,9 +68,11 @@ wss.on("connection", (ws) => {
   ws.on("message", (data) => {
     try {
       const message = JSON.parse(data);
+      console.log("Message Path: ", message.path);
       // Delegate to Virtual or Modbus service based on message
       if (message.path && message.path.startsWith("Virtual.")) {
-        VirtualDeviceService.handleMessage(message, ws, client, broadcast);
+        virtualDeviceService.handleMessage(message, ws, client, broadcast);
+        
       } else if (message.path && message.path.startsWith("Modbus.")) {
         ModbusDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.device && message.device.type === "Virtual") {
@@ -78,7 +80,6 @@ wss.on("connection", (ws) => {
       } else if (message.device && message.device.type === "Modbus") {
         ModbusDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.type === "getLogs") {
-        // TODO: wait for SLavomir's response
         if (client && client.instanceService) {
           response = client.instanceService
             .whois(message.deviceName)
@@ -140,7 +141,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.1.36:7481/wdx/ws",
+      url: "ws://192.168.31.7:7081/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -149,14 +150,14 @@ const initializeWDXClient = async () => {
 
   // Attach DataService to client for backend operations, passing the client instance
   client.dataService = new DataService(client);
-  client.instanceService = new Services.InstanceService(client);
+  client.instanceService = new WDXWSClient.WDX.WS.Client.JS.Service.InstanceService(client);
 
   client.runtimeService =
     new WDXWSClient.WDX.WS.Client.JS.Service.RuntimeService(client);
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.1.36:7481/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.31.7:7081/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();

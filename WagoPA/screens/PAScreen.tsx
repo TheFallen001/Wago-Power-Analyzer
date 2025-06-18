@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { devices } from '../utils/DeviceStore';
+import { devices } from '../utils/VirtualDeviceStore';
 import { RootParamList } from '../navigation/types';
 import tw from 'twrnc';
 

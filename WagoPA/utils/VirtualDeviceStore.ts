@@ -49,16 +49,32 @@ function randomInRange(min: number, max: number) {
 }
 
 export function generateVirtualDeviceValues(device: Device, index: number) {
-  const deviceVolt = Math.round(randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + index * 2);
-  const deviceCurr = Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) / 100 + index * 0.1;
+  const deviceVolt = Math.round(
+    randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + index * 2
+  );
+  const deviceCurr =
+    Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) /
+      100 +
+    index * 0.1;
   return { deviceVolt, deviceCurr };
 }
 
 // --- Virtual Device Alarm Check ---
-export function checkVirtualDeviceAlarms(deviceVolt: number, deviceCurr: number) {
+export function checkVirtualDeviceAlarms(
+  deviceVolt: number,
+  deviceCurr: number
+) {
   let alarm = false;
-  if (deviceVolt < VOLTAGE_ALARM_RANGE.min || deviceVolt > VOLTAGE_ALARM_RANGE.max) alarm = true;
-  if (deviceCurr < CURRENT_ALARM_RANGE.min || deviceCurr > CURRENT_ALARM_RANGE.max) alarm = true;
+  if (
+    deviceVolt < VOLTAGE_ALARM_RANGE.min ||
+    deviceVolt > VOLTAGE_ALARM_RANGE.max
+  )
+    alarm = true;
+  if (
+    deviceCurr < CURRENT_ALARM_RANGE.min ||
+    deviceCurr > CURRENT_ALARM_RANGE.max
+  )
+    alarm = true;
   return alarm;
 }
 
@@ -73,7 +89,9 @@ let ws: WebSocket | null = null;
 let isInitialized = false;
 const listeners: Array<(devices: Device[]) => void> = [];
 
-export const subscribeToDeviceUpdates = (callback: (devices: Device[]) => void) => {
+export const subscribeToDeviceUpdates = (
+  callback: (devices: Device[]) => void
+) => {
   listeners.push(callback);
   if (isInitialized) callback(devices);
   return () => {
@@ -92,14 +110,19 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.1.36:8080";
+  const serverUrl = "ws://192.168.31.7:8080";
   ws = new WebSocket(serverUrl);
-  ws.onopen = () => {};
+  ws.onopen = () => {
+    console.log("OnOpen was called");
+  };
   ws.onmessage = (event) => {
+    console.log("OnMessage was called");
     let message;
     try {
       message = JSON.parse(event.data);
-    } catch (error) { return; }
+    } catch (error) {
+      return;
+    }
     if (message.type === "schema") {
       const wdxDevices = message.devices || [];
       if (!Array.isArray(wdxDevices)) return;
@@ -136,7 +159,10 @@ const initializeWebSocket = () => {
             },
           }))
         );
-        lastSchemaDevices = wdxDevices.map((d) => ({ name: d.name, config: d.config }));
+        lastSchemaDevices = wdxDevices.map((d) => ({
+          name: d.name,
+          config: d.config,
+        }));
         isInitialized = true;
         notifySchemaListeners();
       }
@@ -158,8 +184,13 @@ const initializeWebSocket = () => {
 
 initializeWebSocket();
 
-export const updateDeviceConfig = (idOrName: string, config: Device["config"]) => {
-  let device = devices.find((d) => d.id === idOrName) || devices.find((d) => d.name === idOrName);
+export const updateDeviceConfig = (
+  idOrName: string,
+  config: Device["config"]
+) => {
+  let device =
+    devices.find((d) => d.id === idOrName) ||
+    devices.find((d) => d.name === idOrName);
   if (device) {
     device.config = config;
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -183,7 +214,9 @@ export const updateDeviceConfig = (idOrName: string, config: Device["config"]) =
   }
 };
 
-export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device["config"] }[]) => {
+export const updateDevicesFromWDX = (
+  wdxDevices: { name: string; config: Device["config"] }[]
+) => {
   wdxDevices.forEach((wdxDevice, index) => {
     const deviceName = wdxDevice.name;
     const fullName = `Analyzer - ${deviceName}`;
@@ -225,21 +258,57 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
     Object.entries(value).forEach(([key, val]) => {
       if (typeof val === "number") {
         if (
-          key === "Addr1" || key === "addr1" ||
-          key === "Baud1" || key === "baud1" ||
-          key === "Check Digit 1" || key === "check1" ||
-          key === "Stop Bit 1" || key === "stopBit1" ||
-          key === "Baud2" || key === "baud2" ||
-          key === "Check Digit 2" || key === "check2" ||
-          key === "Stop Bit 2" || key === "stopBit2"
+          key === "Addr1" ||
+          key === "addr1" ||
+          key === "Baud1" ||
+          key === "baud1" ||
+          key === "Check Digit 1" ||
+          key === "check1" ||
+          key === "Stop Bit 1" ||
+          key === "stopBit1" ||
+          key === "Baud2" ||
+          key === "baud2" ||
+          key === "Check Digit 2" ||
+          key === "check2" ||
+          key === "Stop Bit 2" ||
+          key === "stopBit2"
         ) {
-          if (key === "Addr1" || key === "addr1") { if (updatedConfig.addr1 !== val) { updatedConfig.addr1 = val; hasConfigChange = true; } }
-          else if (key === "Baud1" || key === "baud1") { if (updatedConfig.baud1 !== val) { updatedConfig.baud1 = val; hasConfigChange = true; } }
-          else if (key === "Check Digit 1" || key === "check1") { if (updatedConfig.check1 !== val) { updatedConfig.check1 = val; hasConfigChange = true; } }
-          else if (key === "Stop Bit 1" || key === "stopBit1") { if (updatedConfig.stopBit1 !== val) { updatedConfig.stopBit1 = val; hasConfigChange = true; } }
-          else if (key === "Baud2" || key === "baud2") { if (updatedConfig.baud2 !== val) { updatedConfig.baud2 = val; hasConfigChange = true; } }
-          else if (key === "Check Digit 2" || key === "check2") { if (updatedConfig.check2 !== val) { updatedConfig.check2 = val; hasConfigChange = true; } }
-          else if (key === "Stop Bit 2" || key === "stopBit2") { if (updatedConfig.stopBit2 !== val) { updatedConfig.stopBit2 = val; hasConfigChange = true; } }
+          if (key === "Addr1" || key === "addr1") {
+            if (updatedConfig.addr1 !== val) {
+              updatedConfig.addr1 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Baud1" || key === "baud1") {
+            if (updatedConfig.baud1 !== val) {
+              updatedConfig.baud1 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Check Digit 1" || key === "check1") {
+            if (updatedConfig.check1 !== val) {
+              updatedConfig.check1 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Stop Bit 1" || key === "stopBit1") {
+            if (updatedConfig.stopBit1 !== val) {
+              updatedConfig.stopBit1 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Baud2" || key === "baud2") {
+            if (updatedConfig.baud2 !== val) {
+              updatedConfig.baud2 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Check Digit 2" || key === "check2") {
+            if (updatedConfig.check2 !== val) {
+              updatedConfig.check2 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Stop Bit 2" || key === "stopBit2") {
+            if (updatedConfig.stopBit2 !== val) {
+              updatedConfig.stopBit2 = val;
+              hasConfigChange = true;
+            }
+          }
         }
       }
     });
@@ -251,7 +320,9 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
 };
 
 let lastSchemaDevices: { name: string; config: Device["config"] }[] = [];
-function isSchemaChanged(newSchema: { name: string; config: Device["config"] }[]) {
+function isSchemaChanged(
+  newSchema: { name: string; config: Device["config"] }[]
+) {
   if (lastSchemaDevices.length !== newSchema.length) return true;
   for (let i = 0; i < newSchema.length; i++) {
     if (lastSchemaDevices[i].name !== newSchema[i].name) return true;
@@ -269,4 +340,19 @@ export const getLogs = (deviceName: string) => {
       deviceName: result,
     })
   );
+};
+
+export const addVirtualDevice = (device: Device) => {
+  try {
+    console.log("Sending device info")
+    ws?.send(
+      JSON.stringify({
+        type: "addDevice",
+        path: "Virtual.",
+        device: device,
+      })
+    );
+  } catch (e) {
+    console.error(e);
+  }
 };
