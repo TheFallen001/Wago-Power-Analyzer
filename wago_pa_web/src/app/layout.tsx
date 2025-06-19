@@ -24,6 +24,7 @@ const Drawer = ({
     { name: "Configure", path: "/configure" },
     { name: "Devices", path: "/devices" },
     { name: "Settings", path: "/settings" },
+    { name: "Dashboard", path: "/dashboard" }, // Added Dashboard to navigation
   ];
 
   return (

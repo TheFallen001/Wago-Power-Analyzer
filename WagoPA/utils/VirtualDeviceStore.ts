@@ -110,7 +110,7 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.31.7:8080";
+  const serverUrl = "ws://192.168.31.243:8080";
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {
     console.log("OnOpen was called");
@@ -355,4 +355,18 @@ export const addVirtualDevice = (device: Device) => {
   } catch (e) {
     console.error(e);
   }
+};
+
+interface AlarmEvent {
+  type: "volt" | "curr";
+  value: number;
+  deviceName: string;
+}
+const alarmListeners: Array<(alarm: AlarmEvent) => void> = [];
+export const subscribeToAlarms = (cb: (alarm: AlarmEvent) => void) => {
+  alarmListeners.push(cb);
+  return () => {
+    const idx = alarmListeners.indexOf(cb);
+    if (idx !== -1) alarmListeners.splice(idx, 1);
+  };
 };

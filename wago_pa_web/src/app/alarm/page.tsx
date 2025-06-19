@@ -1,7 +1,7 @@
 // Web version of AlarmScreen using Tailwind CSS
 "use client";
 import React, { useEffect, useState } from "react";
-import { subscribeToAlarms } from '../utils/DeviceStore';
+import { subscribeToAlarms } from '../utils/VirtualDeviceStore';
 
 interface AlarmHistoryItem {
   id: string;

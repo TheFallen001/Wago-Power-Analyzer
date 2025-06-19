@@ -2,7 +2,7 @@
 "use client";
 import React, { useState } from "react";
 import DeviceDropdown from "../components/DeviceDropdown";
-import { useDevices } from "../utils/DeviceStore";
+import { useDevices } from "../utils/VirtualDeviceStore";
 
 export default function Logs() {
   const [logs, setLogs] = useState<string[]>([]);

@@ -32,7 +32,7 @@ import {
 } from "chart.js";
 import "chartjs-adapter-date-fns";
 import { Line } from "react-chartjs-2";
-import { useDevices, voltageChartDataMap, currentChartDataMap, VOLTAGE_ALARM_RANGE, CURRENT_ALARM_RANGE } from '../utils/DeviceStore';
+import { useDevices } from '../utils/VirtualDeviceStore';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { ScriptableContext, PointStyle } from "chart.js";
 

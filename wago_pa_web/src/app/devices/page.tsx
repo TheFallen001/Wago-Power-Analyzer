@@ -1,7 +1,7 @@
 // Devices list page: shows all devices from DeviceStore and links to detail page
 "use client";
 import Link from "next/link";
-import { useDevices } from "../utils/DeviceStore";
+import { useDevices } from "../utils/VirtualDeviceStore";
 
 export default function DevicesPage() {
   const { devices } = useDevices();

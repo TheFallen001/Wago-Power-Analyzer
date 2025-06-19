@@ -2,6 +2,7 @@
 // Handles all Virtual device logic for the web frontend, separated from DeviceStore
 
 import { Device } from "./DeviceStore";
+import { useEffect, useState } from 'react';
 
 export let devices: Device[] = [];
 export let logData: any[] = [];
@@ -208,3 +209,15 @@ export const getLogs = (deviceName: string) => {
     })
   );
 };
+
+// React hook to get devices with subscription
+export function useDevices() {
+  const [deviceList, setDeviceList] = useState<Device[]>([...devices]);
+  useEffect(() => {
+    const unsubscribe = subscribeToDeviceUpdates((newDevices) => {
+      setDeviceList([...newDevices]);
+    });
+    return unsubscribe;
+  }, []);
+  return { devices: deviceList };
+}

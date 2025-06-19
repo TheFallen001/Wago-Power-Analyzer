@@ -7,7 +7,7 @@ import {
   Marker,
 } from "@react-google-maps/api";
 import DeviceInfoPopup from "./DeviceInfoPopup";
-import { useDevices } from "../utils/DeviceStore"; // Import your device data
+import { useDevices } from "../utils/VirtualDeviceStore"; // Import your device data
 
 
 

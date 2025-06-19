@@ -21,6 +21,7 @@ const ConfigureScreen = () => {
   const [check2, setCheck2] = useState('');
   const [stopBit2, setStopBit2] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [configEditing, setConfigEditing] = useState(false);
 
   // Update form with selected device data from DeviceStore
   const updateFormWithDevice = (dev: typeof devices[0] | undefined) => {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList } from "react-native";
 import tw from "twrnc";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { devices, subscribeToAlarms } from "../utils/DeviceStore";
+import { devices, subscribeToAlarms } from "../utils/VirtualDeviceStore";
 
 interface AlarmHistoryItem {
   id: string;
