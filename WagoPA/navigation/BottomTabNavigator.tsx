@@ -6,6 +6,8 @@ import DevicesScreen from '../screens/PAScreen';
 import AddDeviceScreen from '../screens/AddPA';
 import ConfigureScreen from '../screens/ConfigureScreen'; 
 import SettingsScreen from '../screens/SettingsScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import NewDetailScreen from '../screens/NewDetailScreen';
 
 const Tab = createBottomTabNavigator();
 
