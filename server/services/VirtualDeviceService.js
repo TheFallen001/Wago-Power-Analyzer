@@ -34,16 +34,19 @@ class VirtualDeviceService {
           client.instanceService.start(result.uuid).subscribe({
             next: () => {
               const children = [
-                { key: "curr", type: "number" },
-                { key: "volt", type: "number" },
-                { key: "addr1", type: "number" },
-                { key: "baud1", type: "number" },
-                { key: "baud2", type: "number" },
-                { key: "check1", type: "number" },
-                { key: "check2", type: "number" },
-                { key: "stopBit1", type: "number" },
-                { key: "stopBit2", type: "number" },
+                { key: "curr", default: 0 },
+                { key: "volt", default: 0 },
+                { key: "addr1", default: 1 },
+                { key: "baud1", default: 1200 },
+                { key: "baud2", default: 1200 },
+                { key: "check1", default: 0 },
+                { key: "check2", default: 0 },
+                { key: "stopBit1", default: 1 },
+                { key: "stopBit2", default: 1 },
+                { key: "lat", default: device.latitude },
+                { key: "lng", default: device.longitude },
               ];
+
               children.forEach((child) => {
                 const schema = new Data.DataSchema();
                 schema.path = `Virtual.${instance.name}.${child.key}`;
@@ -59,62 +62,35 @@ class VirtualDeviceService {
                   new WDXSchema.WDX.Schema.Model.Data.MetaData.MetaDataVirtual();
 
                 client.dataService.setSchema(schema).subscribe({
-                  // next: () => {
-                  //   client.dataService.getSchema("Virtual", 1).subscribe({
-                  //     next: (updatedSchema) => {
-                  //       const children = updatedSchema.children || [];
-                  //       const devicePromises = children.map((child) => {
-                  //         return new Promise((resolve) => {
-                  //           client.dataService.register(child.path).subscribe({
-                  //             next: (data) => {
-                  //               const deviceName = child.path.split(".").pop() || child.path;
-                  //               resolve({
-                  //                 name: deviceName,
-                  //                 config: {
-                  //                   addr1: data?.value?.addr1 ?? 0,
-                  //                   baud1: data?.value?.baud1 ?? 0,
-                  //                   check1: data?.value?.check1 ?? 0,
-                  //                   stopBit1: data?.value?.stopBit1 ?? 0,
-                  //                   baud2: data?.value?.baud2 ?? 0,
-                  //                   check2: data?.value?.check2 ?? 0,
-                  //                   stopBit2: data?.value?.stopBit2 ?? 0,
-                  //                 },
-                  //                 path: child.path,
-                  //               });
-                  //             },
-                  //             error: () => {
-                  //               const deviceName = child.path.split(".").pop() || child.path;
-                  //               resolve({
-                  //                 name: deviceName,
-                  //                 config: {
-                  //                   addr1: 0,
-                  //                   baud1: 0,
-                  //                   check1: 0,
-                  //                   stopBit1: 0,
-                  //                   baud2: 0,
-                  //                   check2: 0,
-                  //                   stopBit2: 0,
-                  //                 },
-                  //                 path: child.path,
-                  //               });
-                  //             },
-                  //           });
-                  //         });
-                  //       });
-                  //       Promise.all(devicePromises).then((devices) => {
-                  //         broadcast({
-                  //           type: "schema",
-                  //           devices: devices.map(({ name, config }) => ({ name, config })),
-                  //         });
-                  //       });
-                  //     },
-                  //     error: (err) => {
-                  //       console.error("[WDX getSchema ERROR after setSchema] (Virtual)", err);
-                  //     },
-                  //   });
-                  // },
-                  next: () => {
-                    console.log("Schema: ", JSON.stringify(schema, null, 2));
+                  next: (schema) => {
+                    client.dataService
+                      .setValue(
+                        schema.path,
+                        children.find(
+                          (child) => child.key === schema.relativePath
+                        ).default
+                      )
+                      .subscribe({
+                        next: (response) => {
+                          console.log(
+                            "Response: ",
+                            JSON.stringify(response, null, 2)
+                          );
+                        },
+                        error: (error) => {
+                          console.log("Error message: ", error.code);
+                          console.log(
+                            "Error encountered when setting values: ",
+                            error.message
+                          );
+                        },
+                        complete: async () => {
+                          console.log(
+                            "Default values have been set successfully"
+                          );
+                        },
+                      });
+                    // console.log("Schema: ", JSON.stringify(schema, null, 2))
                   },
                   error: (err) => {
                     console.error(

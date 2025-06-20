@@ -120,12 +120,21 @@ const MapScreen = () => {
         let modalY = 0;
         if (mapRef.current && mapRef.current.pointForCoordinate) {
           try {
-            const point = await mapRef.current.pointForCoordinate({ latitude, longitude });
+            const point = await mapRef.current.pointForCoordinate({
+              latitude,
+              longitude,
+            });
             modalX = point.x - modalWidth / 2;
             modalY = point.y - modalHeight - 35;
             // Clamp to screen bounds
-            modalX = Math.max(8, Math.min(modalX, screenWidth - modalWidth - 8));
-            modalY = Math.max(8, Math.min(modalY, screenHeight - modalHeight - 8));
+            modalX = Math.max(
+              8,
+              Math.min(modalX, screenWidth - modalWidth - 8)
+            );
+            modalY = Math.max(
+              8,
+              Math.min(modalY, screenHeight - modalHeight - 8)
+            );
           } catch (e) {
             modalX = screenWidth / 2 - modalWidth / 2;
             modalY = screenHeight / 2 - modalHeight / 2;
@@ -134,7 +143,12 @@ const MapScreen = () => {
           modalX = screenWidth / 2 - modalWidth / 2;
           modalY = screenHeight / 2 - modalHeight / 2;
         }
-        setModalPosition({ x: modalX, y: modalY, width: modalWidth, height: modalHeight });
+        setModalPosition({
+          x: modalX,
+          y: modalY,
+          width: modalWidth,
+          height: modalHeight,
+        });
         setSelectedDevice(device);
       }, 300);
     },
@@ -149,13 +163,10 @@ const MapScreen = () => {
     setSelectedDevice(null);
   }, []);
 
-  const handleModalLayout = useCallback(
-    (event: any) => {
-      const { width, height } = event.nativeEvent.layout;
-      setModalPosition((prev) => ({ ...prev, width, height }));
-    },
-    []
-  );
+  const handleModalLayout = useCallback((event: any) => {
+    const { width, height } = event.nativeEvent.layout;
+    setModalPosition((prev) => ({ ...prev, width, height }));
+  }, []);
 
   // Keep device list in sync with DeviceStore
   useEffect(() => {
@@ -184,8 +195,8 @@ const MapScreen = () => {
           <Marker
             key={device.name} // Use device.name for uniqueness
             coordinate={{
-              latitude: device.latitude,
-              longitude: device.longitude,
+              latitude: device.config.lat,
+              longitude: device.config.lng,
             }}
             onPress={() => handleMarkerPress(device)}
             accessibilityLabel={`Marker for ${device.name}`}
@@ -230,14 +241,12 @@ const MapScreen = () => {
                   {selectedDevice.name}
                 </Text>
                 <Text style={styles.text}>
-                  Address: {selectedDevice.address || 'Unknown'}
+                  Address: {selectedDevice.address || "Unknown"}
                 </Text>
                 <Text style={styles.text}>
                   Voltage Range: {selectedDevice.voltageRange}
                 </Text>
-                <Text style={styles.text}>
-                  Status: {selectedDevice.status}
-                </Text>
+                <Text style={styles.text}>Status: {selectedDevice.status}</Text>
                 <TouchableOpacity
                   style={styles.configureButton}
                   onPress={() => handleConfigure(selectedDevice.id)}

@@ -105,18 +105,18 @@ const notifyListeners = () => {
 };
 
 function notifySchemaListeners() {
+  console.log();
   listeners.forEach((listener) => listener(devices));
 }
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.31.243:8080";
+  const serverUrl = "ws://192.168.31.31:8080";
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {
     console.log("OnOpen was called");
   };
   ws.onmessage = (event) => {
-    console.log("OnMessage was called");
     let message;
     try {
       message = JSON.parse(event.data);
@@ -139,6 +139,8 @@ const initializeWebSocket = () => {
           validDevicePaths.add(`Virtual.${deviceName}.check2`);
           validDevicePaths.add(`Virtual.${deviceName}.stopBit1`);
           validDevicePaths.add(`Virtual.${deviceName}.stopBit2`);
+          validDevicePaths.add(`Virtual.${deviceName}.lat`);
+          validDevicePaths.add(`Virtual.${deviceName}.lng`);
         });
         devicePathMap = {};
         wdxDevices.forEach((device) => {
@@ -156,6 +158,8 @@ const initializeWebSocket = () => {
               baud2: 0,
               check2: 0,
               stopBit2: 0,
+              lat: 40,
+              lng: 28,
             },
           }))
         );
@@ -163,6 +167,7 @@ const initializeWebSocket = () => {
           name: d.name,
           config: d.config,
         }));
+
         isInitialized = true;
         notifySchemaListeners();
       }
@@ -221,6 +226,7 @@ export const updateDevicesFromWDX = (
     const deviceName = wdxDevice.name;
     const fullName = `Analyzer - ${deviceName}`;
     let device = devices.find((d) => d.name === fullName);
+
     if (!device) {
       device = {
         id: (index + 1).toString(),
@@ -240,8 +246,11 @@ export const updateDevicesFromWDX = (
           baud2: 9600,
           check2: 0,
           stopBit2: 0,
+          lat: 40.0001,
+          lng: 28.0001,
         },
       };
+
       devices.push(device);
     } else if (wdxDevice.config && Object.keys(wdxDevice.config).length > 0) {
       device.config = wdxDevice.config;
@@ -344,7 +353,7 @@ export const getLogs = (deviceName: string) => {
 
 export const addVirtualDevice = (device: Device) => {
   try {
-    console.log("Sending device info")
+    console.log("Sending device info");
     ws?.send(
       JSON.stringify({
         type: "addDevice",

@@ -41,6 +41,7 @@ const AddDeviceScreen = () => {
   const handleMapPress = async (event: MapPressEvent) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLocation({ latitude, longitude });
+   
     const addr = await reverseGeocode(latitude, longitude);
     if (addr) {
       setAddress(addr);
@@ -55,6 +56,7 @@ const AddDeviceScreen = () => {
       );
       return;
     }
+    
     const newDevice = {
       id: Date.now().toString(),
       name,
@@ -76,12 +78,15 @@ const AddDeviceScreen = () => {
         stopBit2: 1, // Default: 1.5 stop bit
       },
     };
+    
 
     if(newDevice.deviceType = deviceOptions[0])
     {
-      addVirtualDevice(newDevice);
+      // addVirtualDevice(newDevice);
+      console.log("V")
     }else{
-      addModbusDevice(newDevice);
+      // addModbusDevice(newDevice);
+      console.log("M")
     }
     Alert.alert("Success", `Device "${name}" added successfully!`);
 

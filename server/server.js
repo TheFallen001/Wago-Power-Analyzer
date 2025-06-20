@@ -141,7 +141,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.243:7481/wdx/ws",
+      url: "ws://192.168.31.31:7081/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -157,7 +157,7 @@ const initializeWDXClient = async () => {
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.243:7481/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.31.31:7081/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();
@@ -203,6 +203,8 @@ const initializeWDXClient = async () => {
                     baud2: data?.value?.baud2 ?? 0,
                     check2: data?.value?.check2 ?? 0,
                     stopBit2: data?.value?.stopBit2 ?? 0,
+                    lat: data?.value?.lat ?? 40.0000000,
+                    lng: data?.value?.lng ?? 30.0000
                   },
                   path: child.path,
                 });
@@ -234,6 +236,7 @@ const initializeWDXClient = async () => {
             name,
             config,
           }));
+          
           broadcast({ type: "schema", devices: latestSchemaDevices });
         });
 
