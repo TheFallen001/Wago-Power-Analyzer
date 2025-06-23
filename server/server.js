@@ -85,16 +85,12 @@ wss.on("connection", (ws) => {
             .whois(message.deviceName)
             .subscribe({
               next: (response) => {
-                client.instanceService.logSubscribe(response.uuid).subscribe({
+                client.instanceService.listLogs(response.uuid).subscribe({
                   next: (response) => {
-                    console.log(
-                      "Response: ",
-                      JSON.stringify(response, null, 2)
-                    );
                     ws.send(
                       JSON.stringify({
                         type: "updateLogs",
-                        logs: JSON.stringify(response),
+                        logs: JSON.stringify(response, null, 2),
                       })
                     );
                   },
@@ -141,7 +137,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.31:7081/wdx/ws",
+      url: "ws://192.168.31.44:7081/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -151,13 +147,14 @@ const initializeWDXClient = async () => {
   // Attach DataService to client for backend operations, passing the client instance
   client.dataService = new DataService(client);
   client.instanceService = new WDXWSClient.WDX.WS.Client.JS.Service.InstanceService(client);
+  client.instanceService2 = new Services.InstanceService(client);
 
   client.runtimeService =
     new WDXWSClient.WDX.WS.Client.JS.Service.RuntimeService(client);
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.31:7081/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.31.44:7081/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();

@@ -12,7 +12,7 @@
   "type": "commonjs",
   "dependencies": {
     "@wago/wdx-schema": "^29.0.0",
-    "@wago/wdx-ws-client-js": "^24.0.0",
+    "@wago/wdx-ws-client-js": "^25.0.0",
     "typescript": "^5.8.3",
     "websocket": "^1.0.35",
     "ws": "^8.18.2"

@@ -84,7 +84,7 @@ export { validDevicePaths, devicePathMap };
 // --- VirtualDeviceStore: All Virtual device logic separated from DeviceStore ---
 
 export let devices: Device[] = [];
-export let logData: any[] = [];
+export let logData: string = "";
 let ws: WebSocket | null = null;
 let isInitialized = false;
 const listeners: Array<(devices: Device[]) => void> = [];
@@ -111,7 +111,7 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.31.31:8080";
+  const serverUrl = "ws://192.168.31.44:8080";
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {
     console.log("OnOpen was called");
@@ -177,6 +177,8 @@ const initializeWebSocket = () => {
       updateDeviceFromWDXData(message.path, message.config);
     } else if (message.type === "updateLogs") {
       logData = message.logs;
+     
+      
     }
   };
   ws.onclose = () => {

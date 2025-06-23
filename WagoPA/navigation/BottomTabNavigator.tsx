@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import MapScreen from '../screens/MapScreen';
 import DevicesScreen from '../screens/PAScreen';
 import AddDeviceScreen from '../screens/AddPA';
@@ -46,9 +46,11 @@ export function BottomTabNavigator() {
       })}
     >
       <Tab.Screen
-        name="Map"
-        component={MapScreen}
-        options={{ tabBarLabel: 'Map' }}
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{ tabBarLabel: 'Dashboard', tabBarIcon:({color}) => (
+          <MaterialIcons name="dashboard"/>
+        ) }}
       />
       <Tab.Screen
         name="Devices"
