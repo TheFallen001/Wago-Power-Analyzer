@@ -10,6 +10,7 @@ let devicePathMap: { [key: string]: string } = {};
 let ws: WebSocket | null = null;
 let isInitialized = false;
 const listeners: Array<(devices: Device[]) => void> = [];
+const liveValueListeners: Array<(devices: Device[]) => void> = [];
 let validDevicePaths: Set<string> = new Set();
 
 export const subscribeToDeviceUpdates = (callback: (devices: Device[]) => void) => {
@@ -21,8 +22,21 @@ export const subscribeToDeviceUpdates = (callback: (devices: Device[]) => void) 
   };
 };
 
+export const subscribeToLiveValueUpdates = (callback: (devices: Device[]) => void) => {
+  liveValueListeners.push(callback);
+  callback(devices);
+  return () => {
+    const index = liveValueListeners.indexOf(callback);
+    if (index !== -1) liveValueListeners.splice(index, 1);
+  };
+};
+
 const notifyListeners = () => {
   listeners.forEach((listener) => listener(devices));
+};
+
+const notifyLiveValueListeners = () => {
+  liveValueListeners.forEach((listener) => listener(devices));
 };
 
 function notifySchemaListeners() {
@@ -166,20 +180,40 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
   const device = devices.find((d) => d.name === `Analyzer - ${deviceName}`);
   if (device && value) {
     let hasConfigChange = false;
+    let hasLiveValueChange = false;
     const updatedConfig = { ...device.config };
     Object.entries(value).forEach(([key, val]) => {
       if (typeof val === "number") {
-        // Always update config for live values and config keys
-        if (updatedConfig[key] !== val) {
-          updatedConfig[key] = val;
-          hasConfigChange = true;
+        // Config keys (only these trigger notifyListeners)
+        if (
+          key === "Addr1" || key === "addr1" ||
+          key === "Baud1" || key === "baud1" ||
+          key === "Check Digit 1" || key === "check1" ||
+          key === "Stop Bit 1" || key === "stopBit1" ||
+          key === "Baud2" || key === "baud2" ||
+          key === "Check Digit 2" || key === "check2" ||
+          key === "Stop Bit 2" || key === "stopBit2"
+        ) {
+          if (updatedConfig[key] !== val) {
+            updatedConfig[key] = val;
+            hasConfigChange = true;
+          }
+        } else {
+          // Live value keys: update and trigger live listeners
+          if (updatedConfig[key] !== val) {
+            updatedConfig[key] = val;
+            hasLiveValueChange = true;
+          }
         }
       }
     });
+    device.config = updatedConfig;
     if (hasConfigChange) {
-      device.config = updatedConfig; // Replace object reference for reactivity
-      console.log(`[WDX] Updated device '${device.name}' config:`, updatedConfig);
+      console.log(`[WDX] Config change for '${device.name}':`, updatedConfig);
       notifyListeners();
+    }
+    if (hasLiveValueChange) {
+      notifyLiveValueListeners();
     }
   }
 };
@@ -258,6 +292,17 @@ export function useDevices() {
   const [deviceList, setDeviceList] = useState<Device[]>([...devices]);
   useEffect(() => {
     const unsubscribe = subscribeToDeviceUpdates((newDevices) => {
+      setDeviceList([...newDevices]);
+    });
+    return unsubscribe;
+  }, []);
+  return { devices: deviceList };
+}
+
+export function useLiveDevices() {
+  const [deviceList, setDeviceList] = useState<Device[]>([...devices]);
+  useEffect(() => {
+    const unsubscribe = subscribeToLiveValueUpdates((newDevices) => {
       setDeviceList([...newDevices]);
     });
     return unsubscribe;

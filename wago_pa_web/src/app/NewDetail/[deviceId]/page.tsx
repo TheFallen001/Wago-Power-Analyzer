@@ -14,7 +14,7 @@ import {
   Title,
 } from 'chart.js';
 import { useParams } from 'next/navigation';
-import { useDevices } from '../../utils/VirtualDeviceStore';
+import { useLiveDevices } from '../../utils/VirtualDeviceStore';
 
 ChartJS.register(
   ArcElement,
@@ -32,7 +32,7 @@ const INSTALLED_POWER = 200; // kVA
 
 export default function NewDetail() {
   const { deviceId } = useParams();
-  const { devices } = useDevices();
+  const { devices } = useLiveDevices();
   const [lastData, setLastData] = useState('');
   // Add state for power history (6 time slots)
   const [powerHistory, setPowerHistory] = useState([0, 0, 0, 0, 0, 0]);

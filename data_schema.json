@@ -1,16 +1,16 @@
 {
   "type": "object",
   "properties": {
-    "addr1": { "type": "integer" },
-    "baud1": { "type": "integer" },
-    "baud2": { "type": "integer" },
-    "check1": { "type": "integer" },
-    "check2": { "type": "integer" },
-    "curr": { "type": "number" },
-    "energy": { "type": "number" },
-    "power": { "type": "number" },
-    "stopBit1": { "type": "integer" },
-    "stopBit2": { "type": "integer" },
-    "volt": { "type": "number" }
+    "addr1": "integer",
+    "baud1": "integer",
+    "baud2": "integer",
+    "check1": "integer",
+    "check2": "integer",
+    "curr": "number" ,
+    "energy": "number",
+    "power": "number",
+    "stopBit1": "integer",
+    "stopBit2": "integer",
+    "volt": "number"
   }
 }
