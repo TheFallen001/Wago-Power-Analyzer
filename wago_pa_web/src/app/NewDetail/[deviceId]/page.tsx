@@ -34,20 +34,42 @@ export default function NewDetail() {
   const { deviceId } = useParams();
   const { devices } = useDevices();
   const [lastData, setLastData] = useState('');
+  // Add state for power history (6 time slots)
+  const [powerHistory, setPowerHistory] = useState([0, 0, 0, 0, 0, 0]);
 
   useEffect(() => {
     setLastData(new Date().toLocaleString());
   }, []);
+
   // Find device by id (real-time from WDX via VirtualDeviceStore)
   const device = devices.find((d) => d.id === deviceId);
 
+  // Real-time values from WDX (via device.config)
+  const volt = device?.config?.volt ?? '-';
+  const curr = device?.config?.curr ?? '-';
+  const power = device?.config?.power ?? '-';
+  const energy = device?.config?.energy ?? '-';
+
+  // Update powerHistory when power changes
+  useEffect(() => {
+    if (typeof power === 'number') {
+      // Define 6 time slots (e.g., 0, 4, 8, 12, 16, 20)
+      const now = new Date();
+      const hours = now.getHours();
+      // Find the closest slot index
+      const slotHours = [0, 4, 8, 12, 16, 20];
+      let slotIndex = slotHours.findIndex((h, i) => hours >= h && (i === slotHours.length - 1 || hours < slotHours[i + 1]));
+      if (slotIndex === -1) slotIndex = slotHours.length - 1;
+      setPowerHistory((prev) => {
+        const updated = [...prev];
+        updated[slotIndex] = power;
+        return updated;
+      });
+    }
+  }, [power]);
+
   if (!device) return <div className="p-6">Device not found</div>;
 
-  // Real-time values from WDX (via device.config)
-  const volt = device.config.volt ?? '-';
-  const curr = device.config.curr ?? '-';
-  const power = device.config.power ?? '-';
-  const energy = device.config.energy ?? '-';
   // Metrics
   const totalEnergy = typeof energy === 'number' ? energy : 0;
   const energyIntensity = SITE_AREA ? (totalEnergy / SITE_AREA).toFixed(3) : '-';
@@ -92,7 +114,7 @@ export default function NewDetail() {
     datasets: [
       {
         label: 'Power (kW)',
-        data: [power || 0, power || 0, power || 0, power || 0, power || 0, power || 0],
+        data: powerHistory,
         fill: false,
         borderColor: '#43a047',
         tension: 0.4,
