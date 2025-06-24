@@ -39,10 +39,7 @@ export default function DevicesPage() {
             </div>
             <div className="flex-1" />
             <Link
-              href={{
-                pathname: "/device-detail",
-                query: { id: device.id },
-              }}
+              href={`/NewDetail/${device.id}`}
               className="mt-2 px-4 py-2 rounded bg-[#28a745] text-white hover:bg-[#6ec800] transition text-center"
             >
               View Details

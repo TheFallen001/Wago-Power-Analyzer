@@ -36,6 +36,8 @@ class VirtualDeviceService {
               const children = [
                 { key: "curr", default: 0 },
                 { key: "volt", default: 0 },
+                { key: "power", default: 0 },
+                { key: "energy", default: 0 },
                 { key: "addr1", default: 1 },
                 { key: "baud1", default: 1200 },
                 { key: "baud2", default: 1200 },

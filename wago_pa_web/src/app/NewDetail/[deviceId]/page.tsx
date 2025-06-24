@@ -1,6 +1,5 @@
 "use client";
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Pie, Line } from 'react-chartjs-2';
 import {
@@ -15,7 +14,7 @@ import {
   Title,
 } from 'chart.js';
 import { useParams } from 'next/navigation';
-import { useDevices } from '../utils/VirtualDeviceStore';
+import { useDevices } from '../../utils/VirtualDeviceStore';
 
 ChartJS.register(
   ArcElement,
@@ -34,12 +33,23 @@ const INSTALLED_POWER = 200; // kVA
 export default function NewDetail() {
   const { deviceId } = useParams();
   const { devices } = useDevices();
+  const [lastData, setLastData] = useState('');
+
+  useEffect(() => {
+    setLastData(new Date().toLocaleString());
+  }, []);
+  // Find device by id (real-time from WDX via VirtualDeviceStore)
   const device = devices.find((d) => d.id === deviceId);
 
   if (!device) return <div className="p-6">Device not found</div>;
 
+  // Real-time values from WDX (via device.config)
+  const volt = device.config.volt ?? '-';
+  const curr = device.config.curr ?? '-';
+  const power = device.config.power ?? '-';
+  const energy = device.config.energy ?? '-';
   // Metrics
-  const totalEnergy = device.config.energy || 0;
+  const totalEnergy = typeof energy === 'number' ? energy : 0;
   const energyIntensity = SITE_AREA ? (totalEnergy / SITE_AREA).toFixed(3) : '-';
   const carbonEmission = (totalEnergy * 0.000475).toFixed(3);
   const energyCost = (totalEnergy * 0.15).toFixed(2);
@@ -57,7 +67,7 @@ export default function NewDetail() {
     { label: 'Energy Intensity (kWh/m²)', value: energyIntensity, icon: '📊' },
   ];
 
-  // Pie chart: you can customize this to show device-specific breakdowns
+  // Pie chart: device-specific breakdowns (real-time)
   const pieData = {
     labels: ['Energy', 'Other'],
     datasets: [
@@ -69,7 +79,7 @@ export default function NewDetail() {
     ],
   };
 
-  // Line chart: show power over time if you have time series, else show current power
+  // Line chart: show current power (real-time)
   const lineData = {
     labels: [
       '16. Jun',
@@ -82,7 +92,7 @@ export default function NewDetail() {
     datasets: [
       {
         label: 'Power (kW)',
-        data: [device.config.power || 0, device.config.power || 0, device.config.power || 0, device.config.power || 0, device.config.power || 0, device.config.power || 0],
+        data: [power || 0, power || 0, power || 0, power || 0, power || 0, power || 0],
         fill: false,
         borderColor: '#43a047',
         tension: 0.4,
@@ -118,8 +128,13 @@ export default function NewDetail() {
           <div className="text-sm mb-1 text-gray-500">{INSTALLED_POWER} kVA</div>
           <div className="text-xs text-gray-500 font-bold">LAST DATA</div>
           <div className="text-sm flex items-center text-gray-500">
-            <span className="mr-1">🕒</span> {new Date().toLocaleString()}
+            <span className="mr-1">🕒</span> {lastData}
           </div>
+          <div className="text-xs text-gray-500 font-bold mt-2">REAL-TIME VALUES</div>
+          <div className="text-sm mb-1 text-gray-500">Voltage: {volt}</div>
+          <div className="text-sm mb-1 text-gray-500">Current: {curr}</div>
+          <div className="text-sm mb-1 text-gray-500">Power: {power}</div>
+          <div className="text-sm mb-1 text-gray-500">Energy: {energy}</div>
         </div>
         {/* Metrics */}
         <div className="bg-white rounded-xl shadow p-4 col-span-2 flex flex-col">

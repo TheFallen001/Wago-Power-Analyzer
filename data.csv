@@ -1,0 +1,12 @@
+variable,value
+addr1,0
+baud1,2400
+baud2,9600
+check1,1
+check2,1
+curr,0
+energy,0
+power,0
+stopBit1,2
+stopBit2,2
+volt,0

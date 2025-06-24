@@ -1,7 +1,8 @@
 // Web version of AddPA screen using Tailwind CSS
 "use client";
 import React, { useState } from "react";
-import { addDevice, reverseGeocode } from "../utils/DeviceStore";
+import { addDevice } from "../utils/VirtualDeviceStore";
+import { reverseGeocode } from "../utils/DeviceStore";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { API_KEY } from "../map/page";
 
@@ -23,7 +24,7 @@ export default function AddPA() {
       return;
     }
 
-    const addr = await reverseGeocode(location.lat, location.lng, API_KEY);
+    const addr = await reverseGeocode(location.lat, location.lng);
     
     setAddress(addr ?? "");
     const newDevice = {

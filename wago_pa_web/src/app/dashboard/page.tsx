@@ -1,319 +1,158 @@
 "use client";
 
 import React from 'react';
-import { Pie, Bar } from 'react-chartjs-2';
-import 'chart.js/auto';
+import { Pie, Line } from 'react-chartjs-2';
+import { useDevices } from '../utils/VirtualDeviceStore';
 
-// Expanded Mock Data
-const pieData = {
-  labels: ['Off Hours', 'Auxiliary'],
-  datasets: [
-    {
-      data: [34.1, 65.9],
-      backgroundColor: ['#60A5FA', '#34D399'], // lighter blue, green
-      borderWidth: 0,
-    },
-  ],
-};
+const SITE_AREA = 842; // m², replace with dynamic value if available
+const INSTALLED_POWER = 200; // kVA, replace with dynamic value if available
 
-const barData = {
-  labels: [
-    'Active Consumption',
-    'Reactive Inductive Consumption Penalty',
-    'Reactive Inductive Consumption',
-  ],
-  datasets: [
-    {
-      label: 'Reactive Inductive Energy',
-      data: [400000, 200000, 150000],
-      backgroundColor: ['#60A5FA', '#34D399', '#FBBF24'],
-    },
-    {
-      label: 'Reactive Inductive Energy 2',
-      data: [300000, 100000, 120000],
-      backgroundColor: ['#93C5FD', '#6EE7B7', '#FDE68A' ],
-    },
-  ],
-};
+function getLatestTimestamp(devices: Array<{ config: any; name: string }>) {
+  // If you have timestamps in device data, use them. Otherwise, use Date.now()
+  return new Date().toLocaleString();
+}
 
-const barData2 = {
-  labels: [
-    'Active Consumption',
-    'Reactive Inductive Consumption Penalty',
-    'Reactive Inductive Consumption',
-  ],
-  datasets: [
-    {
-      label: 'Reactive Capacitive Energy',
-      data: [350000, 180000, 120000],
-      backgroundColor: ['#60A5FA', '#34D399', '#FBBF24'],
-    },
-    {
-      label: 'Reactive Capacitive Energy 2',
-      data: [200000, 80000, 90000],
-      backgroundColor: ['#93C5FD', '#6EE7B7', '#FDE68A'],
-    },
-  ],
-};
+function getTotalEnergy(devices: Array<{ config: any; name: string }>) {
+  // Replace 'energy' with the correct property from your device config
+  return devices.reduce((sum, d) => sum + (d.config.energy || 0), 0);
+}
 
-const horizontalBarData = {
-  labels: [
-    'Central Anatolia Social Outlet',
-    'Central Anatolia Panora Mall',
-    'Central Anatolia Gordion Mall',
-    'Central Anatolia Next Level Mall',
-    'Central Anatolia Metropol Mall',
-    'Central Anatolia Family Mall',
-    'Central Anatolia Arcadium Mall',
-    'Central Anatolia Ankamall',
-    'Central Anatolia Cepa Mall',
-    'Central Anatolia Kentpark Mall',
-    'Central Anatolia Taurus Mall',
-    'Central Anatolia Armada Mall',
-    'Central Anatolia Atakule',
-    'Central Anatolia Forum Ankara Mall',
-    'Central Anatolia Nata Vega Mall',
-    'Central Anatolia Podium Mall',
-    'Central Anatolia Antares Mall',
-    'Central Anatolia Kızılay Mall',
-    'Central Anatolia Karum Mall',
-    'Central Anatolia Tepe Prime Mall',
-    'Central Anatolia Bilkent Center',
-    'Central Anatolia Bilkent Station',
-    'Central Anatolia Bilkent Hotel',
-    'Central Anatolia Bilkent Cyberpark',
-    'Central Anatolia Bilkent University',
-    'Central Anatolia Mall X',
-    'Central Anatolia Mall Y',
-    'Central Anatolia Mall Z',
-  ],
-  datasets: [
-    {
-      label: 'Consumption',
-      data: [100, 80, 60, 90, 120, 110, 70, 130, 50, 40, 30, 20, 10, 60, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 90, 60, 30],
-      backgroundColor: '#6EE7B7',
-    },
-  ],
-};
+function getReactiveInductiveRatio(devices: Array<{ config: any; name: string }>) {
+  // Replace with real calculation if available
+  return devices.length ? (devices[0].config.reactiveInductiveRatio || 0) : 0;
+}
 
-const tableData = [
-  {
-    name: 'Central Anatolia Social Outlet',
-    total: '16,252,513',
-    average: '8.01',
-    january: '2,213,545',
-    february: '7,813,950',
-    march: '2,250,673',
-    april: '2,250,673',
-    may: '2,151,667',
-    june: '15,879,879',
-    july: '1,000,000',
-    august: '1,200,000',
-    september: '1,100,000',
-    october: '1,300,000',
-    november: '1,400,000',
-    december: '1,500,000',
-  },
-  {
-    name: 'Central Anatolia Panora Mall',
-    total: '12,000,000',
-    average: '7.50',
-    january: '1,000,000',
-    february: '1,200,000',
-    march: '1,100,000',
-    april: '1,300,000',
-    may: '1,400,000',
-    june: '1,500,000',
-    july: '1,600,000',
-    august: '1,700,000',
-    september: '1,800,000',
-    october: '1,900,000',
-    november: '2,000,000',
-    december: '2,100,000',
-  },
-  {
-    name: 'Central Anatolia Gordion Mall',
-    total: '10,000,000',
-    average: '6.00',
-    january: '800,000',
-    february: '900,000',
-    march: '1,000,000',
-    april: '1,100,000',
-    may: '1,200,000',
-    june: '1,300,000',
-    july: '1,400,000',
-    august: '1,500,000',
-    september: '1,600,000',
-    october: '1,700,000',
-    november: '1,800,000',
-    december: '1,900,000',
-  },
-  // Add more rows as needed
-];
+function getReactiveCapacitiveRatio(devices: Array<{ config: any; name: string }>) {
+  // Replace with real calculation if available
+  return devices.length ? (devices[0].config.reactiveCapacitiveRatio || 0) : 0;
+}
 
-const heatmapData = [
-  [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300],
-  [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120],
-  [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180],
-  [20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240],
-];
+function getCarbonEmission(totalEnergy: number) {
+  // Example: 0.000475 tons CO2 per kWh (adjust for your region)
+  return (totalEnergy * 0.000475).toFixed(3);
+}
 
-const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function getEnergyCost(totalEnergy: number) {
+  // Example: 0.15 currency units per kWh
+  return (totalEnergy * 0.15).toFixed(2);
+}
 
-// Device Pie Charts Section
-const deviceList = [
-  'Central Anatolia Ceko Mall',
-  'Bursa Times Square',
-  'Ankara BDC Mall',
-  'Kurt Kose',
-  'Anatol Natural AVM',
-  'Adli Family Fun Kids',
-  'Adli Family Mall',
-  'Grand Majid Mall',
-  'Gulon Mall',
-  'Kaya Store Outlet',
-  'Suleymaniyah Family Mall',
-  'Majid Mall',
-];
+function getEnergyIntensity(totalEnergy: number, area: number) {
+  return area ? (totalEnergy / area).toFixed(3) : '-';
+}
 
-const devicePieData = deviceList.map((name, idx) => ({
-  name,
-  data: {
-    labels: ['Off Hours', 'Auxiliary'],
+export default function Dashboard() {
+  const { devices } = useDevices();
+  const totalEnergy = getTotalEnergy(devices);
+  const energyIntensity = getEnergyIntensity(totalEnergy, SITE_AREA);
+  const carbonEmission = getCarbonEmission(totalEnergy);
+  const energyCost = getEnergyCost(totalEnergy);
+  const reactiveInductiveRatio = getReactiveInductiveRatio(devices);
+  const reactiveCapacitiveRatio = getReactiveCapacitiveRatio(devices);
+  const lastData = getLatestTimestamp(devices);
+
+  // Pie chart: energy by device
+  const pieData = {
+    labels: devices.map(d => d.name),
+    datasets: [{
+      data: devices.map(d => d.config.energy || 0),
+      backgroundColor: ['#60A5FA', '#34D399', '#FBBF24', '#F87171', '#A78BFA', '#F472B6', '#818CF8', '#F59E42'],
+    }],
+  };
+
+  // Line chart: simulate time series (replace with real time series if available)
+  const lineData = {
+    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
     datasets: [
       {
-        data: [Math.floor(Math.random() * 60) + 20, Math.floor(Math.random() * 60) + 20],
-        backgroundColor: ['#60A5FA', '#34D399'], // lighter blue, green
-        borderWidth: 0,
+        label: 'Power (kW)',
+        data: devices.map((d, i) => (d.config.power || 0) + i * 5),
+        fill: false,
+        borderColor: '#43a047',
+        tension: 0.4,
       },
     ],
-  },
-}));
+  };
 
-const Dashboard = () => {
+  const metrics = [
+    { label: 'Grid Consumption (kWh)', value: totalEnergy.toFixed(2), icon: '⚡' },
+    { label: 'Gas (m³)', value: '-', icon: '🔥' },
+    { label: 'Reactive Inductive Ratio', value: reactiveInductiveRatio, icon: '%' },
+    { label: 'Reactive Capacitive Ratio', value: reactiveCapacitiveRatio, icon: '%' },
+    { label: 'Carbon Emission (TON)', value: carbonEmission, icon: '☁️' },
+    { label: 'Water (m³)', value: '-', icon: '💧' },
+    { label: 'Energy Cost', value: energyCost, icon: '💵' },
+    { label: 'Energy Intensity (kWh/m²)', value: energyIntensity, icon: '📊' },
+  ];
+
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Top Cards */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-4 flex flex-col items-center">
-          <h2 className="font-semibold mb-2 text-center text-gray-800">Circular Consumption Chart</h2>
-          <div className="w-full h-48 flex items-center justify-center"><Pie data={pieData} options={{ plugins: { legend: { labels: { color: '#0F172A', font: { weight: 'bold' } } } } }} /></div>
-          <div className="flex justify-center mt-2 text-xs text-gray-900 w-full">
-            <div className="flex items-center mr-4"><span className="w-3 h-3 bg-gray-800 rounded-full inline-block mr-1"></span>34.1% Off Hours</div>
-            <div className="flex items-center"><span className="w-3 h-3 bg-slate-700 rounded-full inline-block mr-1"></span>65.9% Auxiliary</div>
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Site Info */}
+        <div className="bg-white rounded-xl shadow p-4 flex flex-col">
+          <div className="relative h-32 w-full rounded-lg overflow-hidden mb-2">
+            {/* Replace with real image if available */}
+            <img src="/WAGO.svg" alt="Site" className="object-cover w-full h-full" />
+          </div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-yellow-500 text-xl">☀️</span>
+              <span className="font-medium">Clear</span>
+              <span className="text-gray-700">48.6°C</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-green-600 text-xl">🔔</span>
+              <span className="font-medium">Alarms</span>
+              <span className="text-gray-700">-</span>
+            </div>
+          </div>
+          <div className="text-xs text-gray-500 font-bold mt-2">SITE NAME</div>
+          <div className="text-sm mb-1">Irq Al Basrah Times Square Mall</div>
+          <div className="text-xs text-gray-500 font-bold">TOTAL AREA</div>
+          <div className="text-sm mb-1">{SITE_AREA} m²</div>
+          <div className="text-xs text-gray-500 font-bold">INSTALLED POWER</div>
+          <div className="text-sm mb-1">{INSTALLED_POWER} kVA</div>
+          <div className="text-xs text-gray-500 font-bold">LAST DATA</div>
+          <div className="text-sm flex items-center">
+            <span className="mr-1">🕒</span> {lastData}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 flex flex-col items-center">
-          <h2 className="font-semibold mb-2 text-center text-gray-800">Reactive Inductive Energy</h2>
-          <div className="w-full h-48 flex items-center justify-center"><Bar data={barData} options={{ plugins: { legend: { labels: { color: '#0F172A', font: { weight: 'bold' } } } } }} /></div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4 flex flex-col items-center">
-          <h2 className="font-semibold mb-2 text-center text-gray-800">Reactive Capacitive Energy</h2>
-          <div className="w-full h-48 flex items-center justify-center"><Bar data={barData2} options={{ plugins: { legend: { labels: { color: '#0F172A', font: { weight: 'bold' } } } } }} /></div>
-        </div>
-      </div>
-
-      {/* Device Pie Charts Section */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="font-semibold mb-4 text-gray-800">Device Consumption Pie Charts</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {devicePieData.map((dev, i) => (
-            <div key={i} className="bg-gray-50 rounded-lg p-2 flex flex-col items-center border">
-              <div className="text-xs font-semibold text-gray-800 mb-1 text-center truncate w-40">{dev.name}</div>
-              <div className="w-28 h-28"><Pie data={dev.data} options={{ plugins: { legend: { display: true, labels: { color: '#0F172A', font: { weight: 'bold', size: 10 } } } } }} /></div>
-            </div>
-          ))}
+        {/* Metrics */}
+        <div className="bg-white rounded-xl shadow p-4 col-span-2 flex flex-col">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {metrics.map((m, i) => (
+              <div key={i} className="flex flex-col items-center justify-center border-r last:border-r-0 border-gray-200 py-2">
+                <span className="text-2xl mb-1">{m.icon}</span>
+                <span className="text-2xl font-bold text-gray-800">{m.value}</span>
+                <span className="text-xs text-gray-500 text-center">{m.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Horizontal Bar Chart */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="font-semibold mb-4 text-gray-800">Total Consumptions</h2>
-        <div className="w-full h-96">
-          <Bar
-            data={horizontalBarData}
-            options={{
-              indexAxis: 'y',
-              plugins: { legend: { display: false, labels: { color: '#0F172A', font: { weight: 'bold' } } } },
-              scales: { x: { beginAtZero: true, ticks: { color: '#0F172A' } }, y: { ticks: { color: '#0F172A' } } },
-            }}
-          />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        {/* Pie Chart */}
+        <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+          <div className="font-bold mb-2">Circular Consumption Chart</div>
+          <div className="w-56 h-56">
+            <Pie data={pieData} options={{ plugins: { legend: { display: true } } }} />
+          </div>
         </div>
-      </div>
-
-      {/* Data Table */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="font-semibold mb-4 text-gray-800">Monthly Consumption Energy Table</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-xs text-left border">
-            <thead className="bg-gray-100 text-gray-900">
-              <tr>
-                <th className="p-2 border">Site</th>
-                <th className="p-2 border">Total (kWh)</th>
-                <th className="p-2 border">Average (%)</th>
-                {months.map((m) => (
-                  <th key={m} className="p-2 border">{m}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tableData.map((row, i) => (
-                <tr key={i} className="odd:bg-white even:bg-gray-50 text-gray-900">
-                  <td className="p-2 border">{row.name}</td>
-                  <td className="p-2 border">{row.total}</td>
-                  <td className="p-2 border">{row.average}</td>
-                  {months.map((m) => {
-                    const key = m.toLowerCase() as keyof typeof row;
-                    return (
-                      <td key={m} className="p-2 border">{row[key] || '-'}</td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Heatmap */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="font-semibold mb-4 text-gray-800">Consumption Map</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-xs text-center">
-            <thead>
-              <tr className="text-gray-900">
-                <th className="p-2">Site</th>
-                {months.map((m) => (
-                  <th key={m} className="p-2">{m}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {heatmapData.map((row, i) => (
-                <tr key={i}>
-                  <td className="p-2 font-semibold text-gray-900">Site {i + 1}</td>
-                  {row.map((val, j) => (
-                    <td
-                      key={j}
-                      className="p-2"
-                      style={{
-                        background: `rgba(30,41,59,${val / 200 + 0.1})`,
-                        color: val > 100 ? 'white' : '#0F172A',
-                      }}
-                    >
-                      {val}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Line Chart */}
+        <div className="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+          <div className="font-bold mb-2">Consumption Chart</div>
+          <div className="w-full h-56 flex justify-center">
+            <Line data={lineData} options={{
+              responsive: true,
+              plugins: { legend: { display: true } },
+              scales: {
+                y: { beginAtZero: true, max: 200, title: { display: true, text: 'Power (kW)' } },
+                x: {},
+              },
+            }} />
+          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

@@ -1,7 +1,7 @@
 // VirtualDeviceStore.ts (web)
 // Handles all Virtual device logic for the web frontend, separated from DeviceStore
 
-import { Device } from "./DeviceStore";
+import { geocodeAddress, reverseGeocode, Device } from "./DeviceStore";
 import { useEffect, useState } from 'react';
 
 export let devices: Device[] = [];
@@ -31,7 +31,7 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.1.36:8080";
+  const serverUrl = "ws://192.168.31.25:8080";
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {};
   ws.onmessage = (event) => {
@@ -55,6 +55,10 @@ const initializeWebSocket = () => {
           validDevicePaths.add(`Virtual.${deviceName}.check2`);
           validDevicePaths.add(`Virtual.${deviceName}.stopBit1`);
           validDevicePaths.add(`Virtual.${deviceName}.stopBit2`);
+          validDevicePaths.add(`Virtual.${deviceName}.volt`);
+          validDevicePaths.add(`Virtual.${deviceName}.curr`);
+          validDevicePaths.add(`Virtual.${deviceName}.energy`);
+          validDevicePaths.add(`Virtual.${deviceName}.power`);
         });
         devicePathMap = {};
         wdxDevices.forEach((device) => {
@@ -156,34 +160,25 @@ export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device[
 };
 
 export const updateDeviceFromWDXData = (path: string, value: any) => {
-  const deviceName = path.split(".").pop() || "";
+  // Parse device name from path: 'Virtual.Device1.volt' => 'Device1'
+  const parts = path.split(".");
+  const deviceName = parts.length > 1 ? parts[1] : "";
   const device = devices.find((d) => d.name === `Analyzer - ${deviceName}`);
   if (device && value) {
     let hasConfigChange = false;
     const updatedConfig = { ...device.config };
     Object.entries(value).forEach(([key, val]) => {
       if (typeof val === "number") {
-        if (
-          key === "Addr1" || key === "addr1" ||
-          key === "Baud1" || key === "baud1" ||
-          key === "Check Digit 1" || key === "check1" ||
-          key === "Stop Bit 1" || key === "stopBit1" ||
-          key === "Baud2" || key === "baud2" ||
-          key === "Check Digit 2" || key === "check2" ||
-          key === "Stop Bit 2" || key === "stopBit2"
-        ) {
-          if (key === "Addr1" || key === "addr1") { if (updatedConfig.addr1 !== val) { updatedConfig.addr1 = val; hasConfigChange = true; } }
-          else if (key === "Baud1" || key === "baud1") { if (updatedConfig.baud1 !== val) { updatedConfig.baud1 = val; hasConfigChange = true; } }
-          else if (key === "Check Digit 1" || key === "check1") { if (updatedConfig.check1 !== val) { updatedConfig.check1 = val; hasConfigChange = true; } }
-          else if (key === "Stop Bit 1" || key === "stopBit1") { if (updatedConfig.stopBit1 !== val) { updatedConfig.stopBit1 = val; hasConfigChange = true; } }
-          else if (key === "Baud2" || key === "baud2") { if (updatedConfig.baud2 !== val) { updatedConfig.baud2 = val; hasConfigChange = true; } }
-          else if (key === "Check Digit 2" || key === "check2") { if (updatedConfig.check2 !== val) { updatedConfig.check2 = val; hasConfigChange = true; } }
-          else if (key === "Stop Bit 2" || key === "stopBit2") { if (updatedConfig.stopBit2 !== val) { updatedConfig.stopBit2 = val; hasConfigChange = true; } }
+        // Always update config for live values and config keys
+        if (updatedConfig[key] !== val) {
+          updatedConfig[key] = val;
+          hasConfigChange = true;
         }
       }
     });
     if (hasConfigChange) {
-      device.config = updatedConfig;
+      device.config = updatedConfig; // Replace object reference for reactivity
+      console.log(`[WDX] Updated device '${device.name}' config:`, updatedConfig);
       notifyListeners();
     }
   }
@@ -210,6 +205,54 @@ export const getLogs = (deviceName: string) => {
   );
 };
 
+// Simulate device data every 5 seconds
+type SimKey = 'volt' | 'curr' | 'energy' | 'power';
+const SIM_KEYS: SimKey[] = ['volt', 'curr', 'energy', 'power'];
+
+declare global {
+  interface Window {
+    __VIRTUAL_SIM_STARTED__?: boolean;
+  }
+}
+
+function sendSimulatedData(deviceName: string, key: SimKey, value: number) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  let path = (key === "volt" || key === "curr")
+    ? `Virtual.${deviceName}.${key}`
+    : `Virtual.${deviceName}`;
+  ws.send(
+    JSON.stringify({
+      type: "setConfig",
+      path,
+      config: { [key]: value },
+    })
+  );
+}
+
+function startSimulationInterval() {
+  setInterval(() => {
+    devices.forEach((device: Device) => {
+      SIM_KEYS.forEach((key) => {
+        let value = 0;
+        switch (key) {
+          case 'volt': value = 200 + Math.random() * 50; break;
+          case 'curr': value = Math.random() * 10; break;
+          case 'energy': value = (device.config.energy || 0) + Math.random() * 100; break;
+          case 'power': value = Math.random() * 100; break;
+        }
+        sendSimulatedData(device.name.replace('Analyzer - ', ''), key, value);
+      });
+    });
+  }, 5000);
+}
+
+if (typeof window !== 'undefined') {
+  if (!(window as Window).__VIRTUAL_SIM_STARTED__) {
+    (window as Window).__VIRTUAL_SIM_STARTED__ = true;
+    setTimeout(() => startSimulationInterval(), 3000);
+  }
+}
+
 // React hook to get devices with subscription
 export function useDevices() {
   const [deviceList, setDeviceList] = useState<Device[]>([...devices]);
@@ -221,3 +264,31 @@ export function useDevices() {
   }, []);
   return { devices: deviceList };
 }
+
+export const addDevice = async (device: Device) => {
+  let lat = device.latitude;
+  let lng = device.longitude;
+  let address = device.address;
+  if (address && (!lat || !lng)) {
+    const geo = await geocodeAddress(address);
+    if (geo) {
+      lat = geo.latitude;
+      lng = geo.longitude;
+    }
+  } else if ((!address || address === "") && lat && lng) {
+    const addr = await reverseGeocode(lat, lng);
+    if (addr) address = addr;
+  }
+  const newDevice = { ...device, latitude: lat, longitude: lng, address };
+  devices.push(newDevice);
+  ws?.send(
+    JSON.stringify({
+      type: "addDevice",
+      path: newDevice.name,
+      relative_path: "Virtual",
+      device: newDevice,
+    })
+  );
+  console.log("New device sent at", new Date().toISOString(), ":", newDevice);
+  notifyListeners();
+};
