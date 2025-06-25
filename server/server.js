@@ -137,7 +137,7 @@ const broadcast = (message) => {
 const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
     {
-      url: "ws://192.168.31.25:7081/wdx/ws",
+      url: "ws://192.168.31.70:7081/wdx/ws",
       reconnectAttempts: 5,
       reconnectDelay: 1000,
     },
@@ -147,14 +147,14 @@ const initializeWDXClient = async () => {
   // Attach DataService to client for backend operations, passing the client instance
   client.dataService = new DataService(client);
   client.instanceService = new WDXWSClient.WDX.WS.Client.JS.Service.InstanceService(client);
-  client.instanceService2 = new Services.InstanceService(client);
+
 
   client.runtimeService =
     new WDXWSClient.WDX.WS.Client.JS.Service.RuntimeService(client);
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.25:7081/wdx/ws at",
+      "Connecting to WDX server at ws://192.168.31.70:7081/wdx/ws at",
       new Date().toISOString()
     );
     await client.connect();

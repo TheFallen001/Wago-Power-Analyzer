@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { geocodeAddress, reverseGeocode } from "../utils/DeviceStore";
-import {addVirtualDevice} from "../utils/VirtualDeviceStore";
-import {addModbusDevice} from "../utils/ModbusDeviceStore";
+import { addVirtualDevice } from "../utils/VirtualDeviceStore";
+import { addModbusDevice } from "../utils/ModbusDeviceStore";
 import MapView, {
   MapPressEvent,
   Marker,
@@ -41,7 +41,7 @@ const AddDeviceScreen = () => {
   const handleMapPress = async (event: MapPressEvent) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLocation({ latitude, longitude });
-   
+
     const addr = await reverseGeocode(latitude, longitude);
     if (addr) {
       setAddress(addr);
@@ -56,7 +56,7 @@ const AddDeviceScreen = () => {
       );
       return;
     }
-    
+
     const newDevice = {
       id: Date.now().toString(),
       name,
@@ -78,15 +78,13 @@ const AddDeviceScreen = () => {
         stopBit2: 1, // Default: 1.5 stop bit
       },
     };
-    
 
-    if(newDevice.deviceType = deviceOptions[0])
-    {
+    if ((newDevice.deviceType = deviceOptions[0])) {
       // addVirtualDevice(newDevice);
-      console.log("V")
-    }else{
+      console.log("V");
+    } else {
       // addModbusDevice(newDevice);
-      console.log("M")
+      console.log("M");
     }
     Alert.alert("Success", `Device "${name}" added successfully!`);
 
@@ -98,10 +96,9 @@ const AddDeviceScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Add a New Power Analyzer</Text>
-
+    <View style={styles.container}>
+      <Text style={styles.title}>Add a New Power Analyzer</Text>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <Text style={styles.label}>Device Name *</Text>
         <TextInput
           style={styles.input}
@@ -168,22 +165,24 @@ const AddDeviceScreen = () => {
         </View>
 
         <Button title="Add Device" onPress={handleAddDevice} color="#28a745" />
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 40,
+    padding: 30,
     backgroundColor: "#fff",
   },
   title: {
-    fontSize: 24,
+    position: "relative",
+    paddingTop: 12, // pt-12 = 12 * 4 = 48
+    fontSize: 24, // text-2xl ≈ 24px
     fontWeight: "bold",
-    marginBottom: 20,
     textAlign: "center",
+    marginBottom: 20,
   },
   label: {
     paddingTop: 8,

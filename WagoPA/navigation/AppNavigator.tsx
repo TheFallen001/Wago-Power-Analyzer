@@ -1,50 +1,27 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import SplashScreen from '../screens/SplashScreen';
-import BottomTabNavigator from './BottomTabNavigator';
-import ConfigureScreen from '../screens/ConfigureScreen';
-import { RootParamList } from './types';
-import LogScreen from '../screens/LogsScreen';
+import { NavigationContainer } from "@react-navigation/native";
+import * as React from "react";
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import StackNavigator from "./StackNavigator";
+import SplashScreen from "../screens/SplashScreen";
 
-
-const Stack = createStackNavigator<RootParamList>();
+const Drawer = createDrawerNavigator();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="SplashScreen">
-        <Stack.Screen
+      <Drawer.Navigator initialRouteName="SplashScreen">
+        <Drawer.Screen
           name="SplashScreen"
           component={SplashScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="MainTabs"
-          component={BottomTabNavigator}
+
+        <Drawer.Screen
+          name="Home"
+          component={StackNavigator}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="LogsScreen"
-          component={LogScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Configure"
-          component={ConfigureScreen}
-          options={{ headerShown: true, title: 'Configure Device' }}
-        />
-        <Stack.Screen
-          name="DeviceDetail"
-          component={require('../screens/DeviceDetailScreen').default}
-          options={{ headerShown: true, title: 'Device Details' }}
-        />
-        <Stack.Screen
-          name="AlarmScreen"
-          component={require('../screens/AlarmScreen').default}
-          options={{ headerShown: true, title: 'Alarm History' }}
-        />
-      </Stack.Navigator>
+      </Drawer.Navigator>
     </NavigationContainer>
   );
 };
