@@ -49,7 +49,7 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = `ws://${IPADDRESS}:8080`;
+  const serverUrl = "ws://localhost:8080";
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {};
   ws.onmessage = (event) => {
