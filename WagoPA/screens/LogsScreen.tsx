@@ -1,4 +1,11 @@
-import { View, Text, Button, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  TouchableOpacity,
+  ActivityIndicatorBase,
+  ActivityIndicator,
+} from "react-native";
 import tw from "twrnc";
 import React, { useEffect, useState } from "react";
 import { getLogs } from "../utils/VirtualDeviceStore";
@@ -15,7 +22,7 @@ export interface LogItem {
   };
   channel: string;
   title: string;
-  messsage: string; 
+  messsage: string;
   instanceUuid: string;
 }
 
@@ -29,11 +36,18 @@ interface LogResponse {
 const LogsScreen = () => {
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [selectedDevice, setSelectedDevice] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     // useEffect(() => {
+    setLoading(true);
     console.log("Getting Logs...");
-    getLogs(selectedDevice);
+    try {
+      await getLogs(selectedDevice);
+    } catch (e) {
+      console.error("Log fetch error: ", e);
+    }
+
     // }, [setSelectedDevice]);
   };
 
@@ -42,12 +56,13 @@ const LogsScreen = () => {
       if (logData.length > 0) {
         const data: LogResponse = JSON.parse(logData);
         setLogs(data.items);
+        setLoading(false);
       }
     } catch (e) {
       console.error("Error:", e);
+      setLoading(false);
     }
   }, [logData]);
- 
 
   return (
     <View style={tw`relative flex-1 bg-white pt-10 px-5 gap-10`}>
@@ -65,13 +80,19 @@ const LogsScreen = () => {
         <Text>Confirm</Text>
       </TouchableOpacity>
       <View style={tw`flex bg-gray-100 rounded-2xl h-110`}>
-        <FlatList
-        data={logs}
-        keyExtractor={(item, index) => `${item.date.timestamp}-${index}`}
-        renderItem={({ item }) => <LogItemComponent log={item} />}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" color="#10b981" />
+        ) : (
+          <FlatList
+            data={logs}
+            keyExtractor={(item, index) => `${item.date.timestamp}-${index}`}
+            renderItem={({ item }) => <LogItemComponent log={item} />}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+          />
+        )}
       </View>
-      
     </View>
   );
 };

@@ -1,25 +1,51 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Dimensions } from 'react-native';
-import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
-import { RootParamList } from '../navigation/types';
-import { devices, voltageChartDataMap, currentChartDataMap, subscribeToAlarms, VOLTAGE_ALARM_RANGE, CURRENT_ALARM_RANGE } from '../utils/VirtualDeviceStore';
-import { geocodeAddress, reverseGeocode } from '../utils/DeviceStore';
-import tw from 'twrnc';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import Svg, { Polyline, Line, Circle, Defs, LinearGradient, Stop, Rect, Text as SvgText } from 'react-native-svg';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  Dimensions,
+} from "react-native";
+import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
+import { RootParamList } from "../navigation/types";
+import {
+  devices,
+  voltageChartDataMap,
+  currentChartDataMap,
+  subscribeToAlarms,
+  VOLTAGE_ALARM_RANGE,
+  CURRENT_ALARM_RANGE,
+} from "../utils/VirtualDeviceStore";
+import { geocodeAddress, reverseGeocode } from "../utils/DeviceStore";
+import tw from "twrnc";
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import Svg, {
+  Polyline,
+  Line,
+  Circle,
+  Defs,
+  LinearGradient,
+  Stop,
+  Rect,
+  Text as SvgText,
+} from "react-native-svg";
+import { Platform } from "react-native";
+import { updateAddress } from "../utils/VirtualDeviceStore";
 
 // Simulated voltage and consumption data for the graphs
-const chartWidth = Dimensions.get('window').width - 40; // padding
+const chartWidth = Dimensions.get("window").width - 40; // padding
 const chartHeight = 128;
 
 const DeviceDetailScreen = () => {
-  const route = useRoute<RouteProp<RootParamList, 'DeviceDetail'>>();
+  const route = useRoute<RouteProp<RootParamList, "DeviceDetail">>();
   const navigation = useNavigation();
   const { deviceId } = route.params;
   const device = devices.find((d) => d.name === deviceId);
 
   // Address editing state
-  const [address, setAddress] = useState(device?.address || '');
+  const [address, setAddress] = useState(device?.address || "");
   const [isSaving, setIsSaving] = useState(false);
   const [location, setLocation] = useState({
     latitude: device?.latitude || 41.0,
@@ -32,12 +58,19 @@ const DeviceDetailScreen = () => {
     longitudeDelta: 0.01,
   });
   // Chart state from DeviceStore (per device)
-  const [voltageData, setVoltageData] = useState(device ? [...(voltageChartDataMap[device.id] || [])] : []);
-  const [consumptionData, setConsumptionData] = useState(device ? [...(currentChartDataMap[device.id] || [])] : []);
+  const [voltageData, setVoltageData] = useState(
+    device ? [...(voltageChartDataMap[device.id] || [])] : []
+  );
+  const [consumptionData, setConsumptionData] = useState(
+    device ? [...(currentChartDataMap[device.id] || [])] : []
+  );
 
   // Alarm state
   const [alarmActive, setAlarmActive] = useState(false); // Default false, only set true when alarm triggers
-  const [alarmTypes, setAlarmTypes] = useState<{ volt: boolean; curr: boolean }>({ volt: false, curr: false });
+  const [alarmTypes, setAlarmTypes] = useState<{
+    volt: boolean;
+    curr: boolean;
+  }>({ volt: false, curr: false });
 
   // Subscribe to chart data updates every 2s
   React.useEffect(() => {
@@ -61,8 +94,12 @@ const DeviceDetailScreen = () => {
 
   // Check if any voltage or current exceeds the threshold
   React.useEffect(() => {
-    let overVoltage = voltageData.some((v) => v < VOLTAGE_ALARM_RANGE.min || v > VOLTAGE_ALARM_RANGE.max);
-    let overCurrent = consumptionData.some((c) => c < CURRENT_ALARM_RANGE.min || c > CURRENT_ALARM_RANGE.max);
+    let overVoltage = voltageData.some(
+      (v) => v < VOLTAGE_ALARM_RANGE.min || v > VOLTAGE_ALARM_RANGE.max
+    );
+    let overCurrent = consumptionData.some(
+      (c) => c < CURRENT_ALARM_RANGE.min || c > CURRENT_ALARM_RANGE.max
+    );
     setAlarmActive(overVoltage || overCurrent);
     setAlarmTypes({ volt: overVoltage, curr: overCurrent });
   }, [voltageData, consumptionData, device?.status]);
@@ -84,10 +121,17 @@ const DeviceDetailScreen = () => {
       device.latitude = geo.latitude;
       device.longitude = geo.longitude;
       setLocation({ latitude: geo.latitude, longitude: geo.longitude });
-      setRegion({ ...region, latitude: geo.latitude, longitude: geo.longitude });
-      Alert.alert('Success', 'Address updated and location set.');
+      setRegion({
+        ...region,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+      });
+      let temp = device.name.trim().split(/\s+/);
+      updateAddress({ location, deviceName: temp[temp.length - 1] });
+      console.log();
+      Alert.alert("Success", "Address updated and location set.");
     } else {
-      Alert.alert('Error', 'Could not find this address.');
+      Alert.alert("Error", "Could not find this address.");
     }
     setIsSaving(false);
   };
@@ -103,9 +147,12 @@ const DeviceDetailScreen = () => {
       device.address = addr;
       device.latitude = latitude;
       device.longitude = longitude;
-      Alert.alert('Location Updated', 'Address and coordinates updated from map.');
+      // Alert.alert(
+      //   "Location Updated",
+      //   "Address and coordinates updated from map."
+      // );
     } else {
-      Alert.alert('Error', 'Could not resolve address for this location.');
+      Alert.alert("Error", "Could not resolve address for this location.");
     }
   };
 
@@ -116,7 +163,11 @@ const DeviceDetailScreen = () => {
         const geo = await geocodeAddress(address);
         if (geo) {
           setLocation({ latitude: geo.latitude, longitude: geo.longitude });
-          setRegion({ ...region, latitude: geo.latitude, longitude: geo.longitude });
+          setRegion({
+            ...region,
+            latitude: geo.latitude,
+            longitude: geo.longitude,
+          });
         }
       }
     }, 600);
@@ -125,7 +176,15 @@ const DeviceDetailScreen = () => {
   }, [address]);
 
   // Helper to render a line graph with out-of-range segments in red
-  function CustomLineGraph({ data, min, max, alarmRange, color, alarmColor, label }: {
+  function CustomLineGraph({
+    data,
+    min,
+    max,
+    alarmRange,
+    color,
+    alarmColor,
+    label,
+  }: {
     data: number[];
     min: number;
     max: number;
@@ -140,7 +199,10 @@ const DeviceDetailScreen = () => {
     // Normalize data to SVG coordinates
     const points: [number, number][] = data.map((v, i) => [
       (i / (data.length - 1)) * (width - 16) + 8, // x with padding
-      height - ((Math.max(min, Math.min(max, v)) - min) / (max - min)) * (height - 24) - 8 // y with padding
+      height -
+        ((Math.max(min, Math.min(max, v)) - min) / (max - min)) *
+          (height - 24) -
+        8, // y with padding
     ]);
     // Split into segments: normal and alarm
     const segments = [];
@@ -155,20 +217,34 @@ const DeviceDetailScreen = () => {
       } else if (isAlarm === currentAlarm) {
         current.push(points[i] as [number, number]);
       } else {
-        segments.push({ alarm: currentAlarm, pts: [...current, points[i] as [number, number]] });
-        current = [points[i - 1] as [number, number], points[i] as [number, number]];
+        segments.push({
+          alarm: currentAlarm,
+          pts: [...current, points[i] as [number, number]],
+        });
+        current = [
+          points[i - 1] as [number, number],
+          points[i] as [number, number],
+        ];
         currentAlarm = isAlarm;
       }
     }
-    if (current.length > 1) segments.push({ alarm: currentAlarm, pts: current });
+    if (current.length > 1)
+      segments.push({ alarm: currentAlarm, pts: current });
 
     // Gradient for area fill
     const gradientId = `${label}-gradient`;
-    const areaPoints = points.map(([x, y]) => `${x},${y}`).join(' ') + ` ${points[points.length-1][0]},${height-8} ${points[0][0]},${height-8}`;
+    const areaPoints =
+      points.map(([x, y]) => `${x},${y}`).join(" ") +
+      ` ${points[points.length - 1][0]},${height - 8} ${points[0][0]},${
+        height - 8
+      }`;
 
     // Axis labels
     const yTicks = 4;
-    const yLabels = Array.from({length: yTicks+1}, (_,i) => min + (i*(max-min)/yTicks));
+    const yLabels = Array.from(
+      { length: yTicks + 1 },
+      (_, i) => min + (i * (max - min)) / yTicks
+    );
 
     return (
       <Svg width={width} height={height}>
@@ -190,15 +266,25 @@ const DeviceDetailScreen = () => {
           const y = height - ((v - min) / (max - min)) * (height - 24) - 8;
           return (
             <>
-              <Line key={`grid-${i}`} x1={8} x2={width-8} y1={y} y2={y} stroke="#e5e7eb" strokeWidth={1} />
+              <Line
+                key={`grid-${i}`}
+                x1={8}
+                x2={width - 8}
+                y1={y}
+                y2={y}
+                stroke="#e5e7eb"
+                strokeWidth={1}
+              />
               <SvgText
                 key={`label-${i}`}
                 x={0}
-                y={y+4}
+                y={y + 4}
                 fontSize={"10"}
                 fill="#6b7280"
                 textAnchor="start"
-              >{Math.round(v)}</SvgText>
+              >
+                {Math.round(v)}
+              </SvgText>
             </>
           );
         })}
@@ -206,7 +292,7 @@ const DeviceDetailScreen = () => {
         {segments.map((seg, i) => (
           <Polyline
             key={i}
-            points={seg.pts.map(([x, y]) => `${x},${y}`).join(' ')}
+            points={seg.pts.map(([x, y]) => `${x},${y}`).join(" ")}
             fill="none"
             stroke={seg.alarm ? alarmColor : color}
             strokeWidth={3}
@@ -225,8 +311,8 @@ const DeviceDetailScreen = () => {
               cx={x}
               cy={y}
               r={isAlarm ? 7 : 3}
-              fill={isAlarm ? '#dc2626' : '#fff'}
-              stroke={isAlarm ? '#dc2626' : '#374151'}
+              fill={isAlarm ? "#dc2626" : "#fff"}
+              stroke={isAlarm ? "#dc2626" : "#374151"}
               strokeWidth={isAlarm ? 3 : 1}
             />
           );
@@ -253,24 +339,30 @@ const DeviceDetailScreen = () => {
           onPress={handleSaveAddress}
           disabled={isSaving}
         >
-          <Text style={tw`text-white`}>{isSaving ? 'Saving...' : 'Save Address'}</Text>
+          <Text style={tw`text-white`}>
+            {isSaving ? "Saving..." : "Save Address"}
+          </Text>
         </TouchableOpacity>
       </View>
       <Text style={tw`mb-1`}>Or pick location on map:</Text>
-      <View style={tw`my-2 bg-gray-100 rounded items-center overflow-hidden w-full`}>
-        <MapView
-          provider={PROVIDER_GOOGLE}
-          ref={undefined}
-          style={{ width: '100%', height: 128 }}
-          region={region}
-          onPress={handleMapPress}
-          pointerEvents={isSaving ? 'none' : 'auto'}
-          onRegionChangeComplete={setRegion}
-        >
-          <Marker coordinate={location} />
-        </MapView>
+      <View
+        style={tw`my-2 bg-gray-100 rounded items-center overflow-hidden w-full`}
+      >
+        {Platform.OS !== "web" && (
+          <MapView
+            provider={PROVIDER_GOOGLE}
+            ref={undefined}
+            style={{ width: "100%", height: 128 }}
+            region={region}
+            onPress={handleMapPress}
+            pointerEvents={isSaving ? "none" : "auto"}
+            onRegionChangeComplete={setRegion}
+          >
+            <Marker coordinate={location} />
+          </MapView>
+        )}
       </View>
-      
+
       {/* Voltage Graph (Live) */}
       <View style={tw`my-5 bg-gray-100 p-4 rounded items-center w-full`}>
         <Text style={tw`font-bold mb-2`}>Voltage Graph (Live)</Text>
@@ -285,12 +377,16 @@ const DeviceDetailScreen = () => {
         />
         <View style={tw`flex-row justify-between w-full mt-2`}>
           {voltageData.map((v, i) => (
-            <Text key={i} style={tw`text-xs text-gray-500`}>{v}</Text>
+            <Text key={i} style={tw`text-xs text-gray-500`}>
+              {v}
+            </Text>
           ))}
         </View>
       </View>
       <Text style={tw`mb-1`}>Voltage Range: {device.voltageRange}</Text>
-      <Text style={tw`mb-1`}>Status: {alarmActive ? 'ALARM' : device.status}</Text>
+      <Text style={tw`mb-1`}>
+        Status: {alarmActive ? "ALARM" : device.status}
+      </Text>
       {/* Consumption Graph (Live) */}
       <View style={tw`my-5 bg-gray-100 p-4 rounded items-center w-full`}>
         <Text style={tw`font-bold mb-2`}>Consumption Graph (Live)</Text>
@@ -305,12 +401,14 @@ const DeviceDetailScreen = () => {
         />
         <View style={tw`flex-row justify-between w-full mt-2`}>
           {consumptionData.map((c, i) => (
-            <Text key={i} style={tw`text-xs text-gray-500`}>{c.toFixed(2)}</Text>
+            <Text key={i} style={tw`text-xs text-gray-500`}>
+              {c.toFixed(2)}
+            </Text>
           ))}
         </View>
       </View>
       {/* Alarm Button */}
-      {(alarmActive && (alarmTypes.volt || alarmTypes.curr)) && (
+      {alarmActive && (alarmTypes.volt || alarmTypes.curr) && (
         <View style={tw`my-2`}>
           <TouchableOpacity
             style={tw`bg-red-600 py-4 px-8 rounded-lg items-center w-full`}
@@ -319,10 +417,10 @@ const DeviceDetailScreen = () => {
           >
             <Text style={tw`text-white text-xl font-bold`}>
               {alarmTypes.volt && alarmTypes.curr
-                ? 'ALARM: Voltage & Current Out of Range!'
+                ? "ALARM: Voltage & Current Out of Range!"
                 : alarmTypes.volt
-                ? 'ALARM: Voltage Out of Range!'
-                : 'ALARM: Current Out of Range!'}
+                ? "ALARM: Voltage Out of Range!"
+                : "ALARM: Current Out of Range!"}
             </Text>
           </TouchableOpacity>
         </View>

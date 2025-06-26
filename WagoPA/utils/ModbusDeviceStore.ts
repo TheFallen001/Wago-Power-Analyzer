@@ -1,7 +1,7 @@
 // ModbusDeviceStore.ts
 // Handles all Modbus device logic for the frontend, separated from DeviceStore
 
-import { Device } from "./DeviceStore";
+import { Device,IPADDRESS } from "./DeviceStore";
 
 export type ModbusConfig = {
   Addr1: number;
@@ -49,7 +49,7 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.31.31:8080";
+  const serverUrl = `ws://${IPADDRESS}:8080`;
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {};
   ws.onmessage = (event) => {

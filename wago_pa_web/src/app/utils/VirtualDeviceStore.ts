@@ -2,10 +2,10 @@
 // Handles all Virtual device logic for the web frontend, separated from DeviceStore
 
 import { geocodeAddress, reverseGeocode, Device } from "./DeviceStore";
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 export let devices: Device[] = [];
-export let logData: any[] = [];
+export let logData: string = "";
 let devicePathMap: { [key: string]: string } = {};
 let ws: WebSocket | null = null;
 let isInitialized = false;
@@ -13,7 +13,9 @@ const listeners: Array<(devices: Device[]) => void> = [];
 const liveValueListeners: Array<(devices: Device[]) => void> = [];
 let validDevicePaths: Set<string> = new Set();
 
-export const subscribeToDeviceUpdates = (callback: (devices: Device[]) => void) => {
+export const subscribeToDeviceUpdates = (
+  callback: (devices: Device[]) => void
+) => {
   listeners.push(callback);
   if (isInitialized) callback(devices);
   return () => {
@@ -22,7 +24,9 @@ export const subscribeToDeviceUpdates = (callback: (devices: Device[]) => void) 
   };
 };
 
-export const subscribeToLiveValueUpdates = (callback: (devices: Device[]) => void) => {
+export const subscribeToLiveValueUpdates = (
+  callback: (devices: Device[]) => void
+) => {
   liveValueListeners.push(callback);
   callback(devices);
   return () => {
@@ -45,14 +49,17 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.31.25:8080";
+  const serverUrl = "ws://192.168.31.70:8080";
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {};
   ws.onmessage = (event) => {
     let message;
     try {
       message = JSON.parse(event.data);
-    } catch (error) { return; }
+    } catch (error) {
+      console.error(error);
+      return;
+    }
     if (message.type === "schema") {
       const wdxDevices = message.devices || [];
       if (!Array.isArray(wdxDevices)) return;
@@ -93,7 +100,10 @@ const initializeWebSocket = () => {
             },
           }))
         );
-        lastSchemaDevices = wdxDevices.map((d) => ({ name: d.name, config: d.config }));
+        lastSchemaDevices = wdxDevices.map((d) => ({
+          name: d.name,
+          config: d.config,
+        }));
         isInitialized = true;
         notifySchemaListeners();
       }
@@ -115,8 +125,13 @@ const initializeWebSocket = () => {
 
 initializeWebSocket();
 
-export const updateDeviceConfig = (idOrName: string, config: Device["config"]) => {
-  let device = devices.find((d) => d.id === idOrName) || devices.find((d) => d.name === idOrName);
+export const updateDeviceConfig = (
+  idOrName: string,
+  config: Device["config"]
+) => {
+  const device =
+    devices.find((d) => d.id === idOrName) ||
+    devices.find((d) => d.name === idOrName);
   if (device) {
     device.config = config;
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -140,7 +155,9 @@ export const updateDeviceConfig = (idOrName: string, config: Device["config"]) =
   }
 };
 
-export const updateDevicesFromWDX = (wdxDevices: { name: string; config: Device["config"] }[]) => {
+export const updateDevicesFromWDX = (
+  wdxDevices: { name: string; config: Device["config"] }[]
+) => {
   wdxDevices.forEach((wdxDevice, index) => {
     const deviceName = wdxDevice.name;
     const fullName = `Analyzer - ${deviceName}`;
@@ -186,13 +203,20 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
       if (typeof val === "number") {
         // Config keys (only these trigger notifyListeners)
         if (
-          key === "Addr1" || key === "addr1" ||
-          key === "Baud1" || key === "baud1" ||
-          key === "Check Digit 1" || key === "check1" ||
-          key === "Stop Bit 1" || key === "stopBit1" ||
-          key === "Baud2" || key === "baud2" ||
-          key === "Check Digit 2" || key === "check2" ||
-          key === "Stop Bit 2" || key === "stopBit2"
+          key === "Addr1" ||
+          key === "addr1" ||
+          key === "Baud1" ||
+          key === "baud1" ||
+          key === "Check Digit 1" ||
+          key === "check1" ||
+          key === "Stop Bit 1" ||
+          key === "stopBit1" ||
+          key === "Baud2" ||
+          key === "baud2" ||
+          key === "Check Digit 2" ||
+          key === "check2" ||
+          key === "Stop Bit 2" ||
+          key === "stopBit2"
         ) {
           if (updatedConfig[key] !== val) {
             updatedConfig[key] = val;
@@ -219,7 +243,9 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
 };
 
 let lastSchemaDevices: { name: string; config: Device["config"] }[] = [];
-function isSchemaChanged(newSchema: { name: string; config: Device["config"] }[]) {
+function isSchemaChanged(
+  newSchema: { name: string; config: Device["config"] }[]
+) {
   if (lastSchemaDevices.length !== newSchema.length) return true;
   for (let i = 0; i < newSchema.length; i++) {
     if (lastSchemaDevices[i].name !== newSchema[i].name) return true;
@@ -240,8 +266,8 @@ export const getLogs = (deviceName: string) => {
 };
 
 // Simulate device data every 5 seconds
-type SimKey = 'volt' | 'curr' | 'energy' | 'power';
-const SIM_KEYS: SimKey[] = ['volt', 'curr', 'energy', 'power'];
+type SimKey = "volt" | "curr" | "energy" | "power";
+const SIM_KEYS: SimKey[] = ["volt", "curr", "energy", "power"];
 
 declare global {
   interface Window {
@@ -251,9 +277,10 @@ declare global {
 
 function sendSimulatedData(deviceName: string, key: SimKey, value: number) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  let path = (key === "volt" || key === "curr")
-    ? `Virtual.${deviceName}.${key}`
-    : `Virtual.${deviceName}`;
+  let path =
+    key === "volt" || key === "curr"
+      ? `Virtual.${deviceName}.${key}`
+      : `Virtual.${deviceName}`;
   ws.send(
     JSON.stringify({
       type: "setConfig",
@@ -269,18 +296,26 @@ function startSimulationInterval() {
       SIM_KEYS.forEach((key) => {
         let value = 0;
         switch (key) {
-          case 'volt': value = 200 + Math.random() * 50; break;
-          case 'curr': value = Math.random() * 10; break;
-          case 'energy': value = (device.config.energy || 0) + Math.random() * 100; break;
-          case 'power': value = Math.random() * 100; break;
+          case "volt":
+            value = 200 + Math.random() * 50;
+            break;
+          case "curr":
+            value = Math.random() * 10;
+            break;
+          case "energy":
+            value = (device.config.energy || 0) + Math.random() * 100;
+            break;
+          case "power":
+            value = Math.random() * 100;
+            break;
         }
-        sendSimulatedData(device.name.replace('Analyzer - ', ''), key, value);
+        sendSimulatedData(device.name.replace("Analyzer - ", ""), key, value);
       });
     });
   }, 5000);
 }
 
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   if (!(window as Window).__VIRTUAL_SIM_STARTED__) {
     (window as Window).__VIRTUAL_SIM_STARTED__ = true;
     setTimeout(() => startSimulationInterval(), 3000);

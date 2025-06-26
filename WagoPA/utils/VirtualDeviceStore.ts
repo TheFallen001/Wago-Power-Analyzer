@@ -1,7 +1,7 @@
 // VirtualDeviceStore.ts
 // Contains all logic and functions related to Virtual device instances (path: Virtual)
 
-import { Device } from "./DeviceStore";
+import { Device,IPADDRESS } from "./DeviceStore";
 
 // --- Virtual Device Path Helpers ---
 let validDevicePaths: Set<string> = new Set();
@@ -111,7 +111,7 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.31.44:8080";
+  const serverUrl = `ws://${IPADDRESS}:8080`;
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {
     console.log("OnOpen was called");
@@ -177,8 +177,6 @@ const initializeWebSocket = () => {
       updateDeviceFromWDXData(message.path, message.config);
     } else if (message.type === "updateLogs") {
       logData = message.logs;
-     
-      
     }
   };
   ws.onclose = () => {
@@ -272,23 +270,62 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
       if (typeof val === "number") {
         // Only update config keys for configuration, but always update live values (volt, curr, power, energy)
         if (
-          key === "Addr1" || key === "addr1" ||
-          key === "Baud1" || key === "baud1" ||
-          key === "Check Digit 1" || key === "check1" ||
-          key === "Stop Bit 1" || key === "stopBit1" ||
-          key === "Baud2" || key === "baud2" ||
-          key === "Check Digit 2" || key === "check2" ||
-          key === "Stop Bit 2" || key === "stopBit2"
+          key === "Addr1" ||
+          key === "addr1" ||
+          key === "Baud1" ||
+          key === "baud1" ||
+          key === "Check Digit 1" ||
+          key === "check1" ||
+          key === "Stop Bit 1" ||
+          key === "stopBit1" ||
+          key === "Baud2" ||
+          key === "baud2" ||
+          key === "Check Digit 2" ||
+          key === "check2" ||
+          key === "Stop Bit 2" ||
+          key === "stopBit2"
         ) {
-          if (key === "Addr1" || key === "addr1") { if (updatedConfig.addr1 !== val) { updatedConfig.addr1 = val; hasConfigChange = true; } }
-          else if (key === "Baud1" || key === "baud1") { if (updatedConfig.baud1 !== val) { updatedConfig.baud1 = val; hasConfigChange = true; } }
-          else if (key === "Check Digit 1" || key === "check1") { if (updatedConfig.check1 !== val) { updatedConfig.check1 = val; hasConfigChange = true; } }
-          else if (key === "Stop Bit 1" || key === "stopBit1") { if (updatedConfig.stopBit1 !== val) { updatedConfig.stopBit1 = val; hasConfigChange = true; } }
-          else if (key === "Baud2" || key === "baud2") { if (updatedConfig.baud2 !== val) { updatedConfig.baud2 = val; hasConfigChange = true; } }
-          else if (key === "Check Digit 2" || key === "check2") { if (updatedConfig.check2 !== val) { updatedConfig.check2 = val; hasConfigChange = true; } }
-          else if (key === "Stop Bit 2" || key === "stopBit2") { if (updatedConfig.stopBit2 !== val) { updatedConfig.stopBit2 = val; hasConfigChange = true; } }
+          if (key === "Addr1" || key === "addr1") {
+            if (updatedConfig.addr1 !== val) {
+              updatedConfig.addr1 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Baud1" || key === "baud1") {
+            if (updatedConfig.baud1 !== val) {
+              updatedConfig.baud1 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Check Digit 1" || key === "check1") {
+            if (updatedConfig.check1 !== val) {
+              updatedConfig.check1 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Stop Bit 1" || key === "stopBit1") {
+            if (updatedConfig.stopBit1 !== val) {
+              updatedConfig.stopBit1 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Baud2" || key === "baud2") {
+            if (updatedConfig.baud2 !== val) {
+              updatedConfig.baud2 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Check Digit 2" || key === "check2") {
+            if (updatedConfig.check2 !== val) {
+              updatedConfig.check2 = val;
+              hasConfigChange = true;
+            }
+          } else if (key === "Stop Bit 2" || key === "stopBit2") {
+            if (updatedConfig.stopBit2 !== val) {
+              updatedConfig.stopBit2 = val;
+              hasConfigChange = true;
+            }
+          }
         } else if (
-          key === "volt" || key === "curr" || key === "power" || key === "energy"
+          key === "volt" ||
+          key === "curr" ||
+          key === "power" ||
+          key === "energy"
         ) {
           // Always update live values for real-time display, but do not trigger config change
           if (updatedConfig[key] !== val) {
@@ -303,7 +340,10 @@ export const updateDeviceFromWDXData = (path: string, value: any) => {
       device.config = updatedConfig;
       notifyListeners();
     } else if (
-      'volt' in value || 'curr' in value || 'power' in value || 'energy' in value
+      "volt" in value ||
+      "curr" in value ||
+      "power" in value ||
+      "energy" in value
     ) {
       device.config = updatedConfig;
       // Notify listeners for live value updates (real-time UI)
@@ -343,6 +383,28 @@ export const addVirtualDevice = (device: Device) => {
         type: "addDevice",
         path: "Virtual.",
         device: device,
+      })
+    );
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+export const updateAddress = ({
+  location,
+  deviceName,
+}: {
+  location: { latitude: number; longitude: number };
+  deviceName: string;
+}) => {
+  try {
+    console.log("Updating Address");
+    ws?.send(
+      JSON.stringify({
+        type: "updateAddress",
+        path: "Virtual.",
+        deviceName: deviceName,
+        location: location
       })
     );
   } catch (e) {

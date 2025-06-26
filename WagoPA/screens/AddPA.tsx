@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert, Platform } from "react-native";
 import { geocodeAddress, reverseGeocode } from "../utils/DeviceStore";
 import { addVirtualDevice } from "../utils/VirtualDeviceStore";
 import { addModbusDevice } from "../utils/ModbusDeviceStore";
@@ -17,7 +17,7 @@ const AddDeviceScreen = () => {
   const [address, setAddress] = useState("");
   const [status, setStatus] = useState("Active");
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedValue, setSelectedValue] = useState(deviceOptions[0]);
+  const [selectedValue, setSelectedValue] = useState("");
 
   const [location, setLocation] = useState<{
     latitude: number;
@@ -79,13 +79,10 @@ const AddDeviceScreen = () => {
       },
     };
 
-    if ((newDevice.deviceType = deviceOptions[0])) {
-      // addVirtualDevice(newDevice);
-      console.log("V");
-    } else {
-      // addModbusDevice(newDevice);
-      console.log("M");
-    }
+    newDevice.deviceType === deviceOptions[0]
+      ? addVirtualDevice(newDevice)
+      : addModbusDevice(newDevice);
+
     Alert.alert("Success", `Device "${name}" added successfully!`);
 
     // Reset form
@@ -126,7 +123,7 @@ const AddDeviceScreen = () => {
         />
 
         <Text style={styles.label}>Location *</Text>
-        <MapView
+        {Platform.OS !== 'web' &&<MapView
           provider={PROVIDER_GOOGLE}
           style={{ height: 300, width: "100%" }}
           region={
@@ -148,7 +145,7 @@ const AddDeviceScreen = () => {
           onPress={handleMapPress}
         >
           {location && <Marker coordinate={location} />}
-        </MapView>
+        </MapView>}
 
         <Text style={styles.label}>Status</Text>
         <View style={styles.statusContainer}>

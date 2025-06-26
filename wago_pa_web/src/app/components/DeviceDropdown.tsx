@@ -29,9 +29,9 @@ interface DropDownMenuProps {
 export default function DeviceDropdown({ devices, selectedDevice, onChange }: DropDownMenuProps) {
   return (
     <div className="mb-4">
-      <label className="block mb-2 text-text">Select Device:</label>
+      <label className="block mb-2 text-text text-black">Select Device:</label>
       <select
-        className="w-full border border-border rounded px-3 py-2 bg-surface"
+        className="w-full border border-border rounded px-3 py-2 bg-surface text-black"
         value={selectedDevice || ""}
         onChange={e => onChange(e.target.value)}
       >

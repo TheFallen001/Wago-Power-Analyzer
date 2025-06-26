@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   Dimensions,
 } from "react-native";
+import { Platform } from "react-native";
 import MapView, { Marker, Region, PROVIDER_GOOGLE } from "react-native-maps";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -178,33 +179,35 @@ const MapScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={{
-          latitude: 41.0082,
-          longitude: 28.9784,
-          latitudeDelta: 0.2,
-          longitudeDelta: 0.2,
-        }}
-        onRegionChangeComplete={handleRegionChange}
-        onDoublePress={(e) => e.stopPropagation()}
-      >
-        {deviceList.map((device) => (
-          <Marker
-            key={device.name} // Use device.name for uniqueness
-            coordinate={{
-              latitude: device.config.lat,
-              longitude: device.config.lng,
-            }}
-            onPress={() => handleMarkerPress(device)}
-            accessibilityLabel={`Marker for ${device.name}`}
-          >
-            <View style={styles.markerDot} />
-          </Marker>
-        ))}
-      </MapView>
+      {Platform.OS !== "web" && (
+        <MapView
+          ref={mapRef}
+          style={styles.map}
+          provider={PROVIDER_GOOGLE}
+          initialRegion={{
+            latitude: 41.0082,
+            longitude: 28.9784,
+            latitudeDelta: 0.2,
+            longitudeDelta: 0.2,
+          }}
+          onRegionChangeComplete={handleRegionChange}
+          onDoublePress={(e) => e.stopPropagation()}
+        >
+          {deviceList.map((device) => (
+            <Marker
+              key={device.name} // Use device.name for uniqueness
+              coordinate={{
+                latitude: device.config.lat,
+                longitude: device.config.lng,
+              }}
+              onPress={() => handleMarkerPress(device)}
+              accessibilityLabel={`Marker for ${device.name}`}
+            >
+              <View style={styles.markerDot} />
+            </Marker>
+          ))}
+        </MapView>
+      )}
       <Modal
         animationType="none" // Handled by Animated
         transparent={true}

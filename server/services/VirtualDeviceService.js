@@ -90,8 +90,13 @@ class VirtualDeviceService {
                           console.log(
                             "Default values have been set successfully"
                           );
+                          broadcast({
+                            type: "schema",
+                            devices: latestSchemaDevices,
+                          });
                         },
                       });
+
                     // console.log("Schema: ", JSON.stringify(schema, null, 2))
                   },
                   error: (err) => {
@@ -136,6 +141,30 @@ class VirtualDeviceService {
     return this.devices;
   }
 
+  updateDeviceAddress(deviceName, location, client, ws, broadcast) {
+    console.log("Updating Address was called...");
+    let data = [
+      { path: `Virtual.${deviceName}.lat`, value: location.latitude },
+      { path: `Virtual.${deviceName}.lng`, value: location.longitude },
+    ];
+
+    data.forEach((datum) => {
+      console.log( `Updating ${datum.path}...`)
+      client.dataService.setValue(datum.path, datum.value).subscribe({
+        next: (response) => {
+          console.log("Response");
+          console.log(JSON.stringify(response, null, 2));
+        },
+        error: async (error) => {
+          console.error("Error Code: " + error.code);
+          console.log("Error Message " + error.message);
+        },
+        complete: async () => {
+          broadcast({type: "schema", devices: latestSchemaDevices})
+        },
+      });
+    });
+  }
   setConfig(message, ws, client, broadcast) {
     Object.entries(message.config).forEach(([key, value]) => {
       let wdxKey = key;
@@ -280,6 +309,7 @@ class VirtualDeviceService {
   }
 
   handleMessage(message, ws, client, broadcast) {
+    console.log(`DeviceName received: ${message.deviceName}, ${message.path}`)
     if (
       message.type === "setConfig" &&
       message.path &&
@@ -293,6 +323,18 @@ class VirtualDeviceService {
       message.device.deviceType === "Virtual"
     ) {
       this.addDevice(message.device, ws, client, broadcast);
+    } else if (
+      message.type === "updateAddress" &&
+      message.path &&
+      message.deviceName
+    ) {
+      this.updateDeviceAddress(
+        message.deviceName,
+        message.location,
+        client,
+        ws,
+        broadcast
+      );
     }
   }
 }

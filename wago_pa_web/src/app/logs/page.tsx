@@ -1,22 +1,59 @@
 // Web version of LogsScreen using Tailwind CSS
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DeviceDropdown from "../components/DeviceDropdown";
-import { useDevices } from "../utils/VirtualDeviceStore";
+import { useDevices,getLogs,logData } from "../utils/VirtualDeviceStore";
+
+
+export interface LogItem {
+  level: string;
+  date: {
+    timestamp: number;
+    date: string;
+  };
+  channel: string;
+  title: string;
+  messsage: string;
+  instanceUuid: string;
+}
+
+interface LogResponse {
+  items: LogItem[];
+  total: number;
+  currentPage: number;
+  totalPages: number;
+}
 
 export default function Logs() {
-  const [logs, setLogs] = useState<string[]>([]);
+  const [logs, setLogs] = useState<LogItem[]>([]);
   const [selectedDevice, setSelectedDevice] = useState("");
   const { devices } = useDevices();
 
-  const handleConfirm = () => {
-    if (!selectedDevice) return;
-    // Simulate fetching logs
-    setLogs(prev => [
-      ...prev,
-      `Log for ${devices.find(d => d.id === selectedDevice)?.name || selectedDevice} at ${new Date().toLocaleString()}`
-    ]);
-  };
+
+   const handleConfirm = async () => {
+      // useEffect(() => {
+      
+      console.log("Getting Logs...");
+      try {
+        await getLogs(selectedDevice);
+      } catch (e) {
+        console.error("Log fetch error: ", e);
+      }
+  
+      // }, [setSelectedDevice]);
+    };
+    useEffect(() => {
+    try {
+      if (logData.length > 0) {
+        const data: LogResponse = JSON.parse(logData);
+        setLogs(data.items);
+       
+      }
+    } catch (e) {
+      console.error("Error:", e);
+   
+    }
+  }, [logData]);
 
   return (
     <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center p-4">

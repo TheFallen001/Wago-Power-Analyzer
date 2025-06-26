@@ -16,6 +16,7 @@ export type Device = {
 
 // Google Geocoding utility functions
 const GOOGLE_API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo";
+export const IPADDRESS = "172.16.3.150";
 
 export async function geocodeAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
   try {

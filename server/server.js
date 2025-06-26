@@ -10,10 +10,13 @@ const { AlarmService } = require("./services/AlarmService.js");
 const WDXWSClientConfiguration = require("@wago/wdx-ws-client-js");
 const Model = require("./utils");
 const Services = require("./NewServices");
-const virtualDeviceService  = require("./services/VirtualDeviceService.js");
+const virtualDeviceService = require("./services/VirtualDeviceService.js");
 const { ModbusDeviceService } = require("./services/ModbusDeviceService.js");
+const readline = require("readline");
 
 // Set up WebSocket server for React Native clients
+
+const IPADDRESS = "172.16.3.150";
 const wss = new WebSocket.Server({ port: 8080 });
 console.log("WebSocket server started on ws://localhost:8080");
 
@@ -68,11 +71,10 @@ wss.on("connection", (ws) => {
   ws.on("message", (data) => {
     try {
       const message = JSON.parse(data);
-      console.log("Message Path: ", message.path);
+
       // Delegate to Virtual or Modbus service based on message
       if (message.path && message.path.startsWith("Virtual.")) {
         virtualDeviceService.handleMessage(message, ws, client, broadcast);
-        
       } else if (message.path && message.path.startsWith("Modbus.")) {
         ModbusDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.device && message.device.type === "Virtual") {
@@ -135,26 +137,32 @@ const broadcast = (message) => {
 
 // Initialize WDX client
 const initializeWDXClient = async () => {
-  client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService(
-    {
-      url: "ws://192.168.31.70:7081/wdx/ws",
-      reconnectAttempts: 5,
-      reconnectDelay: 1000,
-    },
-    WDXWSClientConfiguration.wsConfiguration
-  );
+  if (client) {
+    try {
+      await client.disconnect();
+      console.log("Previous WDX client disconnected");
+    } catch (err) {
+      console.error("Error during disconnection: ", err);
+    }
+    client = null;
+  }
+  client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService({
+    url: `ws://${IPADDRESS}:7080/wdx/ws`,
+    reconnectAttempts: 5,
+    reconnectDelay: 1000,
+  });
 
   // Attach DataService to client for backend operations, passing the client instance
   client.dataService = new DataService(client);
-  client.instanceService = new WDXWSClient.WDX.WS.Client.JS.Service.InstanceService(client);
-
+  client.instanceService =
+    new WDXWSClient.WDX.WS.Client.JS.Service.InstanceService(client);
 
   client.runtimeService =
     new WDXWSClient.WDX.WS.Client.JS.Service.RuntimeService(client);
 
   try {
     console.log(
-      "Connecting to WDX server at ws://192.168.31.70:7081/wdx/ws at",
+      `Connecting to WDX server at ws://${IPADDRESS}:7081/wdx/ws at`,
       new Date().toISOString()
     );
     await client.connect();
@@ -200,8 +208,8 @@ const initializeWDXClient = async () => {
                     baud2: data?.value?.baud2 ?? 0,
                     check2: data?.value?.check2 ?? 0,
                     stopBit2: data?.value?.stopBit2 ?? 0,
-                    lat: data?.value?.lat ?? 40.0000000,
-                    lng: data?.value?.lng ?? 30.0000
+                    lat: data?.value?.lat ?? 40.0,
+                    lng: data?.value?.lng ?? 30.0,
                   },
                   path: child.path,
                 });
@@ -233,7 +241,7 @@ const initializeWDXClient = async () => {
             name,
             config,
           }));
-          
+
           broadcast({ type: "schema", devices: latestSchemaDevices });
         });
 
@@ -270,6 +278,22 @@ const initializeWDXClient = async () => {
 
 // Start the WDX client
 initializeWDXClient();
+
+
+// Press 'r' to restart WDX client. in cases where updates arent showing in the app
+readline.emitKeypressEvents(process.stdin);
+process.stdin.setRawMode(true);
+
+process.stdin.on("keypress", async (str, key) => {
+  if (key.name === "r") {
+    console.log("Restarting CLient...");
+    await initializeWDXClient();
+  } else if (key.ctrl && key.name === "c") {
+    console.log("Exiting server...");
+    if (client) await client.disconnect();
+    process.exit();
+  }
+});
 
 // Example usage: Replace direct Virtual logic with VirtualDeviceService where appropriate
 // For instance, when adding a device of type 'Virtual', use:

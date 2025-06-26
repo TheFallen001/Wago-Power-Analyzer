@@ -1,26 +1,27 @@
 import { NavigationContainer } from "@react-navigation/native";
 import * as React from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import StackNavigator from "./StackNavigator";
-import SplashScreen from "../screens/SplashScreen";
+import MainStackNavigator from "./StackNavigator";
+import MapScreen from "../screens/MapScreen";
+import NewDetailScreen from "../screens/NewDetailScreen";
 
 const Drawer = createDrawerNavigator();
 
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Drawer.Navigator initialRouteName="SplashScreen">
+      <Drawer.Navigator initialRouteName="Home">
         <Drawer.Screen
-          name="SplashScreen"
-          component={SplashScreen}
-          options={{ headerShown: false }}
-        />
-
+        name="Home"
+        component={MainStackNavigator}
+        options={{headerShown: false}}
+        />    
         <Drawer.Screen
-          name="Home"
-          component={StackNavigator}
-          options={{ headerShown: false }}
-        />
+        name="Maps"
+        component={MapScreen}/>
+        <Drawer.Screen
+        name="Details"
+        component={NewDetailScreen}/>
       </Drawer.Navigator>
     </NavigationContainer>
   );
