@@ -111,9 +111,9 @@ class ModbusDeviceService {
       typeof client.instanceService.save === "function"
     ) {
       // TODO: Replace with Modbus-specific metadata if available
-      // const instance =
-      //   new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.MODBUSDataAdapterInstance();
-      const instance = Instance.DataAdapter.MODBUSDataAdapterInstance();
+      const instance =
+        new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.MODBUSDataAdapterInstance();
+      // const instance = Instance.DataAdapter.MODBUSDataAdapterInstance();
       
 
       
@@ -171,6 +171,35 @@ class ModbusDeviceService {
       this.addDevice(client);
     }
   }
+}
+
+const initInstance = async (name, ipaddress,port,cliendID) => {
+    //console.debug('Benchmark.initInstance', i, uuid);
+ 
+    const instance = new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.MODBUSDataAdapterInstance();
+    instance.name = `name`;
+    instance.enabled = true;
+    instance.ipcType = "tcp";
+ 
+    instance.tcpOptions = new WDXSchema.WDX.Schema.Model.Instance.TCPOptions();
+    instance.tcpOptions.serverOpts = new WDXSchema.WDX.Schema.Model.Instance.TCPOptionsServer();
+    instance.tcpOptions.listenOpts = new WDXSchema.WDX.Schema.Model.Instance.TCPOptionsListen();
+ 
+    instance.udpOptions = new WDXSchema.WDX.Schema.Model.Instance.UDPOptions();
+ 
+    instance.dataSourceOptions = new WDXSchema.WDX.Schema.Model.Instance.DataSourceOptions();
+    instance.dataSourceOptions.name = 'default';
+ 
+    instance.logOptions = new WDXSchema.WDX.Schema.Model.Instance.LogOptions();
+    instance.logOptions.mergeLog = true;
+    instance.logOptions.level = 'debug';
+    instance.logOptions.mergeLogFile = `./logs/${instance.uuid}.log`;
+ 
+    instance.executionOptions = new WDXSchema.WDX.Schema.Model.Instance.ExecutionOptions();
+    instance.executionOptions.mode = 'worker';
+    instance.executionOptions.script = './node_modules/.bin/wdx-virtual';
+ 
+    return instance;
 }
 
 module.exports = new ModbusDeviceService();

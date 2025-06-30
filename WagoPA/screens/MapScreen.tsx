@@ -15,7 +15,7 @@ import MapView, { Marker, Region, PROVIDER_GOOGLE } from "react-native-maps";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { devices, subscribeToDeviceUpdates } from "../utils/VirtualDeviceStore";
+import wdxHelper from "../utils/DeviceStore";
 import { RootParamList } from "../navigation/types";
 
 const MapScreen = () => {
@@ -24,7 +24,7 @@ const MapScreen = () => {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [selectedDevice, setSelectedDevice] = useState<
-    (typeof devices)[0] | null
+    (typeof wdxHelper.devices)[0] | null
   >(null);
   const [modalPosition, setModalPosition] = useState<{
     x: number;
@@ -38,14 +38,14 @@ const MapScreen = () => {
     latitudeDelta: 0.3,
     longitudeDelta: 0.3,
   });
-  const [deviceList, setDeviceList] = useState([...devices]);
+  const [deviceList, setDeviceList] = useState([...wdxHelper.devices]);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   // Fit map to device coordinates
   useEffect(() => {
-    if (mapRef.current && devices.length > 0) {
-      const coordinates = devices.map((device) => ({
+    if (mapRef.current && wdxHelper.devices.length > 0) {
+      const coordinates = wdxHelper.devices.map((device) => ({
         latitude: device.latitude,
         longitude: device.longitude,
       }));
@@ -101,7 +101,7 @@ const MapScreen = () => {
   );
 
   const handleMarkerPress = useCallback(
-    (device: (typeof devices)[0]) => {
+    (device: (typeof wdxHelper.devices)[0]) => {
       const { latitude, longitude } = device;
       mapRef.current?.animateToRegion(
         {
@@ -171,7 +171,7 @@ const MapScreen = () => {
 
   // Keep device list in sync with DeviceStore
   useEffect(() => {
-    const unsubscribe = subscribeToDeviceUpdates((updatedDevices) => {
+    const unsubscribe = wdxHelper.subscribeToDeviceUpdates((updatedDevices) => {
       setDeviceList([...updatedDevices]);
     });
     return unsubscribe;
@@ -179,35 +179,34 @@ const MapScreen = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {Platform.OS !== "web" && (
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          provider={PROVIDER_GOOGLE}
-          initialRegion={{
-            latitude: 41.0082,
-            longitude: 28.9784,
-            latitudeDelta: 0.2,
-            longitudeDelta: 0.2,
-          }}
-          onRegionChangeComplete={handleRegionChange}
-          onDoublePress={(e) => e.stopPropagation()}
-        >
-          {deviceList.map((device) => (
-            <Marker
-              key={device.name} // Use device.name for uniqueness
-              coordinate={{
-                latitude: device.config.lat,
-                longitude: device.config.lng,
-              }}
-              onPress={() => handleMarkerPress(device)}
-              accessibilityLabel={`Marker for ${device.name}`}
-            >
-              <View style={styles.markerDot} />
-            </Marker>
-          ))}
-        </MapView>
-      )}
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={{
+          latitude: 41.0082,
+          longitude: 28.9784,
+          latitudeDelta: 0.2,
+          longitudeDelta: 0.2,
+        }}
+        onRegionChangeComplete={handleRegionChange}
+        onDoublePress={(e) => e.stopPropagation()}
+      >
+        {deviceList.map((device) => (
+          <Marker
+            key={device.name} // Use device.name for uniqueness
+            coordinate={{
+              latitude: device.config.lat,
+              longitude: device.config.lng,
+            }}
+            onPress={() => handleMarkerPress(device)}
+            accessibilityLabel={`Marker for ${device.name}`}
+          >
+            <View style={styles.markerDot} />
+          </Marker>
+        ))}
+      </MapView>
+
       <Modal
         animationType="none" // Handled by Animated
         transparent={true}

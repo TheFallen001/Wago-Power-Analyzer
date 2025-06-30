@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert, Platform } from "react-native";
-import { geocodeAddress, reverseGeocode } from "../utils/DeviceStore";
-import { addVirtualDevice } from "../utils/VirtualDeviceStore";
-import { addModbusDevice } from "../utils/ModbusDeviceStore";
+import {addDevice,geocodeAddress,reverseGeocode } from "../utils/DeviceStore";
+
+
 import MapView, {
   MapPressEvent,
   Marker,
@@ -17,7 +17,7 @@ const AddDeviceScreen = () => {
   const [address, setAddress] = useState("");
   const [status, setStatus] = useState("Active");
   const [isSaving, setIsSaving] = useState(false);
-  const [selectedValue, setSelectedValue] = useState("");
+  const [selectedValue, setSelectedValue] = useState(deviceOptions[0]);
 
   const [location, setLocation] = useState<{
     latitude: number;
@@ -79,9 +79,7 @@ const AddDeviceScreen = () => {
       },
     };
 
-    newDevice.deviceType === deviceOptions[0]
-      ? addVirtualDevice(newDevice)
-      : addModbusDevice();
+    addDevice(newDevice);
 
 
 

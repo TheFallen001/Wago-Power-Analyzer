@@ -8,9 +8,9 @@ import {
 } from "react-native";
 import tw from "twrnc";
 import React, { useEffect, useState } from "react";
-import { getLogs } from "../utils/VirtualDeviceStore";
+import { getLogs } from "../utils/DeviceStore";
 import { FlatList, ScrollView } from "react-native-gesture-handler";
-import { devices, logData } from "../utils/VirtualDeviceStore";
+import wdxHelper from "../utils/DeviceStore";
 import DeviceDropdown from "../components/DropDownMenu";
 import LogItemComponent from "../components/LogItem";
 
@@ -53,8 +53,8 @@ const LogsScreen = () => {
 
   useEffect(() => {
     try {
-      if (logData.length > 0) {
-        const data: LogResponse = JSON.parse(logData);
+      if (wdxHelper.logData.length > 0) {
+        const data: LogResponse = JSON.parse(wdxHelper.logData);
         setLogs(data.items);
         setLoading(false);
       }
@@ -62,13 +62,13 @@ const LogsScreen = () => {
       console.error("Error:", e);
       setLoading(false);
     }
-  }, [logData]);
+  }, [wdxHelper.logData]);
 
   return (
     <View style={tw`relative flex-1 bg-white pt-10 px-5 gap-10`}>
       <Text style={tw`text-2xl font-bold text-center mb-5`}>Logs</Text>
       <DeviceDropdown
-        devices={devices}
+        devices={wdxHelper.devices}
         selectedDevice={selectedDevice}
         onChange={(value) => setSelectedDevice(value)}
       />

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { devices, updateDeviceConfig, subscribeToDeviceUpdates,  } from '../utils/VirtualDeviceStore';
+// import { devices, updateDeviceConfig, subscribeToDeviceUpdates,  } from '../utils/wdx-helpers';
+import wdxHelper, {updateDeviceConfig} from '../utils/DeviceStore';
 import { RootParamList } from '../navigation/types';
 import ConfigCard from '../components/ConfigCard';
 import tw from 'twrnc';
@@ -12,7 +13,7 @@ const ConfigureScreen = () => {
   const route = useRoute<RouteProp<RootParamList, 'Configure'>>();
   const deviceId = route.params?.deviceId;
 
-  const [device, setDevice] = useState<typeof devices[0] | undefined>(undefined);
+  const [device, setDevice] = useState<typeof wdxHelper.devices[0] | undefined>(undefined);
   const [addr1, setAddr1] = useState('');
   const [baud1, setBaud1] = useState('');
   const [check1, setCheck1] = useState('');
@@ -24,7 +25,7 @@ const ConfigureScreen = () => {
   const [configEditing, setConfigEditing] = useState(false);
 
   // Update form with selected device data from DeviceStore
-  const updateFormWithDevice = (dev: typeof devices[0] | undefined) => {
+  const updateFormWithDevice = (dev: typeof wdxHelper.devices[0] | undefined) => {
     if (dev) {
       setAddr1(dev.config.addr1.toString());
       setBaud1(dev.config.baud1.toString());
@@ -47,7 +48,7 @@ const ConfigureScreen = () => {
   // Subscribe to DeviceStore updates
   useEffect(() => {
     setConfigEditing(true);
-    const unsubscribe = subscribeToDeviceUpdates((updatedDevices) => {
+    const unsubscribe = wdxHelper.subscribeToDeviceUpdates((updatedDevices) => {
       setIsLoading(false);
       // Only update the device and form if the device list changes (e.g. device added/removed)
       // Do NOT update config fields if config changes from the server
@@ -75,7 +76,7 @@ const ConfigureScreen = () => {
 
   // When device changes (from dropdown), update form fields
   const handleDeviceChange = (name: string) => {
-    const found = devices.find((d) => d.name === name);
+    const found = wdxHelper.devices.find((d) => d.name === name);
     setDevice(found);
     updateFormWithDevice(found);
   };
@@ -99,6 +100,7 @@ const ConfigureScreen = () => {
       Alert.alert('Error', 'Address must be between 1 and 247.');
       return;
     }
+    console.log("Here");
     updateDeviceConfig(device.name, newConfig); // Use name as identifier for config update
     Alert.alert('Success', 'Configuration applied successfully!');
     navigation.goBack();
@@ -126,9 +128,9 @@ const ConfigureScreen = () => {
           <ConfigCard
             label="Device"
             value={device?.name || ''}
-            options={devices.map(d => ({ label: d.name, value: d.name }))}
+            options={wdxHelper.devices.map(d => ({ label: d.name, value: d.name }))}
             onChange={handleDeviceChange}
-            disabled={devices.length === 0}
+            disabled={wdxHelper.devices.length === 0}
           />
           <ConfigCard
             label="Address (Addr1)"

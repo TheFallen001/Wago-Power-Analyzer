@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList } from "react-native";
 import tw from "twrnc";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { devices, subscribeToAlarms } from "../utils/VirtualDeviceStore";
+// import { devices, subscribeToAlarms } from "../utils/wdx-helpers";
+import wdxHelper from "../utils/DeviceStore";
 
 interface AlarmHistoryItem {
   id: string;
@@ -17,7 +18,7 @@ const AlarmScreen = () => {
   useEffect(() => {
     // Listen for alarms and add to history only if value or type changed for the device
     let lastAlarmMap: { [key: string]: { type: string; value: number } } = {};
-    const unsub = subscribeToAlarms((alarm) => {
+    const unsub = wdxHelper.subscribeToAlarms((alarm) => {
       const key = alarm.deviceName + "-" + alarm.type;
       const last = lastAlarmMap[key];
       // Only add to history if value or type changed

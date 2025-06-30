@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { devices } from '../utils/VirtualDeviceStore';
+import wdxHelper from '../utils/DeviceStore';
 import { RootParamList } from '../navigation/types';
 import tw from 'twrnc';
 
@@ -10,7 +10,7 @@ const DevicesScreen = () => {
 
   const navigation = useNavigation<NativeStackNavigationProp<RootParamList>>();
 
-  const renderDeviceItem = ({ item }: { item: typeof devices[0] }) => (
+  const renderDeviceItem = ({ item }: { item: typeof wdxHelper.devices[0] }) => (
     <View style={tw`bg-gray-100 p-4 mb-3 rounded`}>
       <Text style={tw`text-lg font-bold mb-1`}>{item.name}</Text>
       <Text>Address: {item.address || 'Unknown'}</Text>
@@ -38,7 +38,7 @@ const DevicesScreen = () => {
       <Text style={tw`text-2xl font-bold text-center mb-5`}>Power Analyzers</Text>
       <ScrollView contentContainerStyle={tw`px-5 pb-10`}>
         <FlatList
-          data={devices}
+          data={wdxHelper.devices}
           renderItem={renderDeviceItem}
           keyExtractor={(item) => item.name}
           scrollEnabled={false}

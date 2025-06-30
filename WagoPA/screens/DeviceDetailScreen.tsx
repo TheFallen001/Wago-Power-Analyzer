@@ -10,14 +10,12 @@ import {
 } from "react-native";
 import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
 import { RootParamList } from "../navigation/types";
-import {
-  devices,
+import wdxHelper, {
   voltageChartDataMap,
   currentChartDataMap,
-  subscribeToAlarms,
   VOLTAGE_ALARM_RANGE,
   CURRENT_ALARM_RANGE,
-} from "../utils/VirtualDeviceStore";
+} from "../utils/DeviceStore";
 import { geocodeAddress, reverseGeocode } from "../utils/DeviceStore";
 import tw from "twrnc";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
@@ -32,7 +30,7 @@ import Svg, {
   Text as SvgText,
 } from "react-native-svg";
 import { Platform } from "react-native";
-import { updateAddress } from "../utils/VirtualDeviceStore";
+import { updateAddress } from "../utils/DeviceStore";
 
 // Simulated voltage and consumption data for the graphs
 const chartWidth = Dimensions.get("window").width - 40; // padding
@@ -42,7 +40,7 @@ const DeviceDetailScreen = () => {
   const route = useRoute<RouteProp<RootParamList, "DeviceDetail">>();
   const navigation = useNavigation();
   const { deviceId } = route.params;
-  const device = devices.find((d) => d.name === deviceId);
+  const device = wdxHelper.devices.find((d) => d.name === deviceId);
 
   // Address editing state
   const [address, setAddress] = useState(device?.address || "");
@@ -85,7 +83,7 @@ const DeviceDetailScreen = () => {
 
   // Subscribe to alarm updates
   React.useEffect(() => {
-    const unsub = subscribeToAlarms((alarm) => {
+    const unsub = wdxHelper.subscribeToAlarms((alarm) => {
       setAlarmActive(true);
       setAlarmTypes((prev) => ({ ...prev, [alarm.type]: true }));
     });

@@ -27,7 +27,7 @@ class VirtualDeviceService {
     // : { name: device.name, type: "Virtual" };
     instance.name = device.name;
     instance.type = "Virtual";
-
+    console.log("Instance: ", JSON.stringify(instance))
     client.instanceService.save(instance).subscribe({
       next: (result) => {
         if (result && result.uuid) {
@@ -309,7 +309,7 @@ class VirtualDeviceService {
   }
 
   handleMessage(message, ws, client, broadcast) {
-    console.log(`DeviceName received: ${message.deviceName}, ${message.path}`);
+    console.log(`DeviceName received: ${JSON.stringify(message)}, ${message.path}`);
     if (
       message.type === "setConfig" &&
       message.path &&
