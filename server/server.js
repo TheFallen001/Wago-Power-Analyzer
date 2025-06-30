@@ -11,12 +11,12 @@ const WDXWSClientConfiguration = require("@wago/wdx-ws-client-js");
 const Model = require("./utils");
 const Services = require("./NewServices");
 const virtualDeviceService = require("./services/VirtualDeviceService.js");
-const { ModbusDeviceService } = require("./services/ModbusDeviceService.js");
+const modbusDeviceService = require("./services/ModbusDeviceService.js");
 const readline = require("readline");
 
 // Set up WebSocket server for React Native clients
 
-const IPADDRESS = "172.16.3.150";
+const IPADDRESS = "192.168.31.90";
 const wss = new WebSocket.Server({ port: 8080 });
 console.log("WebSocket server started on ws://localhost:8080");
 
@@ -76,11 +76,11 @@ wss.on("connection", (ws) => {
       if (message.path && message.path.startsWith("Virtual.")) {
         virtualDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.path && message.path.startsWith("Modbus.")) {
-        ModbusDeviceService.handleMessage(message, ws, client, broadcast);
+        modbusDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.device && message.device.type === "Virtual") {
-        VirtualDeviceService.handleMessage(message, ws, client, broadcast);
+        virtualDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.device && message.device.type === "Modbus") {
-        ModbusDeviceService.handleMessage(message, ws, client, broadcast);
+        modbusDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.type === "getLogs") {
         if (client && client.instanceService) {
           response = client.instanceService
@@ -147,7 +147,7 @@ const initializeWDXClient = async () => {
     client = null;
   }
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService({
-    url: `ws://${IPADDRESS}:7080/wdx/ws`,
+    url: `ws://${IPADDRESS}:7081/wdx/ws`,
     reconnectAttempts: 5,
     reconnectDelay: 1000,
   });
@@ -201,8 +201,8 @@ const initializeWDXClient = async () => {
             baud2: data?.value?.baud2 ?? 0,
             check2: data?.value?.check2 ?? 0,
             stopBit2: data?.value?.stopBit2 ?? 0,
-            lat: data?.value?.lat ?? 40.0000000,
-            lng: data?.value?.lng ?? 30.0000
+            lat: data?.value?.lat ?? 40.0,
+            lng: data?.value?.lng ?? 30.0,
           };
         }
 
@@ -214,7 +214,7 @@ const initializeWDXClient = async () => {
             Check1: data?.value?.Check1 ?? 0,
             Baud2: data?.value?.Baud2 ?? 0,
             Check2: data?.value?.Check2 ?? 0,
-            '645Addr': data?.value?.['645Addr'] ?? 0,
+            "645Addr": data?.value?.["645Addr"] ?? 0,
             Language: data?.value?.Language ?? 0,
             // Add more fields as needed
           };
@@ -226,26 +226,51 @@ const initializeWDXClient = async () => {
           return new Promise((resolve) => {
             client.dataService.getSchema(child.path, 1).subscribe({
               next: (deviceSchema) => {
-                console.log('Device schema for', child.path, ':', JSON.stringify(deviceSchema, null, 2));
-                if (!deviceSchema.children || deviceSchema.children.length === 0) {
-                  console.warn('No children found for device', child.path);
+                // console.log(
+                //   "Device schema for",
+                //   child.path,
+                //   ":",
+                //   JSON.stringify(deviceSchema, null, 2)
+                // );
+
+                if (
+                  !deviceSchema.children ||
+                  deviceSchema.children.length === 0
+                ) {
+                  console.warn("No children found for device", child.path);
                   resolve({ name: deviceName, config: {}, path: child.path });
                   return;
                 }
+                const children = deviceSchema.children.slice();
+                const total = children.length;
+                const receivedSet = new Set();
                 let config = {};
                 let received = 0;
-                deviceSchema.children.forEach((valChild) => {
-                  client.dataService.register(valChild.path, 1).subscribe({
+
+                children.forEach((valChild) => {
+                  client.dataService.register(valChild.path).subscribe({
                     next: (data) => {
-                      console.log(`${valChild.path} is ${data.value}`);
+                      console.log(
+                        `${valChild.path} is ${JSON.stringify(data)}`
+                      );
+                      if (receivedSet.has(valChild.path)) return;
+                      receivedSet.add(valChild.path);
                       config[valChild.name] = data.value;
-                      received++;
-                      if (received === deviceSchema.children.length) {
+                      receivedSet.size === total &&
                         resolve({ name: deviceName, config, path: child.path });
-                      }
+                      // config[valChild.name] = data.value;
+                      // received++;
+                      // if (received === deviceSchema.children.length) {
+                      //   resolve({ name: deviceName, config, path: child.path });
+                      // }
                     },
                     error: (err) => {
-                      console.error('Error subscribing to', valChild.path, ':', err);
+                      console.error(
+                        "Error subscribing to",
+                        valChild.path,
+                        ":",
+                        err
+                      );
                       received++;
                       if (received === deviceSchema.children.length) {
                         resolve({ name: deviceName, config, path: child.path });
@@ -255,14 +280,22 @@ const initializeWDXClient = async () => {
                 });
               },
               error: (err) => {
-                console.error('Error getting schema for device', child.path, ':', err);
+                console.error(
+                  "Error getting schema for device",
+                  child.path,
+                  ":",
+                  err
+                );
                 resolve({ name: deviceName, config: {}, path: child.path });
               },
             });
           });
         });
         Promise.all(devicePromises).then((devices) => {
-          latestSchemaDevices = devices.map(({ name, config }) => ({ name, config }));
+          latestSchemaDevices = devices.map(({ name, config }) => ({
+            name,
+            config,
+          }));
           broadcast({ type: "schema", devices: latestSchemaDevices });
         });
 
@@ -271,7 +304,12 @@ const initializeWDXClient = async () => {
         console.log("Attempting to subscribe to single value:", testValuePath);
         client.dataService.register(testValuePath).subscribe({
           next: (data) => {
-            console.log("Received value for", testValuePath, ":", JSON.stringify(data, null, 2));
+            console.log(
+              "Received value for",
+              testValuePath,
+              ":",
+              JSON.stringify(data, null, 2)
+            );
             broadcast({
               type: "modbusTestValue",
               path: testValuePath,
@@ -279,7 +317,12 @@ const initializeWDXClient = async () => {
             });
           },
           error: (err) => {
-            console.error("Error subscribing to single value", testValuePath, ":", err);
+            console.error(
+              "Error subscribing to single value",
+              testValuePath,
+              ":",
+              err
+            );
           },
         });
       },
@@ -314,7 +357,6 @@ const initializeWDXClient = async () => {
 
 // Start the WDX client
 initializeWDXClient();
-
 
 // Press 'r' to restart WDX client. in cases where updates arent showing in the app
 readline.emitKeypressEvents(process.stdin);

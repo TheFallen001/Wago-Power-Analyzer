@@ -49,9 +49,9 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://localhost:8080";
+  const serverUrl = `ws://${IPADDRESS}:8080`;
   ws = new WebSocket(serverUrl);
-  ws.onopen = () => {};
+  ws.onopen = () => {console.log("It's been opened")};
   ws.onmessage = (event) => {
     let message;
     try {
@@ -120,7 +120,7 @@ const initializeWebSocket = () => {
   ws.onerror = () => {};
 };
 
-initializeWebSocket();
+
 
 export const updateDeviceConfig = (idOrName: string, config: ModbusConfig) => {
   let device = devices.find((d) => d.id === idOrName) || devices.find((d) => d.name === idOrName);
@@ -229,6 +229,20 @@ export const getLogs = (deviceName: string) => {
   );
 };
 
-export const addModbusDevice = (device:Device) => {
-  console.log("Add modbus was called")
+export const addModbusDevice = () => {
+  console.log("add device was called")
+  try {
+    console.log("Sending device info");
+    ws?.send(
+      JSON.stringify({
+        type: "addDevice",
+        path: "Modbus.",
+        
+      })
+    );
+  } catch (e) {
+    console.error(e);
+  }
 }
+
+initializeWebSocket();

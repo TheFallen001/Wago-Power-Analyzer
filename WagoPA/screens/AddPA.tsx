@@ -81,9 +81,9 @@ const AddDeviceScreen = () => {
 
     newDevice.deviceType === deviceOptions[0]
       ? addVirtualDevice(newDevice)
-      : addModbusDevice(newDevice);
+      : addModbusDevice();
 
-    Alert.alert("Success", `Device "${name}" added successfully!`);
+
 
     // Reset form
     setName("");

@@ -111,7 +111,7 @@ function notifySchemaListeners() {
 
 const initializeWebSocket = () => {
   if (ws && ws.readyState === WebSocket.OPEN) return;
-  const serverUrl = "ws://192.168.31.51:8080";
+  const serverUrl = `ws://${IPADDRESS}:8080`;
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {
     console.log("OnOpen was called");

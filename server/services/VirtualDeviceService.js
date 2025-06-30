@@ -149,7 +149,7 @@ class VirtualDeviceService {
     ];
 
     data.forEach((datum) => {
-      console.log( `Updating ${datum.path}...`)
+      console.log(`Updating ${datum.path}...`);
       client.dataService.setValue(datum.path, datum.value).subscribe({
         next: (response) => {
           console.log("Response");
@@ -160,7 +160,7 @@ class VirtualDeviceService {
           console.log("Error Message " + error.message);
         },
         complete: async () => {
-          broadcast({type: "schema", devices: latestSchemaDevices})
+          broadcast({ type: "schema", devices: latestSchemaDevices });
         },
       });
     });
@@ -309,7 +309,7 @@ class VirtualDeviceService {
   }
 
   handleMessage(message, ws, client, broadcast) {
-    console.log(`DeviceName received: ${message.deviceName}, ${message.path}`)
+    console.log(`DeviceName received: ${message.deviceName}, ${message.path}`);
     if (
       message.type === "setConfig" &&
       message.path &&

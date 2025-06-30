@@ -2,10 +2,12 @@
 // Handles all logic related to Modbus device instances (path: Modbus)
 // This is a template to be filled with Modbus-specific logic and variables
 
-const { Data } = require("../utils");
+const { Data, Instance } = require("../utils");
 const { MetaData } = Data;
 const { DataSchema } = Data;
 const { MetaDataVirtualAdapter, MetaDataVirtual } = MetaData; // TODO: Replace with Modbus-specific metadata if available
+const WDXSchema = require("@wago/wdx-schema");
+const { DataSourceOptions } = require("../utils/Instance");
 
 const lastDataBroadcastTime = {};
 const DATA_BROADCAST_INTERVAL = 5000;
@@ -44,7 +46,8 @@ class ModbusDeviceService {
                 return new Promise((resolve) => {
                   client.dataService.register(child.path).subscribe({
                     next: (data) => {
-                      const deviceName = child.path.split(".").pop() || child.path;
+                      const deviceName =
+                        child.path.split(".").pop() || child.path;
                       resolve({
                         name: deviceName,
                         config: data?.value || {},
@@ -52,7 +55,8 @@ class ModbusDeviceService {
                       });
                     },
                     error: () => {
-                      const deviceName = child.path.split(".").pop() || child.path;
+                      const deviceName =
+                        child.path.split(".").pop() || child.path;
                       resolve({
                         name: deviceName,
                         config: {},
@@ -74,7 +78,10 @@ class ModbusDeviceService {
               });
             },
             error: (err) => {
-              console.error("[WDX getSchema ERROR after setValue] (Modbus)", err);
+              console.error(
+                "[WDX getSchema ERROR after setValue] (Modbus)",
+                err
+              );
             },
           });
         },
@@ -97,129 +104,40 @@ class ModbusDeviceService {
     });
   }
 
-  addDevice(device, ws, client, broadcast) {
+  addDevice(client) {
     if (
       client &&
       client.instanceService &&
       typeof client.instanceService.save === "function"
     ) {
       // TODO: Replace with Modbus-specific metadata if available
-      const instance = { name: device.name, type: "Modbus" };
+      // const instance =
+      //   new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.MODBUSDataAdapterInstance();
+      const instance = Instance.DataAdapter.MODBUSDataAdapterInstance();
+      
+
+      
+        console.log("instance: ", instance)
       client.instanceService.save(instance).subscribe({
-        next: (result) => {
-          if (result && result.uuid) {
-            client.instanceService.start(result.uuid).subscribe({
-              next: () => {
-                // Config variables for Modbus config page
-                const configChildren = [
-                  { key: "Addr1", type: "number" },
-                  { key: "Baud1", type: "number" },
-                  { key: "Check1", type: "number" },
-                  { key: "Baud2", type: "number" },
-                  { key: "Check2", type: "number" },
-                  { key: "645Addr", type: "number" },
-                  { key: "Language", type: "number" },
-                ];
-                // Read-only variables for graphs
-                const graphChildren = [
-                  { key: "F", type: "number" },
-                  { key: "PF", type: "number" },
-                  { key: "QT", type: "number" },
-                  { key: "PT", type: "number" },
-                  { key: "UA", type: "number" },
-                  { key: "IA", type: "number" },
-                ];
-                const allChildren = [...configChildren, ...graphChildren];
-                const childSchemas = allChildren.map(({ key, type }) =>
-                  new DataSchema(
-                    `Modbus.${instance.name}.${key}`,
-                    key,
-                    key,
-                    undefined,
-                    new MetaDataVirtual(), // TODO: Replace with Modbus metadata
-                    graphChildren.some((g) => g.key === key), // readonly true for graph variables
-                    true,
-                    !graphChildren.some((g) => g.key === key), // editable false for graph variables
-                    false,
-                    true,
-                    false
-                  )
-                );
-                const parentSchema = new DataSchema(
-                  `Modbus.${instance.name}`,
-                  instance.name,
-                  instance.name,
-                  childSchemas,
-                  new MetaDataVirtualAdapter(), // TODO: Replace with Modbus metadata
-                  false,
-                  true,
-                  true,
-                  true,
-                  true,
-                  false
-                );
-                client.dataService.setSchema(parentSchema).subscribe({
-                  next: () => {
-                    client.dataService.getSchema("Modbus", 1).subscribe({
-                      next: (updatedSchema) => {
-                        const children = updatedSchema.children || [];
-                        const devicePromises = children.map((child) => {
-                          return new Promise((resolve) => {
-                            client.dataService
-                              .register(child.path)
-                              .subscribe({
-                                next: (data) => {
-                                  const deviceName = child.path.split(".").pop() || child.path;
-                                  resolve({
-                                    name: deviceName,
-                                    config: data?.value || {},
-                                    path: child.path,
-                                  });
-                                },
-                                error: () => {
-                                  const deviceName = child.path.split(".").pop() || child.path;
-                                  resolve({
-                                    name: deviceName,
-                                    config: {},
-                                    path: child.path,
-                                  });
-                                },
-                              });
-                          });
-                        });
-                        Promise.all(devicePromises).then((devices) => {
-                          latestSchemaDevices = devices.map(({ name, config }) => ({
-                            name,
-                            config,
-                          }));
-                          broadcast({
-                            type: "schema",
-                            devices: latestSchemaDevices,
-                          });
-                        });
-                      },
-                      error: (err) => {
-                        console.error("[WDX getSchema ERROR after setSchema] (Modbus)", err);
-                      },
-                    });
-                  },
-                  error: (err) => {
-                    console.error(`Failed to set schema for Modbus instance ${instance.name}:`, err);
-                  },
-                });
-              },
-              error: (err) => {
-                console.error("Failed to start Modbus instance after save:", err);
-              },
-            });
-          }
+        next: (response) => {
+          console.log("Response");
+          console.log(JSON.stringify(response, null, 2));
         },
-        complete: (result) => {
-          console.log("On Complete (Modbus): ", result);
+
+        error: async (error) => {
+          console.error("Error Code: " + error.code);
+          console.error("Error Message: " + error.message);
+
+          console.log("Disconnecting");
+          await client.disconnect();
+          console.log("Disconnected successfully");
         },
-        error: (result) => {
-          console.log("The error encountered (Modbus): ", result);
-          console.log("Instance used (Modbus): ", instance);
+
+        complete: async () => {
+          console.log("Completed");
+          console.log("Disconnecting");
+          await c.disconnect();
+          console.log("Disconnected successfully");
         },
       });
     } else {
@@ -228,7 +146,7 @@ class ModbusDeviceService {
   }
 
   updateDevice(id, update) {
-    const idx = this.devices.findIndex(d => d.id === id);
+    const idx = this.devices.findIndex((d) => d.id === id);
     if (idx !== -1) {
       this.devices[idx] = { ...this.devices[idx], ...update };
     }
@@ -239,10 +157,18 @@ class ModbusDeviceService {
   }
 
   handleMessage(message, ws, client, broadcast) {
-    if (message.type === "setConfig" && message.path && message.config && message.path.startsWith("Modbus.")) {
+    if (
+      message.type === "setConfig" &&
+      message.path &&
+      message.config &&
+      message.path.startsWith("Modbus.")
+    ) {
       this.setConfig(message, ws, client, broadcast);
-    } else if (message.type === "addDevice" && message.device && message.device.type === "Modbus") {
-      this.addDevice(message.device, ws, client, broadcast);
+    } else if (
+      message.type === "addDevice"
+     
+    ) {
+      this.addDevice(client);
     }
   }
 }
