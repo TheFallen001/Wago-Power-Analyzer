@@ -1,7 +1,8 @@
 // ModbusDeviceStore.ts (web)
 // Handles all Modbus device logic for the web frontend, separated from DeviceStore
 
-import { Device } from "./DeviceStore";
+import { geocodeAddress, reverseGeocode, Device } from "./DeviceStore";
+import { useEffect, useState } from "react";
 
 export type ModbusConfig = {
   Addr1: number;
@@ -20,9 +21,10 @@ export type ModbusConfig = {
   IA?: number;
 };
 
+// Fix: Export the correct type for ModbusDevices and use ModbusDevice everywhere
 export type ModbusDevice = Omit<Device, "config"> & { config: ModbusConfig };
 
-export let devices: ModbusDevice[] = [];
+export let ModbusDevices: ModbusDevice[] = [];
 export let logData: any[] = [];
 let devicePathMap: { [key: string]: string } = {};
 let ws: WebSocket | null = null;
@@ -32,7 +34,7 @@ let validDevicePaths: Set<string> = new Set();
 
 export const subscribeToDeviceUpdates = (callback: (devices: ModbusDevice[]) => void) => {
   listeners.push(callback);
-  if (isInitialized) callback(devices);
+  if (isInitialized) callback(ModbusDevices);
   return () => {
     const index = listeners.indexOf(callback);
     if (index !== -1) listeners.splice(index, 1);
@@ -40,11 +42,11 @@ export const subscribeToDeviceUpdates = (callback: (devices: ModbusDevice[]) => 
 };
 
 const notifyListeners = () => {
-  listeners.forEach((listener) => listener(devices));
+  listeners.forEach((listener) => listener(ModbusDevices));
 };
 
 function notifySchemaListeners() {
-  listeners.forEach((listener) => listener(devices));
+  listeners.forEach((listener) => listener(ModbusDevices));
 }
 
 const initializeWebSocket = () => {
@@ -57,6 +59,8 @@ const initializeWebSocket = () => {
     try {
       message = JSON.parse(event.data);
     } catch (error) { return; }
+    // Debug: Log all incoming messages
+    console.log("[ModbusDeviceStore] WS message received:", message);
     if (message.type === "schema") {
       const wdxDevices = message.devices || [];
       if (!Array.isArray(wdxDevices)) return;
@@ -65,25 +69,25 @@ const initializeWebSocket = () => {
         wdxDevices.forEach((device) => {
           const deviceName = device.name;
           // Config variables
-          validDevicePaths.add(`Modbus.${deviceName}.Addr1`);
-          validDevicePaths.add(`Modbus.${deviceName}.Baud1`);
-          validDevicePaths.add(`Modbus.${deviceName}.Check1`);
-          validDevicePaths.add(`Modbus.${deviceName}.Baud2`);
-          validDevicePaths.add(`Modbus.${deviceName}.Check2`);
-          validDevicePaths.add(`Modbus.${deviceName}.645Addr`);
-          validDevicePaths.add(`Modbus.${deviceName}.Language`);
+          validDevicePaths.add(`MODBUS.${deviceName}.Addr1`);
+          validDevicePaths.add(`MODBUS.${deviceName}.645Addr`);
+          validDevicePaths.add(`MODBUS.${deviceName}.Baud1`);
+          validDevicePaths.add(`MODBUS.${deviceName}.Baud2`);
+          validDevicePaths.add(`MODBUS.${deviceName}.Check1`);
+          validDevicePaths.add(`MODBUS.${deviceName}.Check2`);
+          validDevicePaths.add(`MODBUS.${deviceName}.Language`);
           // Graph variables
-          validDevicePaths.add(`Modbus.${deviceName}.F`);
-          validDevicePaths.add(`Modbus.${deviceName}.PF`);
-          validDevicePaths.add(`Modbus.${deviceName}.QT`);
-          validDevicePaths.add(`Modbus.${deviceName}.PT`);
-          validDevicePaths.add(`Modbus.${deviceName}.UA`);
-          validDevicePaths.add(`Modbus.${deviceName}.IA`);
+          validDevicePaths.add(`MODBUS.${deviceName}.F`);
+          validDevicePaths.add(`MODBUS.${deviceName}.PF`);
+          validDevicePaths.add(`MODBUS.${deviceName}.QT`);
+          validDevicePaths.add(`MODBUS.${deviceName}.PT`);
+          validDevicePaths.add(`MODBUS.${deviceName}.UA`);
+          validDevicePaths.add(`MODBUS.${deviceName}.IA`);
         });
         devicePathMap = {};
         wdxDevices.forEach((device) => {
           const deviceName = device.name;
-          devicePathMap[deviceName] = `Modbus.${deviceName}`;
+          devicePathMap[deviceName] = `MODBUS.${deviceName}`;
         });
         updateDevicesFromWDX(
           wdxDevices.map((device) => ({
@@ -123,7 +127,7 @@ const initializeWebSocket = () => {
 initializeWebSocket();
 
 export const updateDeviceConfig = (idOrName: string, config: ModbusConfig) => {
-  let device = devices.find((d) => d.id === idOrName) || devices.find((d) => d.name === idOrName);
+  let device = ModbusDevices.find((d) => d.id === idOrName) || ModbusDevices.find((d) => d.name === idOrName);
   if (device) {
     device.config = config;
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -148,14 +152,14 @@ export const updateDeviceConfig = (idOrName: string, config: ModbusConfig) => {
 };
 
 export const updateDevicesFromWDX = (wdxDevices: { name: string; config: ModbusConfig }[]) => {
+  console.log("[ModbusDeviceStore] updateDevicesFromWDX called with:", wdxDevices);
   wdxDevices.forEach((wdxDevice, index) => {
     const deviceName = wdxDevice.name;
-    const fullName = `Analyzer - ${deviceName}`;
-    let device = devices.find((d) => d.name === fullName);
+    let device = ModbusDevices.find((d) => d.name === deviceName);
     if (!device) {
       device = {
         id: (index + 1).toString(),
-        name: fullName,
+        name: deviceName,
         latitude: 41.0 + index * 0.01,
         longitude: 29.0 + index * 0.01,
         address: "",
@@ -174,7 +178,7 @@ export const updateDevicesFromWDX = (wdxDevices: { name: string; config: ModbusC
           F: 0, PF: 0, QT: 0, PT: 0, UA: 0, IA: 0,
         },
       };
-      devices.push(device);
+      ModbusDevices.push(device);
     } else if (wdxDevice.config && Object.keys(wdxDevice.config).length > 0) {
       device.config = wdxDevice.config;
     }
@@ -183,7 +187,7 @@ export const updateDevicesFromWDX = (wdxDevices: { name: string; config: ModbusC
 
 export const updateDeviceFromWDXData = (path: string, value: any) => {
   const deviceName = path.split(".").pop() || "";
-  const device = devices.find((d) => d.name === `Analyzer - ${deviceName}`);
+  const device = ModbusDevices.find((d) => d.name === deviceName);
   if (device && value) {
     let hasConfigChange = false;
     const updatedConfig = { ...device.config };
@@ -228,3 +232,18 @@ export const getLogs = (deviceName: string) => {
     })
   );
 };
+
+// Add this function to ModbusDeviceStore if not present
+export function addDevice(device: ModbusDevice) {
+  ModbusDevices.push(device);
+  if (typeof window !== "undefined" && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(
+      JSON.stringify({
+        type: "addDevice",
+        path: "MODBUS.",
+        device,
+      })
+    );
+  }
+  notifyListeners();
+}

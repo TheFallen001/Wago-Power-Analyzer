@@ -1,15 +1,13 @@
 // app/map/page.tsx or wherever your MapScreen lives
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   GoogleMap,
   LoadScript,
   Marker,
 } from "@react-google-maps/api";
 import DeviceInfoPopup from "./DeviceInfoPopup";
-import { useDevices } from "../utils/VirtualDeviceStore"; // Import your device data
-
-
+import { ModbusDevice, ModbusDevices, subscribeToDeviceUpdates } from "../utils/ModbusDeviceStore";
 
 // Set map container style
 const containerStyle = {
@@ -24,21 +22,16 @@ const center = {
 
 export const API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // 🔁 Replace with your actual API key
 
-type Device = { id: string; name: string; latitude: number; longitude: number };
-
 export default function MapScreen() {
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<ModbusDevice | null>(null);
 
-  const { devices } = useDevices(); // Fetch devices from your store
+  const { devices } = useModbusDevices(); // Fetch Modbus devices from your store
 
   return (
     <div
       style={{ background: "#F5F7FA", minHeight: "100vh" }}
       className="flex flex-col items-center p-4"
     >
-      {/* <div style={{ background: '#fff', border: '1px solid #E5E7EB' }} className="p-8 rounded shadow-md w-full max-w-3xl">
-        <h1 style={{ color: '#0057B8' }} className="text-2xl font-bold text-center mb-6">Device Map</h1> */}
-
       {/* Google Map */}
       <div
         className="w-full h-screen mb-4"
@@ -56,7 +49,6 @@ export default function MapScreen() {
                 position={{ lat: device.latitude, lng: device.longitude }}
                 title={device.name}
                 onClick={() => setSelectedDevice(device)}
-                
               />
             ))}
             {selectedDevice && (
@@ -68,7 +60,6 @@ export default function MapScreen() {
           </GoogleMap>
         </LoadScript>
       </div>
-
       {/* Device List */}
       {/* <div className="space-y-2">
           {devices.map(device => (
@@ -84,4 +75,16 @@ export default function MapScreen() {
       {/* </div> */}
     </div>
   );
+}
+
+// Custom hook to use ModbusDevices from the store
+export function useModbusDevices() {
+  const [devices, setDevices] = useState<ModbusDevice[]>([]);
+  useEffect(() => {
+    const unsubscribe = subscribeToDeviceUpdates((newDevices) => {
+      setDevices([...newDevices]);
+    });
+    return unsubscribe;
+  }, []);
+  return { devices };
 }

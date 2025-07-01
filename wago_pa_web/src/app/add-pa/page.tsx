@@ -1,7 +1,7 @@
 // Web version of AddPA screen using Tailwind CSS
 "use client";
 import React, { useState } from "react";
-import { addDevice } from "../utils/VirtualDeviceStore";
+import { addDevice } from "../utils/ModbusDeviceStore";
 import { reverseGeocode } from "../utils/DeviceStore";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { API_KEY } from "../map/page";
@@ -38,13 +38,13 @@ export default function AddPA() {
       currentMax: 2.0, // Default value
       currentMin: 0, // Default value
       config: {
-        addr1: 1, // Default value
-        baud1: 9600, // Default value
-        check1: 2, // Default: Parity
-        stopBit1: 1, // Default: 1.5 stop bit
-        baud2: 57600, // Default value
-        check2: 2, // Default: Parity
-        stopBit2: 1, // Default: 1.5 stop bit
+        Addr1: 1, // Default value
+        Baud1: 9600, // Default value
+        Check1: 2, // Default: Parity
+        Baud2: 57600, // Default value
+        Check2: 2, // Default: Parity
+        "645Addr": 0, // Default value
+        Language: 0, // Default value
       },
     };
 

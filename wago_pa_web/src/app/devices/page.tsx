@@ -1,10 +1,23 @@
 // Devices list page: shows all devices from DeviceStore and links to detail page
 "use client";
 import Link from "next/link";
-import { useDevices } from "../utils/VirtualDeviceStore";
+import { ModbusDevice, ModbusDevices , subscribeToDeviceUpdates } from "../utils/ModbusDeviceStore";
+import { useEffect, useState } from "react";
+
+function useModbusDevices() {
+  const [devices, setDevices] = useState<ModbusDevice[]>([...ModbusDevices]);
+  useEffect(() => {
+    const unsubscribe = subscribeToDeviceUpdates((newDevices) => {
+      console.log('Devices updated:', newDevices);
+      setDevices([...newDevices]);
+    });
+    return unsubscribe;
+  }, []);
+  return { devices };
+}
 
 export default function DevicesPage() {
-  const { devices } = useDevices();
+  const { devices } = useModbusDevices();
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] flex flex-col items-center p-6">

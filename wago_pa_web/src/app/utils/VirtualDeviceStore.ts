@@ -1,6 +1,7 @@
-// VirtualDeviceStore.ts (web)
-// Handles all Virtual device logic for the web frontend, separated from DeviceStore
+// All code in this file is commented out to disable Virtual device logic when focusing on Modbus devices only.
+// To re-enable Virtual device simulation, uncomment and adjust as needed.
 
+/*
 import { geocodeAddress, reverseGeocode, Device } from "./DeviceStore";
 import { useEffect, useState } from "react";
 
@@ -372,3 +373,4 @@ export const addDevice = async (device: Device) => {
   console.log("New device sent at", new Date().toISOString(), ":", newDevice);
   notifyListeners();
 };
+*/
