@@ -180,7 +180,7 @@ const initializeWDXClient = async () => {
   client = new WDXWSClient.WDX.WS.Client.JS.Service.ClientService({
     url: `ws://${IPADDRESS}:7081/wdx/ws`,
     reconnectAttempts: 5,
-    reconnectDelay: 1000,
+    reconnectDelay: 2000,
   });
 
   // Attach DataService to client for backend operations, passing the client instance
@@ -232,47 +232,49 @@ const initializeWDXClient = async () => {
     const devicePromises = deviceNodes.map(async (deviceNode) => {
       const deviceName = deviceNode.path.split(".").pop() || deviceNode.path;
       try {
-        // Get the children of the device node (its components/values)
-        const valueChildren = (deviceNode.children || []).filter(
-          (valChild) => valChild.value !== undefined || valChild.subscribeable === true || valChild.type === 'value'
-        );
-        let config = {};
+        // Hardcode the config field paths as MODBUS.DeviceName.FieldName
+        const configFields = [
+          "Addr1", "645Addr", "Baud1", "Baud2", "Check1", "Check2", "Language",
+          "F", "PF", "QT", "PT", "UA", "IA", "lat", "lng"
+        ];
+        const config = {};
         await Promise.all(
-          valueChildren.map(
-            (valChild) =>
-              new Promise((resolve) => {
-                const sub = client.dataService.register(valChild.path).subscribe({
-                  next: (data) => {
-                    if (configFields.includes(valChild.name)) {
-                      config[valChild.name] = data.value;
-                    }
-                    sub.unsubscribe();
+          configFields.map((field) => {
+            const fieldPath = `MODBUS.${deviceName}.${field}`;
+            console.log(`[${deviceName}] Attempting to subscribe to: ${fieldPath}`);
+            return new Promise((resolve) => {
+              let resolved = false;
+              const timeout = setTimeout(() => {
+                if (!resolved) {
+                  resolved = true;
+                  console.warn(`[${deviceName}] Timeout waiting for value on ${fieldPath}, using default.`);
+                  config[field] = field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
+                  resolve();
+                }
+              }, 15000); // 10 seconds
+              const sub = client.dataService.register(fieldPath).subscribe({
+                next: (data) => {
+                  if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timeout);
+                    console.log(`[${deviceName}] Received value for ${fieldPath}:`, JSON.stringify(data, null, 2));
+                    config[field] = data?.value ?? (field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0);
                     resolve();
-                  },
-                  error: (err) => {
-                    sub.unsubscribe();
+                  }
+                },
+                error: (err) => {
+                  if (!resolved) {
+                    resolved = true;
+                    clearTimeout(timeout);
+                    console.error(`[${deviceName}] Error subscribing to ${fieldPath}:`, err);
+                    config[field] = field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
                     resolve();
-                  },
-                });
-              })
-          )
+                  }
+                },
+              });
+            });
+          })
         );
-        // Fill in missing fields with defaults
-        config = {
-          Addr1: config["Addr1"] ?? 0,
-          "645Addr": config["645Addr"] ?? 0,
-          Baud1: config["Baud1"] ?? 0,
-          Baud2: config["Baud2"] ?? 0,
-          Check1: config["Check1"] ?? 0,
-          Check2: config["Check2"] ?? 0,
-          Language: config["Language"] ?? 0,
-          F: config["F"] ?? 0,
-          PF: config["PF"] ?? 0,
-          QT: config["QT"] ?? 0,
-          PT: config["PT"] ?? 0,
-          UA: config["UA"] ?? 0,
-          IA: config["IA"] ?? 0
-        };
         return { name: deviceName, config, path: deviceNode.path };
       } catch (err) {
         console.error("Error getting schema for device", deviceNode.path, ":", err);
