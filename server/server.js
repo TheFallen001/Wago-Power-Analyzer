@@ -16,7 +16,7 @@ const readline = require("readline");
 
 // Set up WebSocket server for React Native clients
 
-const IPADDRESS = "192.168.31.96";
+const IPADDRESS = "localhost";
 const wss = new WebSocket.Server({ port: 8080 });
 console.log("WebSocket server started on ws://localhost:8080");
 
@@ -156,6 +156,16 @@ const broadcast = (message) => {
   });
 };
 
+// Add async getSchema helper
+const getSchema = async (schema, client) => {
+  try {
+    return await client.dataService.getSchema(schema.path, 1).toPromise();
+  } catch (error) {
+    console.error(`Schema not exists ${schema.path}`);
+    return await client.dataService.setSchema(schema).toPromise();
+  }
+};
+
 // Initialize WDX client
 const initializeWDXClient = async () => {
   if (client) {
@@ -194,216 +204,184 @@ const initializeWDXClient = async () => {
 
     const path = "MODBUS";
 
-    // Subscribe to schema
-    client.dataService.getSchema(path, 1).subscribe({
-      next: (schema) => {
+    // Use new getSchema helper
+    const schemaObj = { path };
+    const schema = await getSchema(schemaObj, client);
+    console.log(
+      "Schema received for path:",
+      path,
+      "at",
+      new Date().toISOString()
+    );
+    const children = schema.children || [];
+
+    if (!Array.isArray(children) || children.length === 0) {
+      console.log(
+        "No children found in schema or invalid schema data at",
+        new Date().toISOString()
+      );
+      return;
+    }
+
+    // Helper to extract Virtual config with lowercase keys
+    function getVirtualConfig(data) {
+      return {
+        addr1: data?.value?.addr1 ?? 0,
+        baud1: data?.value?.baud1 ?? 0,
+        check1: data?.value?.check1 ?? 0,
+        stopBit1: data?.value?.stopBit1 ?? 0,
+        baud2: data?.value?.baud2 ?? 0,
+        check2: data?.value?.check2 ?? 0,
+        stopBit2: data?.value?.stopBit2 ?? 0,
+        lat: data?.value?.lat ?? 40.0,
+        lng: data?.value?.lng ?? 30.0,
+      };
+    }
+
+    // Helper to extract Modbus config with correct key casing
+    function getModbusConfig(data) {
+      return {
+        Addr1: data?.value?.Addr1 ?? 0,
+        Baud1: data?.value?.Baud1 ?? 0,
+        Check1: data?.value?.Check1 ?? 0,
+        Baud2: data?.value?.Baud2 ?? 0,
+        Check2: data?.value?.Check2 ?? 0,
+        "645Addr": data?.value?.["645Addr"] ?? 0,
+        Language: data?.value?.Language ?? 0,
+        // Add more fields as needed
+      };
+    }
+    
+    // Test value path for single value subscription
+    // This is a test value path to ensure the client can subscribe to a single value
+    /*
+    const testValuePath = "MODBUS.Mod.Addr1";
+    console.log("Attempting to subscribe to single value:", testValuePath);
+    client.dataService.register(testValuePath).subscribe({
+      next: (data) => {
         console.log(
-          "Schema received for path:",
-          path,
-          "at",
-          new Date().toISOString()
-        );
-        const children = schema.children || [];
-
-        if (!Array.isArray(children) || children.length === 0) {
-          console.log(
-            "No children found in schema or invalid schema data at",
-            new Date().toISOString()
-          );
-          return;
-        }
-
-        // Helper to extract Virtual config with lowercase keys
-        function getVirtualConfig(data) {
-          return {
-            addr1: data?.value?.addr1 ?? 0,
-            baud1: data?.value?.baud1 ?? 0,
-            check1: data?.value?.check1 ?? 0,
-            stopBit1: data?.value?.stopBit1 ?? 0,
-            baud2: data?.value?.baud2 ?? 0,
-            check2: data?.value?.check2 ?? 0,
-            stopBit2: data?.value?.stopBit2 ?? 0,
-            lat: data?.value?.lat ?? 40.0,
-            lng: data?.value?.lng ?? 30.0,
-          };
-        }
-
-        // Helper to extract Modbus config with correct key casing
-        function getModbusConfig(data) {
-          return {
-            Addr1: data?.value?.Addr1 ?? 0,
-            Baud1: data?.value?.Baud1 ?? 0,
-            Check1: data?.value?.Check1 ?? 0,
-            Baud2: data?.value?.Baud2 ?? 0,
-            Check2: data?.value?.Check2 ?? 0,
-            "645Addr": data?.value?.["645Addr"] ?? 0,
-            Language: data?.value?.Language ?? 0,
-            // Add more fields as needed
-          };
-        }
-
-        // New: For each device, get its schema and subscribe to each child value node
-        const devicePromises = children.map((child) => {
-          const deviceName = child.path.split(".").pop() || child.path;
-          return new Promise((resolve) => {
-            // client.dataService.register(child.path).subscribe({
-            //   next: (data) => {
-            //     // Use the first data received for initial config
-            //     const deviceName = child.path.split(".").pop() || child.path;
-            //     resolve({
-            //       name: deviceName,
-            //       config: {
-            //         addr1: data?.value?.addr1 ?? 0,
-            //         baud1: data?.value?.baud1 ?? 0,
-            //         check1: data?.value?.check1 ?? 0,
-            //         stopBit1: data?.value?.stopBit1 ?? 0,
-            //         baud2: data?.value?.baud2 ?? 0,
-            //         check2: data?.value?.check2 ?? 0,
-            //         stopBit2: data?.value?.stopBit2 ?? 0,
-            //         lat: data?.value?.lat ?? 40.0,
-            //         lng: data?.value?.lng ?? 30.0,
-            //       },
-            //       path: child.path,
-            //     });
-            //   },
-            //   error: () => {
-            //     // On error, fallback to default config
-            //     const deviceName = child.path.split(".").pop() || child.path;
-            //     resolve({
-            //       name: deviceName,
-            //       config: {
-            //         addr1: 0,
-            //         baud1: 0,
-            //         check1: 0,
-            //         stopBit1: 0,
-            //         baud2: 0,
-            //         check2: 0,
-            //         stopBit2: 0,
-            //       },
-            //       path: child.path,
-            //     });
-            //   },
-            // });
-
-            client.dataService.getSchema(child.path, 1).subscribe({
-              next: (deviceSchema) => {
-                // console.log(
-                //   "Device schema for",
-                //   child.path,
-                //   ":",
-                //   JSON.stringify(deviceSchema, null, 2)
-                // );
-
-                if (
-                  !deviceSchema.children ||
-                  deviceSchema.children.length === 0
-                ) {
-                  console.warn("No children found for device", child.path);
-                  resolve({ name: deviceName, config: {}, path: child.path });
-                  return;
-                }
-                const children = deviceSchema.children.slice();
-                const total = children.length;
-                const receivedSet = new Set();
-                let config = {};
-                let received = 0;
-
-                children.forEach((valChild) => {
-                  client.dataService.register(valChild.path).subscribe({
-                    next: (data) => {
-                      // console.log(
-                      //   `${valChild.path} is ${JSON.stringify(data)}`
-                      // );
-                      if (receivedSet.has(valChild.path)) return;
-                      receivedSet.add(valChild.path);
-                      config[valChild.name] = data.value;
-                      receivedSet.size === total &&
-                        resolve({ name: deviceName, config, path: child.path });
-                      // config[valChild.name] = data.value;
-                      // received++;
-                      // if (received === deviceSchema.children.length) {
-                      //   resolve({ name: deviceName, config, path: child.path });
-                      // }
-                    },
-                    error: (err) => {
-                      console.error(
-                        "Error subscribing to",
-                        valChild.path,
-                        ":",
-                        err
-                      );
-                      received++;
-                      if (received === deviceSchema.children.length) {
-                        resolve({ name: deviceName, config, path: child.path });
-                      }
-                    },
-                  });
-                });
-              },
-              error: (err) => {
-                console.error(
-                  "Error getting schema for device",
-                  child.path,
-                  ":",
-                  err
-                );
-                resolve({ name: deviceName, config: {}, path: child.path });
-              },
-            });
-          });
-        });
-        Promise.all(devicePromises).then((devices) => {
-          latestSchemaDevices = devices.map(({ name, config }) => ({
-            name,
-            config,
-          }));
-          broadcast({ type: "schema", devices: latestSchemaDevices });
-        });
-
-        // TEST: Subscribe to a single value (MODBUS.Test.Addr1) and broadcast it
-        const testValuePath = "MODBUS.Mod.Addr1";
-        console.log("Attempting to subscribe to single value:", testValuePath);
-        client.dataService.register(testValuePath).subscribe({
-          next: (data) => {
-            console.log(
-              "Received value for",
-              testValuePath,
-              ":",
-              JSON.stringify(data, null, 2)
-            );
-            broadcast({
-              type: "modbusTestValue",
-              path: testValuePath,
-              value: data?.value ?? null,
-            });
-          },
-          error: (err) => {
-            console.error(
-              "Error subscribing to single value",
-              testValuePath,
-              ":",
-              err
-            );
-          },
-        });
-      },
-      error: async (error) => {
-        console.error(
-          "Schema Error at",
-          new Date().toISOString(),
+          "Received value for",
+          testValuePath,
           ":",
-          error && error.message ? error.message : error
+          JSON.stringify(data, null, 2)
         );
-        await client.disconnect();
-        setTimeout(initializeWDXClient, 5000); // Retry after 5 seconds
+        broadcast({
+          type: "modbusTestValue",
+          path: testValuePath,
+          value: data?.value ?? null,
+        });
       },
-      complete: () => {
-        console.log(
-          "Schema subscription completed at",
-          new Date().toISOString()
+      error: (err) => {
+        console.error(
+          "Error subscribing to single value",
+          testValuePath,
+          ":",
+          err
         );
       },
     });
+    */
+
+    // New: For each device, get its schema and subscribe to each child value node
+    const devicePromises = children.map(async (child) => {
+      const deviceName = child.path.split(".").pop() || child.path;
+      // client.dataService.register(child.path).subscribe({
+      //   next: (data) => {
+      //     // Use the first data received for initial config
+      //     const deviceName = child.path.split(".").pop() || child.path;
+      //     resolve({
+      //       name: deviceName,
+      //       config: {
+      //         addr1: data?.value?.addr1 ?? 0,
+      //         baud1: data?.value?.baud1 ?? 0,
+      //         check1: data?.value?.check1 ?? 0,
+      //         stopBit1: data?.value?.stopBit1 ?? 0,
+      //         baud2: data?.value?.baud2 ?? 0,
+      //         check2: data?.value?.check2 ?? 0,
+      //         stopBit2: data?.value?.stopBit2 ?? 0,
+      //         lat: data?.value?.lat ?? 40.0,
+      //         lng: data?.value?.lng ?? 30.0,
+      //       },
+      //       path: child.path,
+      //     });
+      //   },
+      //   error: () => {
+      //     // On error, fallback to default config
+      //     const deviceName = child.path.split(".").pop() || child.path;
+      //     resolve({
+      //       name: deviceName,
+      //       config: {
+      //         addr1: 0,
+      //         baud1: 0,
+      //         check1: 0,
+      //         stopBit1: 0,
+      //         baud2: 0,
+      //         check2: 0,
+      //         stopBit2: 0,
+      //       },
+      //       path: child.path,
+      //     });
+      //   },
+      // });
+
+      // --- async/await version below ---
+      try {
+        const deviceSchema = await getSchema({ path: child.path }, client);
+        if (!deviceSchema.children || deviceSchema.children.length === 0) {
+          console.warn("No children found for device", child.path);
+          return { name: deviceName, config: {}, path: child.path };
+        }
+        const childrenArr = deviceSchema.children.slice();
+        // console.log(`Device ${deviceName} children:`, childrenArr);
+        // Only subscribe to value nodes (those with a value property or subscribeable true)
+        const valueChildren = childrenArr.filter(
+          (valChild) => valChild.value !== undefined || valChild.subscribeable === true || valChild.type === 'value'
+        );
+        let config = {};
+        await Promise.all(
+          valueChildren.map(
+            (valChild) =>
+              new Promise((resolve) => {
+                // console.log('Processing child:', valChild);
+                //console.log('Attempting to register:', valChild.path);
+                const sub = client.dataService.register(valChild.path).subscribe({
+                  next: (data) => {
+                    console.log('Register resolved for:', valChild.path);
+                    config[valChild.name] = data.value;
+                    console.log(`Subscribed value for ${valChild.path}:`, data.value);
+                    // Broadcast each value as soon as it is received
+                    broadcast({
+                      type: "deviceValue",
+                      device: deviceName,
+                      path: valChild.path,
+                      value: data.value,
+                      config,
+                    });
+                    sub.unsubscribe();
+                    resolve();
+                  },
+                  error: (err) => {
+                    console.error("Error subscribing to", valChild.path, ":", err);
+                    sub.unsubscribe();
+                    resolve();
+                  },
+                });
+              })
+          )
+        );
+        return { name: deviceName, config, path: child.path };
+      } catch (err) {
+        console.error("Error getting schema for device", child.path, ":", err);
+        return { name: deviceName, config: {}, path: child.path };
+      }
+    });
+    const devices = await Promise.all(devicePromises);
+    latestSchemaDevices = devices.map(({ name, config }) => ({
+      name,
+      config,
+    }));
+    broadcast({ type: "schema", devices: latestSchemaDevices });
+  
   } catch (e) {
     console.error(
       "Error initializing WDX client at",
