@@ -78,29 +78,28 @@ wss.on("connection", (ws) => {
           message,
           ws,
           client,
-          initializeWDXClient
+          broadcast
         );
       } else if (message.path && message.path.startsWith("MODBUS.")) {
-        console.log("Its true here");
         modbusDeviceService.handleMessage(
           message,
           ws,
           client,
-          initializeWDXClient
+          broadcast
         );
       } else if (message.device && message.device.deviceType === "Virtual") {
         virtualDeviceService.handleMessage(
           message,
           ws,
           client,
-          initializeWDXClient
+          broadcast
         );
       } else if (message.device && message.device.deviceType === "MODBUS") {
         modbusDeviceService.handleMessage(
           message,
           ws,
           client,
-          initializeWDXClient
+          broadcast
         );
       } else if (message.type === "getLogs") {
         if (client && client.instanceService) {
@@ -312,6 +311,9 @@ process.stdin.on("keypress", async (str, key) => {
     console.log("Exiting server...");
     if (client) await client.disconnect();
     process.exit();
+  }
+  else if(key.name === "s"){
+    modbusDeviceService.addDevice(client,"newName");
   }
 });
 

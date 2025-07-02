@@ -1,5 +1,6 @@
 // DeviceStore.ts (web)
 // Only contains shared types and utilities. All device logic is now in VirtualDeviceStore and ModbusDeviceStore.
+import GOOGLE_API_KEY from "../../../../test"
 
 export type Device = {
   currentMax: number;
@@ -14,8 +15,7 @@ export type Device = {
   config: any; // Use specific config types in VirtualDeviceStore/ModbusDeviceStore
 };
 
-// Google Geocoding utility functions
-const GOOGLE_API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo";
+
 
 export async function geocodeAddress(address: string): Promise<{ latitude: number; longitude: number } | null> {
   try {

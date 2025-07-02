@@ -1,9 +1,10 @@
 // DeviceStore.ts
 // Only contains shared types and utilities. All device logic is now in VirtualDeviceStore and ModbusDeviceStore.
 import wdxHelper, { Device } from "./wdx-helpers";
+import GOOGLE_API_KEY from "../../test"
 // google maps API key
 
-const GOOGLE_API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo";
+
 
 //your ipaddress
 const IPADDRESS = "192.168.31.96";

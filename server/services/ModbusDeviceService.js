@@ -6,8 +6,9 @@ const { Data, Instance } = require("../utils");
 const { MetaData } = Data;
 const { DataSchema } = Data;
 const { MetaDataVirtualAdapter, MetaDataVirtual } = MetaData; // TODO: Replace with Modbus-specific metadata if available
-const WDXSchema = require("@wago/wdx-schema");
+const WDXSchema = require("@wago/wdx-schema-base");
 const { DataSourceOptions } = require("../utils/Instance");
+const { firstValueFrom } = require("rxjs");
 
 const lastDataBroadcastTime = {};
 const DATA_BROADCAST_INTERVAL = 5000;
@@ -104,44 +105,46 @@ class ModbusDeviceService {
     });
   }
 
-  addDevice(client) {
+  async addDevice(client,deviceName) {
     if (
       client &&
       client.instanceService &&
       typeof client.instanceService.save === "function"
     ) {
       // TODO: Replace with Modbus-specific metadata if available
-      const instance =
-        new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.MODBUSDataAdapterInstance();
-      // const instance = Instance.DataAdapter.MODBUSDataAdapterInstance();
-      
+      return new Promise((resolve, reject) => {
+        try {
+          const inst = initInstance(deviceName);
+          // const instance = Instance.DataAdapter.MODBUSDataAdapterInstance();
 
-      
-        console.log("instance: ", instance)
-      client.instanceService.save(instance).subscribe({
-        next: (response) => {
-          console.log("Response");
-          console.log(JSON.stringify(response, null, 2));
-        },
+          // console.log("Detail running...", inst.uuid);
 
-        error: async (error) => {
-          console.error("Error Code: " + error.code);
-          console.error("Error Message: " + error.message);
+          const information = client.instanceService
+            .detail(inst.uuid)
+            .subscribe({
+              next: async (response) => {
+             
+                // console.log(response);
 
-          console.log("Disconnecting");
-          await client.disconnect();
-          console.log("Disconnected successfully");
-        },
+                await client.instanceService.start(inst.uuid).toPromise();
+                resolve();
+              },
+              error: async (error) => {
+                // console.log("Error was called")
+                // console.error(error);
+                await client.instanceService.save(inst).toPromise();
 
-        complete: async () => {
-          console.log("Completed");
-          console.log("Disconnecting");
-          await c.disconnect();
-          console.log("Disconnected successfully");
-        },
+                await client.instanceService.start(inst.uuid).toPromise()
+                resolve();
+              },
+            });
+
+          console.log("Done running...");
+          console.log("Information: ", information);
+        } catch (e) {
+          reject(e);
+        }
       });
-    } else {
-      console.error("InstanceService not available or save method not found");
     }
   }
 
@@ -151,12 +154,12 @@ class ModbusDeviceService {
       this.devices[idx] = { ...this.devices[idx], ...update };
     }
   }
-
+;
   getDevices() {
     return this.devices;
   }
 
-  handleMessage(message, ws, client, broadcast) {
+  async handleMessage(message, ws, client, broadcast) {
     if (
       message.type === "setConfig" &&
       message.path &&
@@ -164,42 +167,60 @@ class ModbusDeviceService {
       message.path.startsWith("Modbus.")
     ) {
       this.setConfig(message, ws, client, broadcast);
-    } else if (
-      message.type === "addDevice"
-     
-    ) {
-      this.addDevice(client);
+    } else if (message.type === "addDevice") {
+      console.log(JSON.stringify(message, null, 2));
+      await this.addDevice(client);
     }
   }
 }
 
-const initInstance = async (name, ipaddress,port,cliendID) => {
-    //console.debug('Benchmark.initInstance', i, uuid);
- 
-    const instance = new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.MODBUSDataAdapterInstance();
-    instance.name = `name`;
-    instance.enabled = true;
-    instance.ipcType = "tcp";
- 
-    instance.tcpOptions = new WDXSchema.WDX.Schema.Model.Instance.TCPOptions();
-    instance.tcpOptions.serverOpts = new WDXSchema.WDX.Schema.Model.Instance.TCPOptionsServer();
-    instance.tcpOptions.listenOpts = new WDXSchema.WDX.Schema.Model.Instance.TCPOptionsListen();
- 
-    instance.udpOptions = new WDXSchema.WDX.Schema.Model.Instance.UDPOptions();
- 
-    instance.dataSourceOptions = new WDXSchema.WDX.Schema.Model.Instance.DataSourceOptions();
-    instance.dataSourceOptions.name = 'default';
- 
-    instance.logOptions = new WDXSchema.WDX.Schema.Model.Instance.LogOptions();
-    instance.logOptions.mergeLog = true;
-    instance.logOptions.level = 'debug';
-    instance.logOptions.mergeLogFile = `./logs/${instance.uuid}.log`;
- 
-    instance.executionOptions = new WDXSchema.WDX.Schema.Model.Instance.ExecutionOptions();
-    instance.executionOptions.mode = 'worker';
-    instance.executionOptions.script = './node_modules/.bin/wdx-virtual';
- 
-    return instance;
-}
+const initInstance = (
+  name = "test",
+  ipaddress = "192.168.2.90",
+  port = 502,
+  clientID = 3
+) => {
+  //console.debug('Benchmark.initInstance', i, uuid);
+
+  const instance =
+    new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.MODBUSDataAdapterInstance();
+  instance.name = name;
+  instance.enabled = true;
+  instance.ipcType = "tcp";
+
+  instance.tcpOptions = new WDXSchema.WDX.Schema.Model.Instance.TCPOptions();
+  instance.tcpOptions.serverOpts =
+    new WDXSchema.WDX.Schema.Model.Instance.TCPOptionsServer();
+  instance.tcpOptions.listenOpts =
+    new WDXSchema.WDX.Schema.Model.Instance.TCPOptionsListen();
+
+  instance.udpOptions = new WDXSchema.WDX.Schema.Model.Instance.UDPOptions();
+
+  instance.dataSourceOptions =
+    new WDXSchema.WDX.Schema.Model.Instance.DataSourceOptions();
+  instance.dataSourceOptions.name = "default";
+
+  instance.logOptions = new WDXSchema.WDX.Schema.Model.Instance.LogOptions();
+  instance.logOptions.mergeLog = true;
+  instance.logOptions.level = "debug";
+  instance.logOptions.mergeLogFile = `./logs/${instance.uuid}.log`;
+
+  instance.executionOptions =
+    new WDXSchema.WDX.Schema.Model.Instance.ExecutionOptions();
+  instance.executionOptions.mode = "worker";
+  instance.executionOptions.script = "./node_modules/.bin/wdx-virtual";
+
+  instance.modbusOptions =
+    new WDXSchema.WDX.Schema.Model.Instance.DataAdapter.MODBUSOptions();
+  instance.modbusOptions.host = ipaddress;
+  instance.modbusOptions.port = port;
+  instance.modbusOptions.clientId = clientID;
+
+  // instance.modbusOptions.clientID
+  return instance;
+};
 
 module.exports = new ModbusDeviceService();
+
+// DOcker Command
+// docker run -d -p 7081:80 -p 7481:443 --name wdx-runtime --restart unless-stopped   -v C:\Users\ustaz\Documents\WAGO\wdx-logs\data:/opt/elrest/edesign/wdx/data -v C:\Users\ustaz\Documents\WAGO\wdx-logs\config:/opt/elrest/edesign/wdx/config -v C:\Users\ustaz\Documents\WAGO\wdx-logs\js-storage:/opt/elrest/edesign/wdx/storage wdx-runtime:4.0.1.107-X86_64-alpine
