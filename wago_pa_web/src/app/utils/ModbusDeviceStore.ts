@@ -1,3 +1,18 @@
+// --- Alarm subscription for Modbus devices ---
+type ModbusAlarm = {
+  deviceName: string;
+  type: string;
+  value: number;
+};
+const alarmListeners: Array<(alarm: ModbusAlarm) => void> = [];
+
+export function subscribeToModbusAlarms(callback: (alarm: ModbusAlarm) => void) {
+  alarmListeners.push(callback);
+  return () => {
+    const idx = alarmListeners.indexOf(callback);
+    if (idx !== -1) alarmListeners.splice(idx, 1);
+  };
+}
 // ModbusDeviceStore.ts (web)
 // Handles all Modbus device logic for the web frontend, separated from DeviceStore
 
@@ -54,14 +69,17 @@ const initializeWebSocket = () => {
   const serverUrl = "ws://localhost:8080";
   ws = new WebSocket(serverUrl);
   ws.onopen = () => {};
-  ws.onmessage = (event) => {
+ws.onmessage = (event) => {
     let message;
     try {
       message = JSON.parse(event.data);
     } catch (error) { return; }
     // Debug: Log all incoming messages
     console.log("[ModbusDeviceStore] WS message received:", message);
-    if (message.type === "schema") {
+    if (message.type === "alarm") {
+      // Expecting: { type: "alarm", deviceName, type, value }
+      alarmListeners.forEach((cb) => cb(message));
+    } else if (message.type === "schema") {
       const wdxDevices = message.devices || [];
       if (!Array.isArray(wdxDevices)) return;
       if (isSchemaChanged(wdxDevices)) {

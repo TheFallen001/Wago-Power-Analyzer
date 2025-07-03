@@ -1,7 +1,7 @@
 // Web version of AlarmScreen using Tailwind CSS
 "use client";
 import React, { useEffect, useState } from "react";
-import { subscribeToAlarms } from '../utils/VirtualDeviceStore';
+import { subscribeToModbusAlarms } from '../utils/ModbusDeviceStore';
 
 interface AlarmHistoryItem {
   id: string;
@@ -16,7 +16,7 @@ export default function Alarm() {
   useEffect(() => {
     // Listen for alarms and add to history only if value or type changed for the device
     let lastAlarmMap: { [key: string]: { type: string; value: number } } = {};
-    const unsub = subscribeToAlarms((alarm) => {
+    const unsub = subscribeToModbusAlarms((alarm) => {
       const key = alarm.deviceName + '-' + alarm.type;
       const last = lastAlarmMap[key];
       // Only add to history if value or type changed

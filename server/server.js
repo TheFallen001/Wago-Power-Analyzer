@@ -224,66 +224,65 @@ const initializeWDXClient = async () => {
     }
 
     // For each device node, collect its children as config fields
+    // Instead of map, use for loop and delay each subscribe by 1 second
     const configFields = [
       "Addr1", "645Addr", "Baud1", "Baud2", "Check1", "Check2", "Language",
-      "F", "PF", "QT", "PT", "UA", "IA"
+      "F", "PF", "QT", "PT", "UA", "IA", "lat", "lng"
     ];
-    const devicePromises = deviceNodes.map(async (deviceNode) => {
+    const devices = [];
+    for (let i = 0; i < deviceNodes.length; i++) {
+      const deviceNode = deviceNodes[i];
       const deviceName = deviceNode.path.split(".").pop() || deviceNode.path;
       try {
-        // Hardcode the config field paths as MODBUS.DeviceName.FieldName
-        const configFields = [
-          "Addr1", "645Addr", "Baud1", "Baud2", "Check1", "Check2", "Language",
-          "F", "PF", "QT", "PT", "UA", "IA", "lat", "lng"
-        ];
         const config = {};
-        await Promise.all(
-          configFields.map((field) => {
-            const fieldPath = `MODBUS.${deviceName}.${field}`;
-            console.log(`[${deviceName}] Attempting to subscribe to: ${fieldPath}`);
-            return new Promise((resolve) => {
-              let resolved = false;
-              const timeout = setTimeout(() => {
+        for (let j = 0; j < configFields.length; j++) {
+          const field = configFields[j];
+          const fieldPath = `MODBUS.${deviceName}.${field}`;
+          console.log(`[${deviceName}] Attempting to subscribe to: ${fieldPath}`);
+          await new Promise((resolve) => {
+            let resolved = false;
+            const timeout = setTimeout(() => {
+              if (!resolved) {
+                resolved = true;
+                console.warn(`[${deviceName}] Timeout waiting for value on ${fieldPath}, using default.`);
+                config[field] = field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
+                resolve();
+              }
+            }, 3000);
+            const sub = client.dataService.register(fieldPath).subscribe({
+              next: (data) => {
                 if (!resolved) {
                   resolved = true;
-                  console.warn(`[${deviceName}] Timeout waiting for value on ${fieldPath}, using default.`);
+                  clearTimeout(timeout);
+                  console.log(`[${deviceName}] Received value for ${fieldPath}:`, JSON.stringify(data, null, 2));
+                  config[field] = data?.value ?? (field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0);
+                  resolve();
+                }
+              },
+              error: (err) => {
+                if (!resolved) {
+                  resolved = true;
+                  clearTimeout(timeout);
+                  console.error(`[${deviceName}] Error subscribing to ${fieldPath}:`, err);
                   config[field] = field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
                   resolve();
                 }
-              }, 15000); // 10 seconds
-              const sub = client.dataService.register(fieldPath).subscribe({
-                next: (data) => {
-                  if (!resolved) {
-                    resolved = true;
-                    clearTimeout(timeout);
-                    console.log(`[${deviceName}] Received value for ${fieldPath}:`, JSON.stringify(data, null, 2));
-                    config[field] = data?.value ?? (field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0);
-                    resolve();
-                  }
-                },
-                error: (err) => {
-                  if (!resolved) {
-                    resolved = true;
-                    clearTimeout(timeout);
-                    console.error(`[${deviceName}] Error subscribing to ${fieldPath}:`, err);
-                    config[field] = field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
-                    resolve();
-                  }
-                },
-              });
+              },
             });
-          })
-        );
-        return { name: deviceName, config, path: deviceNode.path };
+          });
+          // Delay 1 second between each field subscribe for this device
+          await new Promise((r) => setTimeout(r, 5000));
+        }
+        devices.push({ name: deviceName, config, path: deviceNode.path });
+        // Log row by row after each device
+        console.log(`[${deviceName}] Config collected:`, JSON.stringify(config, null, 2));
       } catch (err) {
         console.error("Error getting schema for device", deviceNode.path, ":", err);
-        return { name: deviceName, config: {}, path: deviceNode.path };
+        devices.push({ name: deviceName, config: {}, path: deviceNode.path });
       }
-    });
-    const devices = await Promise.all(devicePromises);
+    }
     latestSchemaDevices = devices.map(({ name, config }) => ({ name, config }));
     broadcast({ type: "schema", devices: latestSchemaDevices });
-  
   } catch (e) {
     console.error(
       "Error initializing WDX client at",
@@ -292,7 +291,7 @@ const initializeWDXClient = async () => {
       e.message
     );
     console.error("Stack:", e.stack);
-    setTimeout(initializeWDXClient, 5000); // Retry after 5 seconds
+    setTimeout(initializeWDXClient, 3000); // Retry after 5 seconds
   }
 };
 

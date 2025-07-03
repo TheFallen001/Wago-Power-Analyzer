@@ -14,7 +14,7 @@ import {
   Title,
 } from 'chart.js';
 import { useParams } from 'next/navigation';
-import { useLiveDevices } from '../../utils/VirtualDeviceStore';
+import { ModbusDevices } from '../../utils/ModbusDeviceStore';
 
 ChartJS.register(
   ArcElement,
@@ -30,25 +30,27 @@ ChartJS.register(
 const SITE_AREA = 842; // m²
 const INSTALLED_POWER = 200; // kVA
 
-export default function NewDetail() {
+
+export default function Page() {
   const { deviceId } = useParams();
-  const { devices } = useLiveDevices();
   const [lastData, setLastData] = useState('');
   // Add state for power history (6 time slots)
   const [powerHistory, setPowerHistory] = useState([0, 0, 0, 0, 0, 0]);
+  // Use ModbusDevices (static, not reactive)
+  const devices = ModbusDevices;
 
   useEffect(() => {
     setLastData(new Date().toLocaleString());
   }, []);
 
-  // Find device by id (real-time from WDX via VirtualDeviceStore)
+  // Find device by id (from ModbusDevices)
   const device = devices.find((d) => d.id === deviceId);
 
   // Real-time values from WDX (via device.config)
-  const volt = device?.config?.volt ?? '-';
-  const curr = device?.config?.curr ?? '-';
-  const power = device?.config?.power ?? '-';
-  const energy = device?.config?.energy ?? '-';
+  const volt = device?.config?.UA ?? '-';
+  const curr = device?.config?.IA ?? '-';
+  const power = device?.config?.PT ?? '-';
+  const energy = device?.config?.PF ?? '-';
 
   // Update powerHistory when power changes
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function NewDetail() {
       });
     }
   }, [power]);
-
+  // ...existing code...
   if (!device) return <div className="p-6">Device not found</div>;
 
   // Metrics
@@ -75,8 +77,8 @@ export default function NewDetail() {
   const energyIntensity = SITE_AREA ? (totalEnergy / SITE_AREA).toFixed(3) : '-';
   const carbonEmission = (totalEnergy * 0.000475).toFixed(3);
   const energyCost = (totalEnergy * 0.15).toFixed(2);
-  const reactiveInductiveRatio = device.config.reactiveInductiveRatio || '-';
-  const reactiveCapacitiveRatio = device.config.reactiveCapacitiveRatio || '-';
+  const reactiveInductiveRatio = device.config.QT || '-';
+  const reactiveCapacitiveRatio = device.config.F || '-';
 
   const metrics = [
     { label: 'Grid Consumption (kWh)', value: totalEnergy.toFixed(2), icon: '⚡' },
@@ -122,6 +124,7 @@ export default function NewDetail() {
     ],
   };
 
+  
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -2,7 +2,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import DeviceDropdown from "../components/DeviceDropdown";
-import { useDevices,getLogs,logData } from "../utils/VirtualDeviceStore";
+import { ModbusDevices } from "../utils/ModbusDeviceStore";
+
+// TODO: Implement Modbus logs fetching if needed
 
 
 export interface LogItem {
@@ -24,36 +26,16 @@ interface LogResponse {
   totalPages: number;
 }
 
-export default function Logs() {
+function LogsPage() {
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [selectedDevice, setSelectedDevice] = useState("");
-  const { devices } = useDevices();
+  const devices = ModbusDevices;
 
-
-   const handleConfirm = async () => {
-      // useEffect(() => {
-      
-      console.log("Getting Logs...");
-      try {
-        await getLogs(selectedDevice);
-      } catch (e) {
-        console.error("Log fetch error: ", e);
-      }
-  
-      // }, [setSelectedDevice]);
-    };
-    useEffect(() => {
-    try {
-      if (logData.length > 0) {
-        const data: LogResponse = JSON.parse(logData);
-        setLogs(data.items);
-       
-      }
-    } catch (e) {
-      console.error("Error:", e);
-   
-    }
-  }, [logData]);
+  // Placeholder: No logs for Modbus devices yet
+  const handleConfirm = () => {
+    setLogs([]);
+    alert('Log fetching for Modbus devices is not implemented.');
+  };
 
   return (
     <div style={{ background: '#F5F7FA', minHeight: '100vh' }} className="flex flex-col items-center p-4">
@@ -78,7 +60,10 @@ export default function Logs() {
             <div style={{ color: '#6B7280' }} className="">No logs yet.</div>
           ) : (
             logs.map((log, idx) => (
-              <div key={idx} style={{ color: '#22223B' }} className="mb-2 text-sm">{log}</div>
+              <div key={idx} style={{ color: '#22223B' }} className="mb-2 text-sm">
+                <div><strong>{log.date.date}</strong> [{log.level}] ({log.channel})</div>
+                <div>{log.title}: {log.messsage}</div>
+              </div>
             ))
           )}
         </div>
@@ -86,3 +71,5 @@ export default function Logs() {
     </div>
   );
 }
+
+export default LogsPage;

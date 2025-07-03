@@ -1,6 +1,6 @@
 // DeviceStore.ts (web)
 // Only contains shared types and utilities. All device logic is now in VirtualDeviceStore and ModbusDeviceStore.
-import GOOGLE_API_KEY from "../../../../test"
+const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
 
 export type Device = {
   currentMax: number;
