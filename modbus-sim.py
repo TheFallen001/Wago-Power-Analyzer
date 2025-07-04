@@ -2,6 +2,7 @@ import logging
 import random
 import time
 import threading
+import struct
 
 from pymodbus.server import StartTcpServer
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
@@ -9,41 +10,94 @@ from pymodbus.datastore import ModbusSequentialDataBlock
 
 logging.basicConfig()
 
-# All the addresses you want to simulate
-registers_to_update = [
-    8192, 8194, 8196, 8198, 8200, 8202, 8204, 8206, 8208, 8210,
-    8212, 8214, 8216, 8218, 8220, 8222, 8224, 8226, 8228, 8230,
-    8232, 8234, 8242, 8244, 8260, 8262, 8264, 8278,
-    4096, 4097, 4098, 4100, 4101, 4102, 4132
-]
+# Map of register address to simulation logic
+register_definitions = {
+    # Voltage (220–240 V)
+    8192: lambda: random.uniform(220, 240),  # UA
+    8194: lambda: random.uniform(220, 240),  # UB
+    8196: lambda: random.uniform(220, 240),  # UC
+    8198: lambda: random.uniform(380, 420),  # UAB
+    8200: lambda: random.uniform(380, 420),  # UBC
+    8202: lambda: random.uniform(380, 420),  # UCA
 
-# Determine how big the register block should be
+    # Current (0–100 A)
+    8204: lambda: random.uniform(0, 100),  # IA
+    8206: lambda: random.uniform(0, 100),  # IB
+    8208: lambda: random.uniform(0, 100),  # IC
+    8210: lambda: random.uniform(0, 10),   # IN
+
+    # Power (0–50000 W)
+    8212: lambda: random.uniform(0, 50000),  # PA
+    8214: lambda: random.uniform(0, 50000),  # PB
+    8216: lambda: random.uniform(0, 50000),  # PC
+    8218: lambda: random.uniform(0, 150000),  # PT
+
+    # Reactive Power
+    8220: lambda: random.uniform(0, 50000),  # QA
+    8222: lambda: random.uniform(0, 50000),  # QB
+    8224: lambda: random.uniform(0, 50000),  # QC
+    8226: lambda: random.uniform(0, 150000), # QT
+
+    # Apparent Power
+    8228: lambda: random.uniform(0, 50000),  # SA
+    8230: lambda: random.uniform(0, 50000),  # SB
+    8232: lambda: random.uniform(0, 50000),  # SC
+    8234: lambda: random.uniform(0, 150000), # ST
+
+    # Power factor
+    8242: lambda: random.uniform(0.85, 1.0),  # PF
+
+    # Frequency
+    8244: lambda: random.uniform(49.0, 51.0),  # F
+
+    # Angles (degrees)
+    8260: lambda: random.uniform(0, 360),  # APangle
+    8262: lambda: random.uniform(0, 360),  # BPangle
+    8264: lambda: random.uniform(0, 360),  # CPangle
+
+    # Temperature
+    8278: lambda: random.uniform(20, 80),  # Templn
+
+    # UINT16 config fields
+    4096: lambda: 1,
+    4097: lambda: 9600,
+    4098: lambda: random.randint(0, 9999),
+    4100: lambda: 9600,
+    4101: lambda: random.randint(0, 9999),
+    4102: lambda: random.randint(0, 65535),
+    4132: lambda: 1,
+}
+
+# Prepare register list
+registers_to_update = list(register_definitions.keys())
 max_register = max(registers_to_update)
-block_size = max_register + 10  # give extra space
+block_size = max_register + 10
 
-# Create Modbus memory blocks
-store = ModbusSlaveContext(
-    hr=ModbusSequentialDataBlock(0, [0] * block_size)
-)
+# Create Modbus store
+store = ModbusSlaveContext(hr=ModbusSequentialDataBlock(0, [0]*block_size))
 context = ModbusServerContext(slaves={1: store}, single=False)
 
-# Background thread to simulate changes
+# Helper to write float as two 16-bit registers (big-endian)
+def float_to_regs(value: float):
+    b = struct.pack('>f', value)
+    return [int.from_bytes(b[:2], 'big'), int.from_bytes(b[2:], 'big')]
+
+# Background simulation
 def update_registers():
-    counter = 0
     while True:
         time.sleep(1)
-        slave_context = context[1]  # slave ID = 1
-        for addr in registers_to_update:
-            # Simulate a value
-            value = (counter + addr) % 10000  # custom logic
-            slave_context.setValues(3, addr, [value])  # 3 = holding register
-        counter += 1
-        print(f"Updated {len(registers_to_update)} registers at t={counter}s")
+        slave = context[1]
+        for addr, generator in register_definitions.items():
+            val = generator()
+            if addr >= 8192:  # FLOAT32 range
+                regs = float_to_regs(val)
+                slave.setValues(3, addr, regs)
+            else:  # UINT16
+                slave.setValues(3, addr, [val])
+        print("Registers updated with simulated values.")
 
-# Start update thread
-thread = threading.Thread(target=update_registers)
-thread.daemon = True
-thread.start()
+# Start simulation thread
+threading.Thread(target=update_registers, daemon=True).start()
 
-# Start the Modbus TCP server
+# Start Modbus TCP server
 StartTcpServer(context, address=("0.0.0.0", 1502))

@@ -80,9 +80,7 @@ const initializeWebSocket = () => {
       wdxHelper.updateDeviceFromWDXData(message.path, message.value);
     } else if (message.type === "configUpdated") {
       wdxHelper.updateDeviceFromWDXData(message.path, message.config);
-    } else if (message.type === "updateLogs") {
-      wdxHelper.logData = message.logs;
-    }
+    } 
   };
   ws.onclose = () => {
     wdxHelper.isInitialized = false;
@@ -124,7 +122,7 @@ export function updateDeviceConfig(
   }
 }
 
-export function getLogs(deviceName: string) {
+export function getLogs(deviceName: string,onReceived: (logs: string) => void) {
   let result = deviceName.startsWith("Analyzer")
     ? deviceName.split(" - ")[1]?.trim()
     : deviceName;
@@ -134,6 +132,15 @@ export function getLogs(deviceName: string) {
       deviceName: result,
     })
   );
+  if (ws) {
+    ws.onmessage = (message) => {
+      const data = JSON.parse(message.data);
+      if (data.type === "updateLogs") {
+        wdxHelper.logData = data.logs;
+        onReceived(data.logs); // trigger the callback
+      }
+    };
+  }
 }
 
 export interface ModbusInfo {

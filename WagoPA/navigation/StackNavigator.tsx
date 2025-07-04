@@ -26,6 +26,7 @@ const MainStackNavigator = () => (
       component={LogScreen}
       options={{ headerShown: false }}
     />
+    
     <Stack.Screen
       name="Configure"
       component={ConfigureScreen}

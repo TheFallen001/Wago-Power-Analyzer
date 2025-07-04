@@ -145,7 +145,7 @@ ws.onmessage = (event) => {
 initializeWebSocket();
 
 export const updateDeviceConfig = (idOrName: string, config: ModbusConfig) => {
-  let device = ModbusDevices.find((d) => d.id === idOrName) || ModbusDevices.find((d) => d.name === idOrName);
+  const device = ModbusDevices.find((d) => d.id === idOrName) || ModbusDevices.find((d) => d.name === idOrName);
   if (device) {
     device.config = config;
     if (ws && ws.readyState === WebSocket.OPEN) {

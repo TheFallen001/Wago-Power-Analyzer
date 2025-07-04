@@ -21,7 +21,7 @@ import MapView, {
 } from "react-native-maps";
 import { Picker } from "@react-native-picker/picker";
 import { ScrollView } from "react-native-gesture-handler";
-import { client } from "websocket";
+
 
 const deviceOptions = ["Virtual", "MODBUS"];
 const AddDeviceScreen = () => {
@@ -30,8 +30,8 @@ const AddDeviceScreen = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedValue, setSelectedValue] = useState(deviceOptions[0]);
   const [hostAddress, setHostAddress] = useState("localhost");
-  const [port, setPort] = useState<number | undefined>();
-  const [clientID, setClientID] = useState<number | undefined>();
+  const [port, setPort] = useState<number | undefined>(502);
+  const [clientID, setClientID] = useState<number | undefined>(0);
 
   const [location, setLocation] = useState<{
     latitude: number;
@@ -104,7 +104,7 @@ const AddDeviceScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Add a New Power Analyzer</Text>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
         <Text style={styles.label}>Device Name *</Text>
         <TextInput
           style={styles.input}
@@ -142,12 +142,12 @@ const AddDeviceScreen = () => {
               keyboardType="numeric"
             />
 
-            <Text style={styles.label}>Client ID</Text>
+            <Text style={styles.label}>Client ID*</Text>
             <TextInput
               style={styles.input}
               value={clientID?.toString()}
               onChangeText={text => setClientID(Number(text))}
-              placeholder="Default IP: localhost"
+              placeholder="Default Client ID: 0"
             />
 
           </>

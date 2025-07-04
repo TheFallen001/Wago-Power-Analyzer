@@ -98,12 +98,14 @@ wss.on("connection", (ws) => {
             .whois(message.deviceName)
             .subscribe({
               next: (response) => {
-                client.instanceService.listLogs(response.uuid).subscribe({
+                client.instanceService.listLogs(response.uuid,1,2).subscribe({
                   next: (response) => {
+                    // Response's Attributes: [ 'items', 'total', 'currentPage', 'totalPages' ]
+                    
                     ws.send(
                       JSON.stringify({
                         type: "updateLogs",
-                        logs: JSON.stringify(response, null, 2),
+                        logs: JSON.stringify(response.items.slice(0, 10), null, 2),
                       })
                     );
                   },
