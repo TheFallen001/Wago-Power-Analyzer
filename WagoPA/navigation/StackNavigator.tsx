@@ -5,12 +5,12 @@ import BottomTabNavigator from "./BottomTabNavigator";
 import * as React from "react";
 import LogScreen from "../screens/LogsScreen";
 import ConfigureScreen from "../screens/ConfigureScreen";
-
+import LogsDetailScreen from "../screens/LogDetailsScreen";
 
 const Stack = createStackNavigator<RootParamList>();
 
 const MainStackNavigator = () => (
-  <Stack.Navigator >
+  <Stack.Navigator>
     {/* <Stack.Screen
       name="SplashScreen"
       component={SplashScreen}
@@ -26,7 +26,7 @@ const MainStackNavigator = () => (
       component={LogScreen}
       options={{ headerShown: false }}
     />
-    
+
     <Stack.Screen
       name="Configure"
       component={ConfigureScreen}
@@ -41,6 +41,12 @@ const MainStackNavigator = () => (
       name="AlarmScreen"
       component={require("../screens/AlarmScreen").default}
       options={{ headerShown: true, title: "Alarm History" }}
+    />
+
+    <Stack.Screen
+      name="LogsDetailScreen"
+      component={LogsDetailScreen}
+      options={{ headerShown: false }}
     />
   </Stack.Navigator>
 );

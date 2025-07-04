@@ -7,89 +7,32 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { LogItem } from "../screens/LogsScreen";
+import { useNavigation } from "@react-navigation/native";
+import tw from "twrnc";
+import { Message } from "../screens/LogDetailsScreen";
 
 interface LogItemProps {
   log: LogItem;
 }
-// interface Message {
-//   createdDate: number;
-//   dataSourceOptions: {
-//     database: null;
-//     host: null;
-//     id: number;
-//     name: string;
-//     password: null;
-//     port: null;
-//     type: null;
-//     username: null;
-//     uuid: string;
-//   };
-//   enabled: boolean;
-//   executionOptions: {
-//     id: number;
-//     mode: string;
-//     script: string;
-//     uuid: string;
-//   };
-//   id: number;
-//   ipcType: string;
-//   logOptions: {
-//     errorLogFile: string;
-//     id: number;
-//     level: string;
-//     logFile: string;
-//     mergeLog: boolean;
-//     mergeLogFile: string;
-//     uuid: string;
-//   };
-//   name: string;
-//   namespace: string;
-//   needsRestart: null;
-//   order: number;
-//   parentProcessId: number;
-//   processId: number;
-//   startTime: null;
-//   status: string;
-//   stopTime: null;
-//   tcpOptions: {
-//     id: number;
-//     listenOpts: {
-//       backlog: null;
-//       exclusive: null;
-//       host: string;
-//       id: number;
-//       ipv6Only: boolean;
-//       path: null;
-//       port: number;
-//       readableAll: null;
-//       uuid: string;
-//       writableAll: null;
-//     };
-//     serverOpts: {
-//       allowHalfOpen: null;
-//       highWaterMark: null;
-//       id: number;
-//       keepAlive: null;
-//       keepAliveInitialDelay: null;
-//       noDelay: null;
-//       pauseOnConnect: null;
-//       uuid: string;
-//     };
-//     uuid: string;
-//   };
-//   threadId: number;
-//   type: string;
-//   udpOptions: {
-//     id: number;
-//     uuid: string;
-//   };
-//   updatedDate: number;
-//   uuid: string;
-// }
 
 const LogItemComponent: React.FC<LogItemProps> = ({ log }) => {
+  const navigation = useNavigation();
+
+  const handleNavigation = () => {
+    let parsedMessage: Message | null = null;
+    try {
+      const parsed = JSON.parse(log.messsage); // logs sometimes contain [ { ... } ]
+      parsedMessage = Array.isArray(parsed) ? parsed[0] : parsed;
+    } catch (e) {
+      console.warn("Failed to parse messsage", e);
+    }
+    navigation.navigate("LogsDetailScreen", { log, parsedMessage });
+  };
   return (
-    <TouchableOpacity>
+    <TouchableOpacity
+      onPress={handleNavigation}
+      style={tw`p-2 border-b border-gray-300`}
+    >
       <View style={styles.container}>
         <Text style={styles.title}>{log.title}</Text>
         <Text style={styles.date}>{log.date.date}</Text>
@@ -138,10 +81,6 @@ const styles = StyleSheet.create({
   },
   channel: {
     fontSize: 14,
-  },
-  detail: {
-    fontSize: 14,
-    color: "#333",
   },
 });
 export default LogItemComponent;
