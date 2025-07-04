@@ -37,40 +37,8 @@
 
 
 
-// // --- Virtual Device Value Generation ---
-// function randomInRange(min: number, max: number) {
-//   return Math.random() * (max - min) + min;
-// }
 
-// export function generateVirtualDeviceValues(device: Device, index: number) {
-//   const deviceVolt = Math.round(
-//     randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + index * 2
-//   );
-//   const deviceCurr =
-//     Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) /
-//       100 +
-//     index * 0.1;
-//   return { deviceVolt, deviceCurr };
-// }
 
-// // --- Virtual Device Alarm Check ---
-// export function checkVirtualDeviceAlarms(
-//   deviceVolt: number,
-//   deviceCurr: number
-// ) {
-//   let alarm = false;
-//   if (
-//     deviceVolt < VOLTAGE_ALARM_RANGE.min ||
-//     deviceVolt > VOLTAGE_ALARM_RANGE.max
-//   )
-//     alarm = true;
-//   if (
-//     deviceCurr < CURRENT_ALARM_RANGE.min ||
-//     deviceCurr > CURRENT_ALARM_RANGE.max
-//   )
-//     alarm = true;
-//   return alarm;
-// }
 
 // // --- Export helpers for use in DeviceStore.ts and elsewhere ---
 // export { validDevicePaths, devicePathMap };

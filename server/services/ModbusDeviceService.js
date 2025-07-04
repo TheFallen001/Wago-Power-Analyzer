@@ -105,7 +105,7 @@ class ModbusDeviceService {
     });
   }
 
-  async addDevice(client,deviceName) {
+  async addDevice(client, device, modbusOptions) {
     if (
       client &&
       client.instanceService &&
@@ -114,7 +114,12 @@ class ModbusDeviceService {
       // TODO: Replace with Modbus-specific metadata if available
       return new Promise((resolve, reject) => {
         try {
-          const inst = initInstance(deviceName);
+          const inst = initInstance(
+            device.name,
+            modbusOptions.hostAddress,
+            modbusOptions.port,
+            modbusOptions.clientID
+          );
           // const instance = Instance.DataAdapter.MODBUSDataAdapterInstance();
 
           // console.log("Detail running...", inst.uuid);
@@ -123,7 +128,6 @@ class ModbusDeviceService {
             .detail(inst.uuid)
             .subscribe({
               next: async (response) => {
-             
                 // console.log(response);
 
                 await client.instanceService.start(inst.uuid).toPromise();
@@ -134,7 +138,7 @@ class ModbusDeviceService {
                 // console.error(error);
                 await client.instanceService.save(inst).toPromise();
 
-                await client.instanceService.start(inst.uuid).toPromise()
+                await client.instanceService.start(inst.uuid).toPromise();
                 resolve();
               },
             });
@@ -154,7 +158,6 @@ class ModbusDeviceService {
       this.devices[idx] = { ...this.devices[idx], ...update };
     }
   }
-;
   getDevices() {
     return this.devices;
   }
@@ -167,9 +170,13 @@ class ModbusDeviceService {
       message.path.startsWith("Modbus.")
     ) {
       this.setConfig(message, ws, client, broadcast);
-    } else if (message.type === "addDevice") {
+    } else if (
+      message.type === "addDevice" &&
+      message.device.deviceType === "MODBUS"
+    ) {
       console.log(JSON.stringify(message, null, 2));
-      await this.addDevice(client);
+      await this.addDevice(client, message.device, message.modbusInfo);
+      broadcast();
     }
   }
 }

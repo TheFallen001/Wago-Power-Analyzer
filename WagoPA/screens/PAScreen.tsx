@@ -33,6 +33,8 @@ const DevicesScreen = () => {
     </View>
   );
 
+ 
+
   return (
     <View style={tw`flex-1 bg-white pt-10`}>
       <Text style={tw`text-2xl font-bold text-center mb-5`}>Power Analyzers</Text>

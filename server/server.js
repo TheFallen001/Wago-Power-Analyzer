@@ -73,34 +73,25 @@ wss.on("connection", (ws) => {
       const message = JSON.parse(data);
 
       // Delegate to Virtual or Modbus service based on message
-      if (message.path && message.path.startsWith("Virtual.")) {
-        virtualDeviceService.handleMessage(
-          message,
-          ws,
-          client,
-          broadcast
-        );
-      } else if (message.path && message.path.startsWith("MODBUS.")) {
-        modbusDeviceService.handleMessage(
-          message,
-          ws,
-          client,
-          broadcast
-        );
-      } else if (message.device && message.device.deviceType === "Virtual") {
-        virtualDeviceService.handleMessage(
-          message,
-          ws,
-          client,
-          broadcast
-        );
+      // if (message.path && message.path.startsWith("Virtual.")) {
+      //   virtualDeviceService.handleMessage(
+      //     message,
+      //     ws,
+      //     client,
+      //     broadcast
+      //   );
+      // } else if (message.path && message.path.startsWith("MODBUS.")) {
+      //   modbusDeviceService.handleMessage(
+      //     message,
+      //     ws,
+      //     client,
+      //     broadcast
+      //   );
+      // } else
+      if (message.device && message.device.deviceType === "Virtual") {
+        virtualDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.device && message.device.deviceType === "MODBUS") {
-        modbusDeviceService.handleMessage(
-          message,
-          ws,
-          client,
-          broadcast
-        );
+        modbusDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.type === "getLogs") {
         if (client && client.instanceService) {
           response = client.instanceService
@@ -310,9 +301,8 @@ process.stdin.on("keypress", async (str, key) => {
     console.log("Exiting server...");
     if (client) await client.disconnect();
     process.exit();
-  }
-  else if(key.name === "s"){
-    modbusDeviceService.addDevice(client,"newName");
+  } else if (key.name === "s") {
+    modbusDeviceService.addDevice(client, "newName");
   }
 });
 
@@ -338,6 +328,9 @@ process.stdin.on("keypress", async (str, key) => {
 
 setInterval(() => {
   if (latestSchemaDevices && latestSchemaDevices.length > 0) {
-    console.log("Current Modbus devices:", latestSchemaDevices.map(d => d.name));
+    console.log(
+      "Current Modbus devices:",
+      latestSchemaDevices.map((d) => d.name)
+    );
   }
 }, 10000); // Log every 10 seconds

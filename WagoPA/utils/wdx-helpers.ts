@@ -9,7 +9,6 @@ export type Device = {
   longitude: number;
   address: string;
   voltageRange: string;
-  status: string;
   config: any;
 };
 
@@ -64,7 +63,6 @@ class WDXHelpers {
           longitude: 29.0 + index * 0.01,
           address: "",
           voltageRange: "230V",
-          status: "Active",
           currentMax: 2.0,
           currentMin: 0,
           config: wdxDevice.config || {

@@ -1,13 +1,11 @@
 // DeviceStore.ts
 // Only contains shared types and utilities. All device logic is now in VirtualDeviceStore and ModbusDeviceStore.
 import wdxHelper, { Device } from "./wdx-helpers";
-import GOOGLE_API_KEY from "../test"
+import GOOGLE_API_KEY from "../test";
 // google maps API key
 
-
-
 //your ipaddress
-const IPADDRESS = "192.168.31.96";
+const IPADDRESS = "192.168.31.119";
 
 //Websocket server instance
 let ws: WebSocket | null = null;
@@ -31,6 +29,7 @@ const initializeWebSocket = () => {
     }
     if (message.type === "schema") {
       const wdxDevices = message.devices || [];
+
       if (!Array.isArray(wdxDevices)) return;
       if (wdxHelper.isSchemaChanged(wdxDevices)) {
         wdxHelper.validDevicePaths = new Set();
@@ -137,8 +136,18 @@ export function getLogs(deviceName: string) {
   );
 }
 
-export function addDevice(device: Device): void {
+export interface ModbusInfo {
+  hostAddress: string | undefined;
+  port: number | undefined;
+  clientID: number | undefined;
+}
+
+export function addDevice(device: Device, modbusInfo: ModbusInfo): void {
   let instanceType = device.deviceType === "Virtual" ? "Virtual" : "MODBUS";
+  modbusInfo.clientID ??= 0;
+  modbusInfo.hostAddress ??= "127.0.0.1";
+  modbusInfo.port ??= 502;
+
   try {
     console.log("Sending device info");
     ws?.send(
@@ -146,6 +155,7 @@ export function addDevice(device: Device): void {
         type: "addDevice",
         path: instanceType + ".",
         device: device,
+        modbusInfo: modbusInfo,
       })
     );
   } catch (e) {
@@ -219,3 +229,48 @@ export async function reverseGeocode(
 
 export default wdxHelper;
 export { Device };
+
+// --- Virtual Device Simulation Ranges ---
+export const VOLTAGE_RANGE = { min: 215, max: 240 };
+export const CURRENT_RANGE = { min: 0, max: 2.0 };
+export const VOLTAGE_ALARM_RANGE = { min: 215, max: 236 };
+export const CURRENT_ALARM_RANGE = { min: 0, max: 1.6 };
+
+// --- Virtual Device Chart Data Buffers ---
+export let voltageChartDataMap: { [deviceId: string]: number[] } = {};
+export let currentChartDataMap: { [deviceId: string]: number[] } = {};
+
+export function generateVirtualDeviceValues(device: Device, index: number) {
+  const deviceVolt = Math.round(
+    randomInRange(VOLTAGE_RANGE.min, VOLTAGE_RANGE.max) + index * 2
+  );
+  const deviceCurr =
+    Math.round(randomInRange(CURRENT_RANGE.min, CURRENT_RANGE.max) * 100) /
+      100 +
+    index * 0.1;
+  return { deviceVolt, deviceCurr };
+}
+
+// --- Virtual Device Value Generation ---
+function randomInRange(min: number, max: number) {
+  return Math.random() * (max - min) + min;
+}
+
+// --- Virtual Device Alarm Check ---
+export function checkVirtualDeviceAlarms(
+  deviceVolt: number,
+  deviceCurr: number
+) {
+  let alarm = false;
+  if (
+    deviceVolt < VOLTAGE_ALARM_RANGE.min ||
+    deviceVolt > VOLTAGE_ALARM_RANGE.max
+  )
+    alarm = true;
+  if (
+    deviceCurr < CURRENT_ALARM_RANGE.min ||
+    deviceCurr > CURRENT_ALARM_RANGE.max
+  )
+    alarm = true;
+  return alarm;
+}

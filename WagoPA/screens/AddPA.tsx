@@ -1,7 +1,18 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert, Platform } from "react-native";
-import {addDevice,geocodeAddress,reverseGeocode } from "../utils/DeviceStore";
-
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  Platform,
+} from "react-native";
+import {
+  addDevice,
+  geocodeAddress,
+  reverseGeocode,
+} from "../utils/DeviceStore";
 
 import MapView, {
   MapPressEvent,
@@ -10,14 +21,17 @@ import MapView, {
 } from "react-native-maps";
 import { Picker } from "@react-native-picker/picker";
 import { ScrollView } from "react-native-gesture-handler";
+import { client } from "websocket";
 
 const deviceOptions = ["Virtual", "MODBUS"];
 const AddDeviceScreen = () => {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
-  const [status, setStatus] = useState("Active");
   const [isSaving, setIsSaving] = useState(false);
   const [selectedValue, setSelectedValue] = useState(deviceOptions[0]);
+  const [hostAddress, setHostAddress] = useState("localhost");
+  const [port, setPort] = useState<number | undefined>();
+  const [clientID, setClientID] = useState<number | undefined>();
 
   const [location, setLocation] = useState<{
     latitude: number;
@@ -64,7 +78,6 @@ const AddDeviceScreen = () => {
       latitude: location.latitude,
       longitude: location.longitude,
       address, // Add the missing address property
-      status,
       voltageRange: "230V", // Default value
       currentMax: 2.0, // Default value
       currentMin: 0, // Default value
@@ -79,15 +92,13 @@ const AddDeviceScreen = () => {
       },
     };
 
-    addDevice(newDevice);
-
-
+    addDevice(newDevice,{hostAddress, port, clientID});
 
     // Reset form
     setName("");
     setAddress("");
     setLocation(null);
-    setStatus("Active");
+   
   };
 
   return (
@@ -112,6 +123,36 @@ const AddDeviceScreen = () => {
           ))}
         </Picker>
 
+        {selectedValue === 'MODBUS' && (
+          <>
+            <Text style={styles.label}>IP Address*</Text>
+            <TextInput
+              style={styles.input}
+              value={hostAddress}
+              onChangeText={setHostAddress}
+              placeholder="Default IP: localhost"
+            />
+
+            <Text style={styles.label}>Port Number*</Text>
+            <TextInput
+              style={styles.input}
+              value={port?.toString()}
+              onChangeText={text => setPort(Number(text))}
+              placeholder="Default Port: 502"
+              keyboardType="numeric"
+            />
+
+            <Text style={styles.label}>Client ID</Text>
+            <TextInput
+              style={styles.input}
+              value={clientID?.toString()}
+              onChangeText={text => setClientID(Number(text))}
+              placeholder="Default IP: localhost"
+            />
+
+          </>
+        )}
+
         <Text style={styles.label}>Address *</Text>
         <TextInput
           style={styles.input}
@@ -121,9 +162,9 @@ const AddDeviceScreen = () => {
         />
 
         <Text style={styles.label}>Location *</Text>
-        {Platform.OS !== 'web' &&<MapView
+        <MapView
           provider={PROVIDER_GOOGLE}
-          style={{ height: 300, width: "100%" }}
+          style={{ height: 250, width: "100%", marginBlock: 30 }}
           region={
             location
               ? {
@@ -141,23 +182,12 @@ const AddDeviceScreen = () => {
           }
           pointerEvents={isSaving ? "none" : "auto"}
           onPress={handleMapPress}
+          
         >
           {location && <Marker coordinate={location} />}
-        </MapView>}
+        </MapView>
 
-        <Text style={styles.label}>Status</Text>
-        <View style={styles.statusContainer}>
-          <Button
-            title="Active"
-            onPress={() => setStatus("Active")}
-            color={status === "Active" ? "#28a745" : "#ccc"}
-          />
-          <Button
-            title="Inactive"
-            onPress={() => setStatus("Inactive")}
-            color={status === "Inactive" ? "#FF2400" : "#ccc"}
-          />
-        </View>
+       
 
         <Button title="Add Device" onPress={handleAddDevice} color="#28a745" />
       </ScrollView>
@@ -182,7 +212,7 @@ const styles = StyleSheet.create({
   label: {
     paddingTop: 8,
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: 4,
   },
   input: {
     borderWidth: 1,
