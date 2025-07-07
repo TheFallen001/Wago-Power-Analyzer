@@ -14,6 +14,8 @@
     "@wago/wdx-schema": "^29.0.0",
     "@wago/wdx-schema-base": "^2.0.0",
     "@wago/wdx-ws-client-js": "^25.0.0",
+    "jsmodbus": "^4.0.10",
+    "modbus-serial": "^8.0.21-no-serial-port",
     "typescript": "^5.8.3",
     "uuid": "^11.1.0",
     "websocket": "^1.0.35",

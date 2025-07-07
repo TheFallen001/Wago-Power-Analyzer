@@ -5,6 +5,10 @@
 *
 * @copyright 2024 Elrest AutomationsSysteme GMBH
 */
+
+/**
+ * Temporary stuff.
+ */
  
 const WDXWSClient = require('@wago/wdx-ws-client-js');
 const WDXSchema = require('@wago/wdx-schema-base');

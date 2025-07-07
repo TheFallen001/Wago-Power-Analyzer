@@ -13,7 +13,7 @@ const Services = require("./NewServices");
 const virtualDeviceService = require("./services/VirtualDeviceService.js");
 const modbusDeviceService = require("./services/ModbusDeviceService.js");
 const readline = require("readline");
-
+const { server, serverSocket, holding } = require("./ModbusSim.js");
 // Set up WebSocket server for React Native clients
 
 const IPADDRESS = "localhost";
@@ -98,14 +98,18 @@ wss.on("connection", (ws) => {
             .whois(message.deviceName)
             .subscribe({
               next: (response) => {
-                client.instanceService.listLogs(response.uuid,1,2).subscribe({
+                client.instanceService.listLogs(response.uuid, 1, 2).subscribe({
                   next: (response) => {
                     // Response's Attributes: [ 'items', 'total', 'currentPage', 'totalPages' ]
-                    
+
                     ws.send(
                       JSON.stringify({
                         type: "updateLogs",
-                        logs: JSON.stringify(response.items.slice(0, 10), null, 2),
+                        logs: JSON.stringify(
+                          response.items.slice(0, 10),
+                          null,
+                          2
+                        ),
                       })
                     );
                   },
@@ -219,8 +223,21 @@ const initializeWDXClient = async () => {
     // For each device node, collect its children as config fields
     // Instead of map, use for loop and delay each subscribe by 1 second
     const configFields = [
-      "Addr1", "645Addr", "Baud1", "Baud2", "Check1", "Check2", "Language",
-      "F", "PF", "QT", "PT", "UA", "IA", "lat", "lng"
+      "Addr1",
+      "645Addr",
+      "Baud1",
+      "Baud2",
+      "Check1",
+      "Check2",
+      "Language",
+      "F",
+      "PF",
+      "QT",
+      "PT",
+      "UA",
+      "IA",
+      "lat",
+      "lng",
     ];
     const devices = [];
     for (let i = 0; i < deviceNodes.length; i++) {
@@ -231,14 +248,19 @@ const initializeWDXClient = async () => {
         for (let j = 0; j < configFields.length; j++) {
           const field = configFields[j];
           const fieldPath = `MODBUS.${deviceName}.${field}`;
-          console.log(`[${deviceName}] Attempting to subscribe to: ${fieldPath}`);
+          console.log(
+            `[${deviceName}] Attempting to subscribe to: ${fieldPath}`
+          );
           await new Promise((resolve) => {
             let resolved = false;
             const timeout = setTimeout(() => {
               if (!resolved) {
                 resolved = true;
-                console.warn(`[${deviceName}] Timeout waiting for value on ${fieldPath}, using default.`);
-                config[field] = field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
+                console.warn(
+                  `[${deviceName}] Timeout waiting for value on ${fieldPath}, using default.`
+                );
+                config[field] =
+                  field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
                 resolve();
               }
             }, 3000);
@@ -247,8 +269,13 @@ const initializeWDXClient = async () => {
                 if (!resolved) {
                   resolved = true;
                   clearTimeout(timeout);
-                  console.log(`[${deviceName}] Received value for ${fieldPath}:`, JSON.stringify(data, null, 2));
-                  config[field] = data?.value ?? (field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0);
+                  console.log(
+                    `[${deviceName}] Received value for ${fieldPath}:`,
+                    JSON.stringify(data, null, 2)
+                  );
+                  config[field] =
+                    data?.value ??
+                    (field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0);
                   resolve();
                 }
               },
@@ -256,8 +283,12 @@ const initializeWDXClient = async () => {
                 if (!resolved) {
                   resolved = true;
                   clearTimeout(timeout);
-                  console.error(`[${deviceName}] Error subscribing to ${fieldPath}:`, err);
-                  config[field] = field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
+                  console.error(
+                    `[${deviceName}] Error subscribing to ${fieldPath}:`,
+                    err
+                  );
+                  config[field] =
+                    field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
                   resolve();
                 }
               },
@@ -268,9 +299,17 @@ const initializeWDXClient = async () => {
         }
         devices.push({ name: deviceName, config, path: deviceNode.path });
         // Log row by row after each device
-        console.log(`[${deviceName}] Config collected:`, JSON.stringify(config, null, 2));
+        console.log(
+          `[${deviceName}] Config collected:`,
+          JSON.stringify(config, null, 2)
+        );
       } catch (err) {
-        console.error("Error getting schema for device", deviceNode.path, ":", err);
+        console.error(
+          "Error getting schema for device",
+          deviceNode.path,
+          ":",
+          err
+        );
         devices.push({ name: deviceName, config: {}, path: deviceNode.path });
       }
     }
@@ -288,6 +327,13 @@ const initializeWDXClient = async () => {
   }
 };
 
+holding.writeUInt16BE(1234, 4102 * 2); // Just an example
+
+// Start server
+serverSocket.listen(1502, () => {
+  console.log("✅ Modbus TCP server listening on port 1502");
+});
+
 // Start the WDX client
 initializeWDXClient();
 
@@ -303,8 +349,6 @@ process.stdin.on("keypress", async (str, key) => {
     console.log("Exiting server...");
     if (client) await client.disconnect();
     process.exit();
-  } else if (key.name === "s") {
-    modbusDeviceService.addDevice(client, "newName");
   }
 });
 

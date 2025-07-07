@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable, ScrollView } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-// import { devices, updateDeviceConfig, subscribeToDeviceUpdates,  } from '../utils/wdx-helpers';
+
 import wdxHelper, {updateDeviceConfig} from '../utils/DeviceStore';
 import { RootParamList } from '../navigation/types';
 import ConfigCard from '../components/ConfigCard';
@@ -13,7 +13,10 @@ const ConfigureScreen = () => {
   const route = useRoute<RouteProp<RootParamList, 'Configure'>>();
   const deviceId = route.params?.deviceId;
 
+ 
+
   const [device, setDevice] = useState<typeof wdxHelper.devices[0] | undefined>(undefined);
+   console.log(device?.config)
   const [addr1, setAddr1] = useState('');
   const [baud1, setBaud1] = useState('');
   const [check1, setCheck1] = useState('');
@@ -25,25 +28,25 @@ const ConfigureScreen = () => {
   const [configEditing, setConfigEditing] = useState(false);
 
   // Update form with selected device data from DeviceStore
-  const updateFormWithDevice = (dev: typeof wdxHelper.devices[0] | undefined) => {
-    if (dev) {
-      setAddr1(dev.config.addr1.toString());
-      setBaud1(dev.config.baud1.toString());
-      setCheck1(dev.config.check1.toString());
-      setStopBit1(dev.config.stopBit1.toString());
-      setBaud2(dev.config.baud2.toString());
-      setCheck2(dev.config.check2.toString());
-      setStopBit2(dev.config.stopBit2.toString());
-    } else {
-      setAddr1('');
-      setBaud1('');
-      setCheck1('');
-      setStopBit1('');
-      setBaud2('');
-      setCheck2('');
-      setStopBit2('');
-    }
-  };
+  // const updateFormWithDevice = (dev: typeof wdxHelper.devices[0] | undefined) => {
+  //   if (dev) {
+  //     setAddr1(dev.config.addr1.toString());
+  //     setBaud1(dev.config.baud1.toString());
+  //     setCheck1(dev.config.check1.toString());
+  //     setStopBit1(dev.config.stopBit1.toString());
+  //     setBaud2(dev.config.baud2.toString());
+  //     setCheck2(dev.config.check2.toString());
+  //     setStopBit2(dev.config.stopBit2.toString());
+  //   } else {
+  //     setAddr1('');
+  //     setBaud1('');
+  //     setCheck1('');
+  //     setStopBit1('');
+  //     setBaud2('');
+  //     setCheck2('');
+  //     setStopBit2('');
+  //   }
+  // };
 
   // Subscribe to DeviceStore updates
   useEffect(() => {
@@ -59,7 +62,7 @@ const ConfigureScreen = () => {
       // Only update if device is not set or deviceId changed (e.g. user selects a different device)
       if (!device || (selected && device.name !== selected.name)) {
         setDevice(selected);
-        updateFormWithDevice(selected);
+        // updateFormWithDevice(selected);
       }
       // Do NOT update config fields if config changes from the server
     });
@@ -71,14 +74,14 @@ const ConfigureScreen = () => {
 
   // Update form when device changes
   useEffect(() => {
-    updateFormWithDevice(device);
+    // updateFormWithDevice(device);
   }, [device]);
 
   // When device changes (from dropdown), update form fields
   const handleDeviceChange = (name: string) => {
     const found = wdxHelper.devices.find((d) => d.name === name);
     setDevice(found);
-    updateFormWithDevice(found);
+    // updateFormWithDevice(found);
   };
 
   const handleApply = () => {
@@ -100,7 +103,7 @@ const ConfigureScreen = () => {
       Alert.alert('Error', 'Address must be between 1 and 247.');
       return;
     }
-    console.log("Here");
+    
     updateDeviceConfig(device.name, newConfig); // Use name as identifier for config update
     Alert.alert('Success', 'Configuration applied successfully!');
     navigation.goBack();

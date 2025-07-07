@@ -5,7 +5,7 @@ import GOOGLE_API_KEY from "../test";
 // google maps API key
 
 //your ipaddress
-const IPADDRESS = "192.168.31.119";
+const IPADDRESS = "192.168.31.121";
 
 //Websocket server instance
 let ws: WebSocket | null = null;
