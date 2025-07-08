@@ -262,7 +262,7 @@ const initializeWDXClient = async () => {
                   field === "lat" ? 40.0 : field === "lng" ? 30.0 : 0;
                 resolve();
               }
-            }, 3000);
+            }, 100);
             const sub = client.dataService.register(fieldPath).subscribe({
               next: (data) => {
                 if (!resolved) {
@@ -294,7 +294,7 @@ const initializeWDXClient = async () => {
             });
           });
           // Delay 1 second between each field subscribe for this device
-          await new Promise((r) => setTimeout(r, 5000));
+          await new Promise((r) => setTimeout(r, 100));
         }
         devices.push({ name: deviceName, config, path: deviceNode.path });
         // Log row by row after each device
@@ -322,7 +322,7 @@ const initializeWDXClient = async () => {
       e.message
     );
     console.error("Stack:", e.stack);
-    setTimeout(initializeWDXClient, 3000); // Retry after 5 seconds
+    setTimeout(initializeWDXClient, 100); // Retry after 5 seconds
   }
 };
 

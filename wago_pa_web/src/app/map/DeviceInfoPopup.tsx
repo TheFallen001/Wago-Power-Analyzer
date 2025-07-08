@@ -44,7 +44,7 @@ export default function DeviceInfoPopup({
         <p className="text-sm text-gray-600">Longitude: {device.longitude}</p>
         <button
           // onClick={onClose}
-          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-[#6EC800] transition-colors duration-300"
+          className="mt-4 bg-[#28a745] text-white px-4 py-2 rounded hover:bg-[#6EC800] transition-colors duration-300"
 
           onClick={() => {handleRouting()}}
         >

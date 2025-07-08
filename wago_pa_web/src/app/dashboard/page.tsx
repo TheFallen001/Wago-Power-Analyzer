@@ -231,11 +231,12 @@ const Dashboard = () => {
       {/* Horizontal Bar Chart */}
       <div className="bg-white rounded-lg shadow p-4">
         <h2 className="font-semibold mb-4 text-gray-800">Total Consumptions</h2>
-        <div className="w-full h-96">
+        <div className="w-full" style={{ height: 500 }}>
           <Bar
             data={horizontalBarData}
             options={{
               indexAxis: 'y',
+              maintainAspectRatio: false,
               plugins: { legend: { display: false, labels: { color: '#0F172A', font: { weight: 'bold' } } } },
               scales: { x: { beginAtZero: true, ticks: { color: '#0F172A' } }, y: { ticks: { color: '#0F172A' } } },
             }}

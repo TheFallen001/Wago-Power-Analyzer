@@ -51,5 +51,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
 }
 
 
+
+
 // All device logic is now in VirtualDeviceStore.ts and ModbusDeviceStore.ts
 // This file should only be used for shared types/utilities.

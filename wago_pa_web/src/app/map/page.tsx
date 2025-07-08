@@ -7,7 +7,7 @@ import {
   Marker,
 } from "@react-google-maps/api";
 import DeviceInfoPopup from "./DeviceInfoPopup";
-import { ModbusDevice, ModbusDevices, subscribeToDeviceUpdates } from "../utils/ModbusDeviceStore";
+import { ModbusDevice, useModbusDevices, ModbusDevices, subscribeToDeviceUpdates } from "../utils/ModbusDeviceStore";
 
 // Set map container style
 const containerStyle = {
@@ -75,16 +75,4 @@ export default function MapScreen() {
       {/* </div> */}
     </div>
   );
-}
-
-// Custom hook to use ModbusDevices from the store
-export function useModbusDevices() {
-  const [devices, setDevices] = useState<ModbusDevice[]>([]);
-  useEffect(() => {
-    const unsubscribe = subscribeToDeviceUpdates((newDevices) => {
-      setDevices([...newDevices]);
-    });
-    return unsubscribe;
-  }, []);
-  return { devices };
 }

@@ -17,6 +17,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import wdxHelper from "../utils/DeviceStore";
 import { RootParamList } from "../navigation/types";
+export const API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // 🔁 Replace with your actual API key
+
 
 const MapScreen = () => {
   const mapRef = useRef<MapView>(null);

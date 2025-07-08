@@ -260,17 +260,33 @@ export function getLogs(deviceName: string,onReceived: (logs: string) => void) {
   }
 }
 
-// Add this function to ModbusDeviceStore if not present
-export function addDevice(device: ModbusDevice) {
-  ModbusDevices.push(device);
-  if (typeof window !== "undefined" && ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(
+export function addModbusDevice(device: Device, modbusInfo: any): void {
+  modbusInfo.clientID ??= 0;
+  modbusInfo.hostAddress ??= "127.0.0.1";
+  modbusInfo.port ??= 502;
+
+  try {
+    console.log("Sending device info");
+    ws?.send(
       JSON.stringify({
         type: "addDevice",
         path: "MODBUS.",
-        device,
+        device: device,
+        modbusInfo: modbusInfo,
       })
     );
+  } catch (e) {
+    console.error(e);
   }
-  notifyListeners();
+}
+
+export function useModbusDevices() {
+  const [devices, setDevices] = useState<ModbusDevice[]>([]);
+  useEffect(() => {
+    const unsubscribe = subscribeToDeviceUpdates((newDevices) => {
+      setDevices([...newDevices]);
+    });
+    return unsubscribe;
+  }, []);
+  return { devices };
 }

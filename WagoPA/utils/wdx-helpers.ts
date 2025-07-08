@@ -1,5 +1,6 @@
 //helpers to work with the server.
 export type Device = {
+  status: ReactNode;
   deviceType?: string;
   currentMax: number;
   currentMin: number;
