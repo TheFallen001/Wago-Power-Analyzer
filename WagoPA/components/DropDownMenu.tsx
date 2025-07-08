@@ -12,8 +12,6 @@ interface DropDownMenuProps {
 }
 export default function DeviceDropdown({ devices, selectedDevice, onChange }: DropDownMenuProps) {
 
-
-
   return (
     <View style={tw`mb-4`}>
       <Text style={tw`mb-2 text-gray-700`}>Select Device:</Text>

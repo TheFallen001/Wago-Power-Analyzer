@@ -24,7 +24,7 @@ function setRegister(addr, val) {
 
 // Register simulation
 const registerMap = {
-  8192: () => floatToBE_RE_Registers(randFloat(220, 240)),  // UA
+  8192: () => floatToBE_RE_Registers(randFloat(2200, 2400)),  // UA
   8194: () => floatToBE_RE_Registers(randFloat(220, 240)),  // UB
   8196: () => floatToBE_RE_Registers(randFloat(220, 240)),  // UC
   8198: () => floatToBE_RE_Registers(randFloat(380, 420)),  // UAB

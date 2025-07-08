@@ -92,40 +92,38 @@ wss.on("connection", (ws) => {
         virtualDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.device && message.device.deviceType === "MODBUS") {
         modbusDeviceService.handleMessage(message, ws, client, broadcast);
-        
       } else if (message.type === "getLogs") {
         if (client && client.instanceService) {
-          response = client.instanceService
-            .whois(message.deviceName)
-            .subscribe({
-              next: (response) => {
-                client.instanceService.listLogs(response.uuid, 1, 2).subscribe({
-                  next: (response) => {
-                    // Response's Attributes: [ 'items', 'total', 'currentPage', 'totalPages' ]
+          
+          client.instanceService.whois(message.deviceName).subscribe({
+            next: (response) => {
+              client.instanceService.listLogs(response.uuid, 1, 2).subscribe({
+                next: (response) => {
+                  // Response's Attributes: [ 'items', 'total', 'currentPage', 'totalPages' ]
 
-                    ws.send(
-                      JSON.stringify({
-                        type: "updateLogs",
-                        logs: JSON.stringify(
-                          response.items.slice(0, 10),
-                          null,
-                          2
-                        ),
-                      })
-                    );
-                  },
-                  error: async (error) => {
-                    console.log("Error encountered: ", error);
-                  },
-                  complete: async () => {
-                    console.log("Got all logs");
-                  },
-                });
-              },
-              error: (error) => {
-                console.error("Error: ", error);
-              },
-            });
+                  ws.send(
+                    JSON.stringify({
+                      type: "updateLogs",
+                      logs: JSON.stringify(
+                        response.items.slice(0, 10),
+                        null,
+                        2
+                      ),
+                    })
+                  );
+                },
+                error: async (error) => {
+                  console.log("Error encountered: ", error);
+                },
+                complete: async () => {
+                  console.log("Got all logs");
+                },
+              });
+            },
+            error: (error) => {
+              console.error("Who is Error: ", error);
+            },
+          });
         }
       }
     } catch (err) {

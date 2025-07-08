@@ -239,8 +239,8 @@ function isSchemaChanged(newSchema: { name: string; config: ModbusConfig }[]) {
   return false;
 }
 
-export const getLogs = (deviceName: string) => {
-  let result = deviceName.startsWith("Analyzer")
+export function getLogs(deviceName: string,onReceived: (logs: string) => void) {
+  const result = deviceName.startsWith("Analyzer")
     ? deviceName.split(" - ")[1]?.trim()
     : deviceName;
   ws?.send(
@@ -249,7 +249,16 @@ export const getLogs = (deviceName: string) => {
       deviceName: result,
     })
   );
-};
+  if (ws) {
+    ws.onmessage = (message) => {
+      const data = JSON.parse(message.data);
+      if (data.type === "updateLogs") {
+        logData = data.logs;
+        onReceived(data.logs); // trigger the callback
+      }
+    };
+  }
+}
 
 // Add this function to ModbusDeviceStore if not present
 export function addDevice(device: ModbusDevice) {

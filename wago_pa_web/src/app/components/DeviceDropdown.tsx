@@ -26,18 +26,27 @@ interface DropDownMenuProps {
   onChange: (value: string) => void;
 }
 
-export default function DeviceDropdown({ devices, selectedDevice, onChange }: DropDownMenuProps) {
+export default function DeviceDropdown({
+  devices,
+  selectedDevice,
+  onChange,
+}: DropDownMenuProps) {
   return (
     <div className="mb-4">
       <label className="block mb-2 text-text text-black">Select Device:</label>
       <select
         className="w-full border border-border rounded px-3 py-2 bg-surface text-black"
         value={selectedDevice || ""}
-        onChange={e => onChange(e.target.value)}
+        onChange={(e) => {
+          const selected = devices.find((d) => d.id === e.target.value);
+          onChange(selected ? selected.id : ""); // Pass device id string to parent
+        }}
       >
         <option value="">Select a device...</option>
-        {devices.map(device => (
-          <option key={device.id} value={device.id}>{device.name}</option>
+        {devices.map((device) => (
+          <option key={device.id} value={device.id}>
+            {device.name}
+          </option>
         ))}
       </select>
     </div>

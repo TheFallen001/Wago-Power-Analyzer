@@ -1,8 +1,8 @@
 // Web version of LogsScreen using Tailwind CSS
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import DeviceDropdown from "../components/DeviceDropdown";
-import { ModbusDevices } from "../utils/ModbusDeviceStore";
+import { ModbusDevices,getLogs } from "../utils/ModbusDeviceStore";
 
 // TODO: Implement Modbus logs fetching if needed
 
@@ -19,12 +19,7 @@ export interface LogItem {
   instanceUuid: string;
 }
 
-interface LogResponse {
-  items: LogItem[];
-  total: number;
-  currentPage: number;
-  totalPages: number;
-}
+
 
 function LogsPage() {
   const [logs, setLogs] = useState<LogItem[]>([]);
@@ -33,8 +28,21 @@ function LogsPage() {
 
   // Placeholder: No logs for Modbus devices yet
   const handleConfirm = () => {
+    console.log(selectedDevice)
     setLogs([]);
-    alert('Log fetching for Modbus devices is not implemented.');
+    console.log("Getting Logs...");
+
+    getLogs(selectedDevice, (rawLogs) => {
+      try {
+        const parsed = JSON.parse(rawLogs);
+        setLogs(parsed);
+      } catch (e) {
+        console.error("Parse error:", e);
+      }
+     
+    });
+
+
   };
 
   return (
@@ -45,7 +53,10 @@ function LogsPage() {
           <DeviceDropdown
             devices={devices}
             selectedDevice={selectedDevice}
-            onChange={setSelectedDevice}
+            onChange={(selDev) => {
+              const dev = devices.find((d) => d.id === selDev);
+              setSelectedDevice(dev?.name ?? "");
+            }}
           />
         </div>
         <button
