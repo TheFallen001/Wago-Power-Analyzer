@@ -92,6 +92,7 @@ wss.on("connection", (ws) => {
         virtualDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.device && message.device.deviceType === "MODBUS") {
         modbusDeviceService.handleMessage(message, ws, client, broadcast);
+        
       } else if (message.type === "getLogs") {
         if (client && client.instanceService) {
           response = client.instanceService

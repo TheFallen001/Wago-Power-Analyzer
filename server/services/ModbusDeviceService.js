@@ -20,10 +20,12 @@ class ModbusDeviceService {
   }
 
   setConfig(message, ws, client, broadcast) {
+    
     Object.entries(message.config).forEach(([key, value]) => {
       let valuePath = `${message.path}.${key}`;
       client.dataService.setValue(valuePath, value).subscribe({
         next: (result) => {
+          console.log("Result: ", result);
           ws.send(
             JSON.stringify({
               type: "configUpdated",
@@ -167,7 +169,7 @@ class ModbusDeviceService {
       message.type === "setConfig" &&
       message.path &&
       message.config &&
-      message.path.startsWith("Modbus.")
+      message.path.startsWith("MODBUS.")
     ) {
       this.setConfig(message, ws, client, broadcast);
     } else if (

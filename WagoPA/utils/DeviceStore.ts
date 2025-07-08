@@ -2,10 +2,11 @@
 // Only contains shared types and utilities. All device logic is now in VirtualDeviceStore and ModbusDeviceStore.
 import wdxHelper, { Device } from "./wdx-helpers";
 import GOOGLE_API_KEY from "../test";
+import { Console } from "console";
 // google maps API key
 
 //your ipaddress
-const IPADDRESS = "192.168.31.121";
+const IPADDRESS = "192.168.31.122";
 
 //Websocket server instance
 let ws: WebSocket | null = null;
@@ -35,17 +36,17 @@ const initializeWebSocket = () => {
         wdxHelper.validDevicePaths = new Set();
         wdxDevices.forEach((device) => {
           const deviceName = device.name;
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.volt`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.curr`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.addr1`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.baud1`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.baud2`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.check1`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.check2`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.stopBit1`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.stopBit2`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.lat`);
-          wdxHelper.validDevicePaths.add(`Virtual.${deviceName}.lng`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.volt`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.curr`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.addr1`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.baud1`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.baud2`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.check1`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.check2`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.stopBit1`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.stopBit2`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.lat`);
+          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.lng`);
         });
         wdxHelper.devicePathMap = {};
         wdxDevices.forEach((device) => {
@@ -100,10 +101,12 @@ export function updateDeviceConfig(
     wdxHelper.devices.find((d) => d.id === idOrName) ||
     wdxHelper.devices.find((d) => d.name === idOrName);
   if (device) {
+    device.deviceType = "MODBUS";
     device.config = config;
     if (ws && ws.readyState === WebSocket.OPEN) {
       const deviceName = device.name.replace("Analyzer - ", "");
-      const devicePath = wdxHelper.devicePathMap[deviceName];
+      const devicePath = "MODBUS." + deviceName;
+      
       if (devicePath) {
         Object.entries(config).forEach(([key, value]) => {
           if (ws && ws.readyState === WebSocket.OPEN) {
@@ -111,6 +114,7 @@ export function updateDeviceConfig(
               JSON.stringify({
                 type: "setConfig",
                 path: devicePath,
+                device: device,
                 config: { [key]: value },
               })
             );
