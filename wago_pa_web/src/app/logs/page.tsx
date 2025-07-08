@@ -1,6 +1,6 @@
 // Web version of LogsScreen using Tailwind CSS
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DeviceDropdown from "../components/DeviceDropdown";
 import { ModbusDevices,getLogs } from "../utils/ModbusDeviceStore";
 
@@ -24,25 +24,58 @@ export interface LogItem {
 function LogsPage() {
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [selectedDevice, setSelectedDevice] = useState("");
-  const devices = ModbusDevices;
+  // Map ModbusDevices to Device[] type expected by DeviceDropdown
+  const [devices, setDevices] = useState(() => ModbusDevices.map((d) => ({
+    ...d,
+    config: {
+      addr1: (d.config as any).addr1 ?? 0,
+      baud1: (d.config as any).baud1 ?? 0,
+      check1: (d.config as any).check1 ?? 0,
+      stopBit1: (d.config as any).stopBit1 ?? 0,
+      baud2: (d.config as any).baud2 ?? 0,
+      check2: (d.config as any).check2 ?? 0,
+      stopBit2: (d.config as any).stopBit2 ?? 0,
+      ...(d.config || {})
+    }
+  })));
+
+  // Keep selectedDevice stable even if devices rerender
+  useEffect(() => {
+    setDevices(ModbusDevices.map((d) => ({
+      ...d,
+      config: {
+        addr1: (d.config as any).addr1 ?? 0,
+        baud1: (d.config as any).baud1 ?? 0,
+        check1: (d.config as any).check1 ?? 0,
+        stopBit1: (d.config as any).stopBit1 ?? 0,
+        baud2: (d.config as any).baud2 ?? 0,
+        check2: (d.config as any).check2 ?? 0,
+        stopBit2: (d.config as any).stopBit2 ?? 0,
+        ...(d.config || {})
+      }
+    })));
+  }, [ModbusDevices.length]);
 
   // Placeholder: No logs for Modbus devices yet
   const handleConfirm = () => {
-    console.log(selectedDevice)
+    console.log(selectedDevice);
     setLogs([]);
     console.log("Getting Logs...");
 
-    getLogs(selectedDevice, (rawLogs) => {
+    // Find the device by id and pass its name to getLogs
+    const dev = devices.find((d) => d.id === selectedDevice);
+    if (!dev) {
+      alert("Please select a device.");
+      return;
+    }
+    getLogs(dev.name, (rawLogs) => {
       try {
         const parsed = JSON.parse(rawLogs);
         setLogs(parsed);
       } catch (e) {
         console.error("Parse error:", e);
       }
-     
     });
-
-
   };
 
   return (
@@ -54,8 +87,7 @@ function LogsPage() {
             devices={devices}
             selectedDevice={selectedDevice}
             onChange={(selDev) => {
-              const dev = devices.find((d) => d.id === selDev);
-              setSelectedDevice(dev?.name ?? "");
+              setSelectedDevice(selDev);
             }}
           />
         </div>
@@ -66,7 +98,7 @@ function LogsPage() {
         >
           Confirm
         </button>
-        <div style={{ background: '#F3F4F6', border: '1px solid #E5E7EB' }} className="rounded-2xl h-60 overflow-y-auto p-4">
+        <div style={{ background: '#F3F4F6', border: '1px solid #E5E7EB', height: 600 }} className="rounded-2xl overflow-y-auto p-4">
           {logs.length === 0 ? (
             <div style={{ color: '#6B7280' }} className="">No logs yet.</div>
           ) : (
