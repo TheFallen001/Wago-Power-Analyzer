@@ -5,7 +5,7 @@ export const API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // 🔁 Replac
 // google maps API key
 
 //your ipaddress
-const IPADDRESS = "192.168.1.101";
+const IPADDRESS = "192.168.31.91";
 
 //Websocket server instance
 let ws: WebSocket | null = null;

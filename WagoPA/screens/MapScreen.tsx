@@ -17,7 +17,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import wdxHelper from "../utils/DeviceStore";
 import { RootParamList } from "../navigation/types";
-export const API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // 🔁 Replace with your actual API key
+// TODO: Replace with your actual Google Maps API key or use an environment variable
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 
 const MapScreen = () => {

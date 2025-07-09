@@ -9,6 +9,9 @@ import {
 import DeviceInfoPopup from "./DeviceInfoPopup";
 import { ModbusDevice, useModbusDevices, ModbusDevices, subscribeToDeviceUpdates } from "../utils/ModbusDeviceStore";
 
+// TODO: Replace with your actual Google Maps API key or use an environment variable
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
 // Set map container style
 const containerStyle = {
   width: "100%",
@@ -20,7 +23,6 @@ const center = {
   lng: 28.9784,
 };
 
-export const API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // 🔁 Replace with your actual API key
 
 export default function MapScreen() {
   const [selectedDevice, setSelectedDevice] = useState<ModbusDevice | null>(null);

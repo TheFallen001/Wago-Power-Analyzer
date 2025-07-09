@@ -22,51 +22,115 @@ function setRegister(addr, val) {
   holding.writeUInt16BE(val, offset);
 }
 
-// Register simulation
-const registerMap = {
-  8192: () => floatToBE_RE_Registers(randFloat(2200, 2400)),  // UA
-  8194: () => floatToBE_RE_Registers(randFloat(220, 240)),  // UB
-  8196: () => floatToBE_RE_Registers(randFloat(220, 240)),  // UC
-  8198: () => floatToBE_RE_Registers(randFloat(380, 420)),  // UAB
-  8200: () => floatToBE_RE_Registers(randFloat(380, 420)),  // UBC
-  8202: () => floatToBE_RE_Registers(randFloat(380, 420)),  // UCA
-  8204: () => floatToBE_RE_Registers(randFloat(0, 100)),    // IA
-  8206: () => floatToBE_RE_Registers(randFloat(0, 100)),    // IB
-  8208: () => floatToBE_RE_Registers(randFloat(0, 100)),    // IC
-  8210: () => floatToBE_RE_Registers(randFloat(0, 10)),     // IN
-  8212: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // PA
-  8214: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // PB
-  8216: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // PC
-  8218: () => floatToBE_RE_Registers(randFloat(0, 150000)), // PT
-  8220: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // QA
-  8222: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // QB
-  8224: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // QC
-  8226: () => floatToBE_RE_Registers(randFloat(0, 150000)), // QT
-  8228: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // SA
-  8230: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // SB
-  8232: () => floatToBE_RE_Registers(randFloat(0, 50000)),  // SC
-  8234: () => floatToBE_RE_Registers(randFloat(0, 150000)), // ST
-  8242: () => floatToBE_RE_Registers(randFloat(0.85, 1.0)), // PF
-  8244: () => floatToBE_RE_Registers(randFloat(49.0, 51.0)),// F
-  8260: () => floatToBE_RE_Registers(randFloat(0, 360)),    // APangle
-  8262: () => floatToBE_RE_Registers(randFloat(0, 360)),    // BPangle
-  8264: () => floatToBE_RE_Registers(randFloat(0, 360)),    // CPangle
-  8278: () => floatToBE_RE_Registers(randFloat(20, 80)),    // TempIn
-
-  // UINT16
+// Configurable static registers (set once at startup)
+const staticRegisters = {
+  4096: 1,      // Addr1: 1-247
+  4097: 9600,   // Baud1: 1200,2400,4800,9600,19200,38400,57600
+  4098: 0,      // Check1: 0,1,2
+  4100: 9600,   // Baud2: 1200,2400,4800,9600,19200,38400,57600
+  4101: 0,      // Check2: 0,1,2
+  4102: 1,      // 645Addr: 1-247
+  4132: 1,      // Mode: 1 or 2
 };
 
-holding.writeUInt16BE(1, 4096 * 2);      // 4096 = 1
-holding.writeUInt16BE(9600, 4097 * 2);   // 4097 = 9600
-holding.writeUInt16BE(1234, 4098 * 2);   // 4098 = random or fixed
-holding.writeUInt16BE(9600, 4100 * 2);   // 4100 = 9600
-holding.writeUInt16BE(5678, 4101 * 2);   // 4101 = random or fixed
-holding.writeUInt16BE(9999, 4102 * 2);   // 4102 = random or fixed
-holding.writeUInt16BE(1, 4132 * 2);      // 4132 = 1
+// Realistic power simulation state
+let simState = {
+  UA: randFloat(220, 240), // Phase A voltage (V)
+  PF: randFloat(0.92, 0.99), // Power factor
+  F: randFloat(49.8, 50.2), // Frequency (Hz)
+  PT: randFloat(3000, 15000), // Total active power (W)
+  lat: 41.0329, // Istanbul (from IP geolocation)
+  lng: 28.9529,
+};
+
+function updateSimState() {
+  // Small random walk for realism
+  simState.UA += randFloat(-0.5, 0.5);
+  simState.UA = Math.max(220, Math.min(240, simState.UA));
+  simState.PF += randFloat(-0.01, 0.01);
+  simState.PF = Math.max(0.85, Math.min(1.0, simState.PF));
+  simState.F += randFloat(-0.02, 0.02);
+  simState.F = Math.max(49.8, Math.min(50.2, simState.F));
+  simState.PT += randFloat(-100, 100);
+  simState.PT = Math.max(1000, Math.min(15000, simState.PT));
+  // Slightly adjust lat/lng for realism (within ~0.001 deg)
+  simState.lat += randFloat(-0.0005, 0.0005);
+  simState.lng += randFloat(-0.0005, 0.0005);
+}
+
+function getIA() {
+  // I = P / (U * PF)
+  return simState.PT / (simState.UA * simState.PF);
+}
+
+function getQT() {
+  // QT = PT * tan(acos(PF))
+  return simState.PT * Math.tan(Math.acos(simState.PF));
+}
+
+// Register simulation (periodically updated)
+const registerMap = {
+  8192: () => floatToBE_RE_Registers(simState.UA),         // UA: Phase A voltage (V)
+  8204: () => floatToBE_RE_Registers(getIA()),             // IA: Phase A current (A)
+  8218: () => floatToBE_RE_Registers(simState.PT),         // PT: Total active power (W)
+  8226: () => floatToBE_RE_Registers(getQT()),             // QT: Total reactive power (var)
+  8242: () => floatToBE_RE_Registers(simState.PF),         // PF: Power factor
+  8244: () => floatToBE_RE_Registers(simState.F),          // F: Frequency (Hz)
+  // lat/lng as fixed values (Bucharest)
+  8300: () => floatToBE_RE_Registers(simState.lat),         // lat (dynamic, near actual)
+  8302: () => floatToBE_RE_Registers(simState.lng),         // lng (dynamic, near actual)
+  // The rest can be simulated as before or left as is
+  8194: () => floatToBE_RE_Registers(randFloat(220, 240)), // UB
+  8196: () => floatToBE_RE_Registers(randFloat(220, 240)), // UC
+  8198: () => floatToBE_RE_Registers(randFloat(380, 420)), // UAB
+  8200: () => floatToBE_RE_Registers(randFloat(380, 420)), // UBC
+  8202: () => floatToBE_RE_Registers(randFloat(380, 420)), // UCA
+  8206: () => floatToBE_RE_Registers(randFloat(0, 100)),   // IB
+  8208: () => floatToBE_RE_Registers(randFloat(0, 100)),   // IC
+  8210: () => floatToBE_RE_Registers(randFloat(0, 10)),    // IN
+  8212: () => floatToBE_RE_Registers(randFloat(0, 50000)), // PA
+  8214: () => floatToBE_RE_Registers(randFloat(0, 50000)), // PB
+  8216: () => floatToBE_RE_Registers(randFloat(0, 50000)), // PC
+  8220: () => floatToBE_RE_Registers(randFloat(0, 50000)), // QA
+  8222: () => floatToBE_RE_Registers(randFloat(0, 50000)), // QB
+  8224: () => floatToBE_RE_Registers(randFloat(0, 50000)), // QC
+  8228: () => floatToBE_RE_Registers(randFloat(0, 50000)), // SA
+  8230: () => floatToBE_RE_Registers(randFloat(0, 50000)), // SB
+  8232: () => floatToBE_RE_Registers(randFloat(0, 50000)), // SC
+  8234: () => floatToBE_RE_Registers(randFloat(0, 150000)),// ST
+  8260: () => floatToBE_RE_Registers(randFloat(0, 360)),   // APangle
+  8262: () => floatToBE_RE_Registers(randFloat(0, 360)),   // BPangle
+  8264: () => floatToBE_RE_Registers(randFloat(0, 360)),   // CPangle
+  8278: () => floatToBE_RE_Registers(randFloat(20, 80)),   // TempIn
+};
 
 
-// Periodically update values
+// Set static registers once at startup
+for (const [addr, val] of Object.entries(staticRegisters)) {
+  holding.writeUInt16BE(val, parseInt(addr) * 2);
+}
+
+
+// Periodically update only dynamic values
 setInterval(() => {
+  updateSimState();
+  // Debug: log float values and register values for key fields
+  const debugFields = [
+    { name: 'UA', addr: 8192, value: simState.UA },
+    { name: 'IA', addr: 8204, value: getIA() },
+    { name: 'PT', addr: 8218, value: simState.PT },
+    { name: 'QT', addr: 8226, value: getQT() },
+    { name: 'PF', addr: 8242, value: simState.PF },
+    { name: 'F', addr: 8244, value: simState.F },
+    { name: 'lat', addr: 8300, value: simState.lat },
+    { name: 'lng', addr: 8302, value: simState.lng },
+  ];
+  debugFields.forEach(({ name, addr, value }) => {
+    const regs = floatToBE_RE_Registers(value);
+    console.log(
+      `[SIM] ${name} @ ${addr}: float=${value} | reg[0]=${regs[0]} reg[1]=${regs[1]}`
+    );
+  });
   for (let addr in registerMap) {
     addr = parseInt(addr);
     const val = registerMap[addr]();
@@ -77,7 +141,7 @@ setInterval(() => {
       setRegister(addr, val[0]);
     }
   }
-  console.log("Registers updated.");
+  // console.log("Registers updated.");
 }, 1000);
 
 // Start TCP Modbus server

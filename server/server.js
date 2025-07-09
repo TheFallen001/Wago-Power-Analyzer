@@ -221,22 +221,31 @@ const initializeWDXClient = async () => {
 
     // For each device node, collect its children as config fields
     // Instead of map, use for loop and delay each subscribe by 1 second
+    // Power consumption norms for config fields:
+    // "F": Frequency (Hz)
+    // "PF": Power Factor (0-1)
+    // "QT": Total Reactive Power (var)
+    // "PT": Total Active Power (W)
+    // "UA": Phase A Voltage (V)
+    // "IA": Phase A Current (A)
+    // "lat": Latitude (decimal degrees, set to actual or simulated position)
+    // "lng": Longitude (decimal degrees, set to actual or simulated position)
     const configFields = [
-      "Addr1",
-      "645Addr",
-      "Baud1",
-      "Baud2",
-      "Check1",
-      "Check2",
-      "Language",
-      "F",
-      "PF",
-      "QT",
-      "PT",
-      "UA",
-      "IA",
-      "lat",
-      "lng",
+      "Addr1",      // Device address
+      "645Addr",    // 645 protocol address
+      "Baud1",      // Baud rate 1
+      "Baud2",      // Baud rate 2
+      "Check1",     // Check digit 1
+      "Check2",     // Check digit 2
+      "Language",   // Language
+      "F",          // Frequency (Hz)
+      "PF",         // Power Factor (0-1)
+      "QT",         // Total Reactive Power (var)
+      "PT",         // Total Active Power (W)
+      "UA",         // Phase A Voltage (V)
+      "IA",         // Phase A Current (A)
+      "lat",        // Latitude (decimal degrees)
+      "lng",        // Longitude (decimal degrees)
     ];
     const devices = [];
     for (let i = 0; i < deviceNodes.length; i++) {
