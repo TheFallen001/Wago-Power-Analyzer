@@ -114,23 +114,6 @@ for (const [addr, val] of Object.entries(staticRegisters)) {
 // Periodically update only dynamic values
 setInterval(() => {
   updateSimState();
-  // Debug: log float values and register values for key fields
-  const debugFields = [
-    { name: 'UA', addr: 8192, value: simState.UA },
-    { name: 'IA', addr: 8204, value: getIA() },
-    { name: 'PT', addr: 8218, value: simState.PT },
-    { name: 'QT', addr: 8226, value: getQT() },
-    { name: 'PF', addr: 8242, value: simState.PF },
-    { name: 'F', addr: 8244, value: simState.F },
-    { name: 'lat', addr: 8300, value: simState.lat },
-    { name: 'lng', addr: 8302, value: simState.lng },
-  ];
-  debugFields.forEach(({ name, addr, value }) => {
-    const regs = floatToBE_RE_Registers(value);
-    console.log(
-      `[SIM] ${name} @ ${addr}: float=${value} | reg[0]=${regs[0]} reg[1]=${regs[1]}`
-    );
-  });
   for (let addr in registerMap) {
     addr = parseInt(addr);
     const val = registerMap[addr]();
