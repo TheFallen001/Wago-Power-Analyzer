@@ -3,6 +3,7 @@
 const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
 
 export type Device = {
+  deviceType: "MODBUS";
   currentMax: number;
   currentMin: number;
   id: string;

@@ -117,6 +117,12 @@ export function updateDeviceConfig(
                 config: { [key]: value },
               })
             );
+            // console.log("Sent full message:", {
+            //   type: "setConfig",
+            //   path: devicePath,
+            //   device: { deviceType: "MODBUS", name: deviceName },
+            //   config: { [key]: value },
+            // });
           }
         });
       }

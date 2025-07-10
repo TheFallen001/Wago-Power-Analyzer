@@ -33,6 +33,7 @@ let client;
 const lastDataBroadcastTime = {};
 const DATA_BROADCAST_INTERVAL = 5000; // ms
 
+
 wss.on("connection", (ws) => {
   console.log("New React Native client connected at", new Date().toISOString());
   clients.add(ws);
@@ -69,9 +70,10 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("message", (data) => {
+  console.log("Received raw message:", data.toString());
     try {
       const message = JSON.parse(data);
-
+      console.log("Parsed message:", message);
       // Delegate to Virtual or Modbus service based on message
       // if (message.path && message.path.startsWith("Virtual.")) {
       //   virtualDeviceService.handleMessage(
