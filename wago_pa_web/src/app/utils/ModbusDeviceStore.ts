@@ -199,7 +199,7 @@ export const updateDevicesFromWDX = (wdxDevices: { name: string; config: ModbusC
         name: deviceName,
         deviceType: "MODBUS",
         latitude: 41.0 + index * 0.01,
-        longitude: 29.0 + index * 0.01,
+        longitude: 29.02 + index * 0.01,
         address: "",
         voltageRange: "230V",
         status: "Active",

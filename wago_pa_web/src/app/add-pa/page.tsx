@@ -5,7 +5,7 @@ import { addModbusDevice } from "../utils/ModbusDeviceStore";
 import { reverseGeocode } from "../utils/DeviceStore";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 // TODO: Replace with your actual Google Maps API key or use an environment variable
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || "";// TODO: Replace with your actual Google Maps API key or use an environment variable
 
 export default function AddPA() {
   const [name, setName] = useState("");
