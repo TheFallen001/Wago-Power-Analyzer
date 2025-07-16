@@ -1,7 +1,7 @@
 // DeviceStore.ts
 // Only contains shared types and utilities. All device logic is now in VirtualDeviceStore and ModbusDeviceStore.
 import wdxHelper, { Device } from "./wdx-helpers";
-export const API_KEY = "AIzaSyD-6wlPgPO1Njypt9V5DJCmVNdMkuaI_bo"; // 🔁 Replace with your actual API key
+const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
 // google maps API key
 
 //your ipaddress
@@ -210,7 +210,7 @@ export async function geocodeAddress(
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
         address
-      )}&key=${API_KEY}`
+      )}&key=${GOOGLE_API_KEY}`
     );
     const data = await response.json();
     if (data.status === "OK" && data.results.length > 0) {
@@ -230,7 +230,7 @@ export async function reverseGeocode(
 ): Promise<string | null> {
   try {
     const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_API_KEY}`
     );
     const data = await response.json();
     if (data.status === "OK" && data.results.length > 0) {

@@ -35,5 +35,4 @@ Address from (Decimal),Name,Description,Format,Access,Read Transformation,Write 
 4101,Check2,Check digit 2,UINT16_BE,READ/WRITE,,
 4102,645Addr,645 address,UINT16_BE,READ/WRITE,,
 4132,Language,language,UINT16_BE,READ/WRITE,,
-8300,lat,Latitude,FLOAT32_BE_RE,READ,,
-8302,lng,Longitude,FLOAT32_BE_RE,READ,,
+
