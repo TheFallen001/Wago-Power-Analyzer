@@ -1,6 +1,5 @@
 //helpers to work with the server.
 export type Device = {
-  status: ReactNode;
   deviceType?: string;
   currentMax: number;
   currentMin: number;
@@ -11,6 +10,23 @@ export type Device = {
   address: string;
   voltageRange: string;
   config: any;
+};
+
+export type ModbusConfig = {
+  Addr1: number;
+  Baud1: number;
+  Check1: number;
+  Baud2: number;
+  Check2: number;
+  "645Addr": number;
+  Language: number;
+  // Graph variables (read-only)
+  F?: number;
+  PF?: number;
+  QT?: number;
+  PT?: number;
+  UA?: number;
+  IA?: number;
 };
 
 interface AlarmEvent {
@@ -48,7 +64,7 @@ class WDXHelpers {
   }
 
   updateDevicesFromWDX = (
-    wdxDevices: { name: string; config: Device["config"] }[]
+    wdxDevices: { name: string; deviceType: string; config: Device["config"] }[]
   ) => {
     wdxDevices.forEach((wdxDevice, index) => {
       const deviceName = wdxDevice.name;
@@ -56,32 +72,67 @@ class WDXHelpers {
       let device = this.devices.find((d) => d.name === fullName);
 
       if (!device) {
-        device = {
-          id: (index + 1).toString(),
-          name: fullName,
-          
-          latitude: 41.0 + index * 0.01,
-          longitude: 29.0 + index * 0.01,
-          address: "",
-          voltageRange: "230V",
-          currentMax: 2.0,
-          currentMin: 0,
-          config: wdxDevice.config || {
-            addr1: 1,
-            baud1: 9600,
-            check1: 0,
-            stopBit1: 0,
-            baud2: 9600,
-            check2: 0,
-            stopBit2: 0,
-            lat: 40.0001,
-            lng: 28.0001,
-          },
-        };
+        switch (wdxDevice.deviceType) {
+          case "Virtual ": {
+            device = {
+              id: (index + 1).toString(),
+              name: fullName,
+              deviceType: wdxDevice.deviceType,
+              latitude: 41.0 + index * 0.01,
+              longitude: 29.0 + index * 0.01,
+              address: "",
+              voltageRange: "230V",
+              currentMax: 2.0,
+              currentMin: 0,
+              config: wdxDevice.config || {
+                addr1: 1,
+                baud1: 9600,
+                check1: 0,
+                stopBit1: 0,
+                baud2: 9600,
+                check2: 0,
+                stopBit2: 0,
+                lat: 40.0001,
+                lng: 28.0001,
+              },
+            };
 
-        this.devices.push(device);
+            this.devices.push(device);
+            break;
+          }
+          case "MODBUS": {
+            device = {
+              id: (index + 1).toString(),
+              name: fullName,
+              deviceType: wdxDevice.deviceType,
+              latitude: 41.0 + index * 0.01,
+              longitude: 29.0 + index * 0.01,
+              address: "",
+              voltageRange: "230V",
+              currentMax: 2.0,
+              currentMin: 0,
+              config: wdxDevice.config || {
+                Addr1: 0,
+                Baud1: 0,
+                Check1: 0,
+                Baud2: 0,
+                Check2: 0,
+                "645Addr": 0,
+                Language: 0,
+                F: 0,
+                PF: 0,
+                QT: 0,
+                PT: 0,
+                UA: 0,
+                IA: 0,
+              },
+            };
+            this.devices.push(device);
+          }
+        }
       } else if (wdxDevice.config && Object.keys(wdxDevice.config).length > 0) {
         device.config = wdxDevice.config;
+        device.deviceType = wdxDevice.deviceType;
       }
     });
   };
@@ -198,6 +249,44 @@ class WDXHelpers {
       if (index !== -1) this.listeners.splice(index, 1);
     };
   };
+
+  setDevicePaths(device: any) {
+    const deviceName = device.name;
+    switch (device.deviceType) {
+      case "Virtual": {
+        this.validDevicePaths.add(`Virtual.${deviceName}.volt`);
+        this.validDevicePaths.add(`Virtual.${deviceName}.curr`);
+        this.validDevicePaths.add(`Virtual.${deviceName}.addr1`);
+        this.validDevicePaths.add(`Virtual.${deviceName}.baud1`);
+        this.validDevicePaths.add(`Virtual.${deviceName}.baud2`);
+        this.validDevicePaths.add(`Virtual.${deviceName}.check1`);
+        this.validDevicePaths.add(`Virtual.${deviceName}.check2`);
+        this.validDevicePaths.add(`Virtual.${deviceName}.stopBit1`);
+        this.validDevicePaths.add(`Virtual.${deviceName}.stopBit2`);
+        this.devicePathMap[deviceName] = `Virtual.${deviceName}`;
+        break;
+      }
+      case "MODBUS": {
+        // Config variables
+        this.validDevicePaths.add(`MODBUS.${deviceName}.Addr1`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.Baud1`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.Check1`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.Baud2`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.Check2`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.645Addr`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.Language`);
+        // Graph varibles
+        this.validDevicePaths.add(`MODBUS.${deviceName}.F`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.PF`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.QT`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.PT`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.UA`);
+        this.validDevicePaths.add(`MODBUS.${deviceName}.IA`);
+        this.devicePathMap[deviceName] = `Modbus.${deviceName}`;
+        break;
+      }
+    }
+  }
 }
 
 export default new WDXHelpers();

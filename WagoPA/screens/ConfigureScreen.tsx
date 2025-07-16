@@ -31,12 +31,16 @@ const ConfigureScreen = () => {
   const [addr645, setAddr645] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
+
+
   const [configEditing, setConfigEditing] = useState(false);
 
   // Update form with selected device data from DeviceStore
   const updateFormWithDevice = (
     dev: (typeof wdxHelper.devices)[0] | undefined
   ) => {
+
+    
     if (dev) {
       setAddr1(dev.config.Addr1);
       setBaud1(dev.config.Baud1);

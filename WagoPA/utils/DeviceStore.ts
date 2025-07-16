@@ -5,7 +5,7 @@ const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOO
 // google maps API key
 
 //your ipaddress
-const IPADDRESS = "192.168.31.91";
+const IPADDRESS = "192.168.31.137";
 
 //Websocket server instance
 let ws: WebSocket | null = null;
@@ -31,41 +31,47 @@ const initializeWebSocket = () => {
       const wdxDevices = message.devices || [];
 
       if (!Array.isArray(wdxDevices)) return;
+
       if (wdxHelper.isSchemaChanged(wdxDevices)) {
         wdxHelper.validDevicePaths = new Set();
-        wdxDevices.forEach((device) => {
-          const deviceName = device.name;
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.volt`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.curr`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.addr1`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.baud1`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.baud2`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.check1`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.check2`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.stopBit1`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.stopBit2`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.lat`);
-          wdxHelper.validDevicePaths.add(`MODBUS.${deviceName}.lng`);
-        });
         wdxHelper.devicePathMap = {};
+
         wdxDevices.forEach((device) => {
-          const deviceName = device.name;
-          wdxHelper.devicePathMap[deviceName] = `Virtual.${deviceName}`;
+          wdxHelper.setDevicePaths(device);
         });
+
         wdxHelper.updateDevicesFromWDX(
           wdxDevices.map((device) => ({
             name: device.name,
-            config: device.config || {
-              addr1: 0,
-              baud1: 0,
-              check1: 0,
-              stopBit1: 0,
-              baud2: 0,
-              check2: 0,
-              stopBit2: 0,
-              lat: 40,
-              lng: 28,
-            },
+            deviceType: device.deviceType,
+            config:
+              device.config || device.deviceType === "Virtual"
+                ? {
+                    addr1: 0,
+                    baud1: 0,
+                    check1: 0,
+                    stopBit1: 0,
+                    baud2: 0,
+                    check2: 0,
+                    stopBit2: 0,
+                    lat: 40,
+                    lng: 28,
+                  }
+                : {
+                    Addr1: 0,
+                    Baud1: 0,
+                    Check1: 0,
+                    Baud2: 0,
+                    Check2: 0,
+                    "645Addr": 0,
+                    Language: 0,
+                    F: 0,
+                    PF: 0,
+                    QT: 0,
+                    PT: 0,
+                    UA: 0,
+                    IA: 0,
+                  },
           }))
         );
         wdxHelper.lastSchemaDevices = wdxDevices.map((d) => ({
@@ -80,7 +86,7 @@ const initializeWebSocket = () => {
       wdxHelper.updateDeviceFromWDXData(message.path, message.value);
     } else if (message.type === "configUpdated") {
       wdxHelper.updateDeviceFromWDXData(message.path, message.config);
-    } 
+    }
   };
   ws.onclose = () => {
     wdxHelper.isInitialized = false;
@@ -105,7 +111,7 @@ export function updateDeviceConfig(
     if (ws && ws.readyState === WebSocket.OPEN) {
       const deviceName = device.name.replace("Analyzer - ", "");
       const devicePath = "MODBUS." + deviceName;
-      
+
       if (devicePath) {
         Object.entries(config).forEach(([key, value]) => {
           if (ws && ws.readyState === WebSocket.OPEN) {
@@ -131,7 +137,10 @@ export function updateDeviceConfig(
   }
 }
 
-export function getLogs(deviceName: string,onReceived: (logs: string) => void) {
+export function getLogs(
+  deviceName: string,
+  onReceived: (logs: string) => void
+) {
   let result = deviceName.startsWith("Analyzer")
     ? deviceName.split(" - ")[1]?.trim()
     : deviceName;
@@ -158,22 +167,51 @@ export interface ModbusInfo {
   clientID: number | undefined;
 }
 
-export function addDevice(device: Device, modbusInfo: ModbusInfo): void {
-  let instanceType = device.deviceType === "Virtual" ? "Virtual" : "MODBUS";
+export async function addDevice(device: Device, modbusInfo: ModbusInfo) {
   modbusInfo.clientID ??= 0;
   modbusInfo.hostAddress ??= "127.0.0.1";
   modbusInfo.port ??= 502;
 
   try {
-    console.log("Sending device info");
-    ws?.send(
-      JSON.stringify({
-        type: "addDevice",
-        path: instanceType + ".",
-        device: device,
-        modbusInfo: modbusInfo,
-      })
-    );
+    if (device.deviceType === "Virtual") {
+      console.log("Sending Virtual Device info");
+      ws?.send(
+        JSON.stringify({
+          type: "addDevice",
+          device: device
+        })
+      ); 
+    } else {
+      console.log("Sending MODBUS device info");
+      ws?.send(
+        JSON.stringify({
+          type: "addDevice",
+          device: device,
+          modbusInfo: modbusInfo,
+        })
+      );
+    }
+
+    if (ws) {
+      ws.onmessage = (message) => {
+        const data = JSON.parse(message.data);
+        if (data.type === "newInstanceAdded") {
+          let currentDevices = [];
+          wdxHelper.devices.forEach((device) => {
+            currentDevices.push({
+              name: device.name,
+              deviceType: device.deviceType,
+              config: device.config
+            })
+          })
+
+          // wdxHelper.updateDevicesFromWDX(wdxHelper.devices)
+          // trigger the callback
+        }
+      };
+    }
+
+    ws?.onmessage;
   } catch (e) {
     console.error(e);
   }

@@ -16,7 +16,7 @@ const readline = require("readline");
 const { server, serverSocket, holding } = require("./ModbusSim.js");
 // Set up WebSocket server for React Native clients
 
-const IPADDRESS = "localhost";
+const IPADDRESS = "192.168.31.137";
 const wss = new WebSocket.Server({ port: 8080 });
 console.log("WebSocket server started on ws://localhost:8080");
 
@@ -41,6 +41,7 @@ wss.on("connection", (ws) => {
   // Send latest schema to new client
   if (latestSchemaDevices.length > 0) {
     console.log("Sending latest schema to new client");
+    console.log("Devices", latestSchemaDevices);
     const messageString = JSON.stringify({
       type: "schema",
       devices: latestSchemaDevices,
@@ -96,7 +97,6 @@ wss.on("connection", (ws) => {
         modbusDeviceService.handleMessage(message, ws, client, broadcast);
       } else if (message.type === "getLogs") {
         if (client && client.instanceService) {
-          
           client.instanceService.whois(message.deviceName).subscribe({
             next: (response) => {
               client.instanceService.listLogs(response.uuid, 1, 2).subscribe({
@@ -154,7 +154,7 @@ const broadcast = (message) => {
 };
 
 // Add async getSchema helper
-const getSchema = async (schema, client) => {
+  const getSchema = async (schema, client) => {
   try {
     return await client.dataService.getSchema(schema.path, 1).toPromise();
   } catch (error) {
@@ -257,7 +257,7 @@ const initializeWDXClient = async () => {
         const config = {};
         for (let j = 0; j < configFields.length; j++) {
           const field = configFields[j];
-          const fieldPath = `MODBUS.${deviceName}.${field}`;
+          const fieldPath = `${path}.${deviceName}.${field}`;
           console.log(
             `[${deviceName}] Attempting to subscribe to: ${fieldPath}`
           );
@@ -307,7 +307,12 @@ const initializeWDXClient = async () => {
           // Delay 1 second between each field subscribe for this device
           await new Promise((r) => setTimeout(r, 200));
         }
-        devices.push({ name: deviceName, config, path: deviceNode.path });
+        devices.push({
+          name: deviceName,
+          deviceType: "MODBUS",
+          config,
+          path: deviceNode.path,
+        });
         // Log row by row after each device
         console.log(
           `[${deviceName}] Config collected:`,
@@ -320,10 +325,15 @@ const initializeWDXClient = async () => {
           ":",
           err
         );
-        devices.push({ name: deviceName, config: {}, path: deviceNode.path });
+        devices.push({
+          name: deviceName,
+          deviceType: "MODBUS",
+          config: {},
+          path: deviceNode.path,
+        });
       }
     }
-    latestSchemaDevices = devices.map(({ name, config }) => ({ name, config }));
+    latestSchemaDevices = devices.map(({ name,deviceType, config }) => ({ name,deviceType, config }));
     broadcast({ type: "schema", devices: latestSchemaDevices });
   } catch (e) {
     console.error(
@@ -341,7 +351,7 @@ holding.writeUInt16BE(1234, 4102 * 2); // Just an example
 
 // Start server
 serverSocket.listen(1502, () => {
-  console.log("✅ Modbus TCP server listening on port 1502");
+  console.log("✅ MODBUS TCP server listening on port 1502");
 });
 
 // Start the WDX client
@@ -385,7 +395,7 @@ process.stdin.on("keypress", async (str, key) => {
 setInterval(() => {
   if (latestSchemaDevices && latestSchemaDevices.length > 0) {
     console.log(
-      "Current Modbus devices:",
+      "Current MODBUS devices:",
       latestSchemaDevices.map((d) => d.name)
     );
   }

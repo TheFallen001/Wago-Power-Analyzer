@@ -9,23 +9,7 @@
 
 
 
-// export function setVirtualDevicePaths(devices: { name: string }[]) {
-//   validDevicePaths = new Set();
-//   devicePathMap = {};
-//   devices.forEach((device) => {
-//     const deviceName = device.name;
-//     validDevicePaths.add(`Virtual.${deviceName}.volt`);
-//     validDevicePaths.add(`Virtual.${deviceName}.curr`);
-//     validDevicePaths.add(`Virtual.${deviceName}.addr1`);
-//     validDevicePaths.add(`Virtual.${deviceName}.baud1`);
-//     validDevicePaths.add(`Virtual.${deviceName}.baud2`);
-//     validDevicePaths.add(`Virtual.${deviceName}.check1`);
-//     validDevicePaths.add(`Virtual.${deviceName}.check2`);
-//     validDevicePaths.add(`Virtual.${deviceName}.stopBit1`);
-//     validDevicePaths.add(`Virtual.${deviceName}.stopBit2`);
-//     devicePathMap[deviceName] = `Virtual.${deviceName}`;
-//   });
-// }
+// export function 
 
 // export function getVirtualDevicePath(deviceName: string) {
 //   return devicePathMap[deviceName];

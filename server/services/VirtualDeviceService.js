@@ -6,6 +6,7 @@ const { MetaData } = Data;
 const { DataSchema } = Data;
 const { MetaDataVirtualAdapter, MetaDataVirtual } = MetaData;
 const WDXSchema = require("@wago/wdx-schema");
+const { getSchema } = require("../server");
 
 const lastDataBroadcastTime = {};
 const DATA_BROADCAST_INTERVAL = 5000;
@@ -27,7 +28,7 @@ class VirtualDeviceService {
     // : { name: device.name, type: "Virtual" };
     instance.name = device.name;
     instance.type = "Virtual";
-    console.log("Instance: ", JSON.stringify(instance))
+    console.log("Instance: ", JSON.stringify(instance));
     client.instanceService.save(instance).subscribe({
       next: (result) => {
         if (result && result.uuid) {
@@ -90,10 +91,12 @@ class VirtualDeviceService {
                           console.log(
                             "Default values have been set successfully"
                           );
-                          broadcast({
-                            type: "schema",
-                            devices: latestSchemaDevices,
-                          });
+                          const result = getSchema({ path: "Virtual" }, client);
+                          ws.send(
+                            JSON.stringify({
+                              type: "newInstanceAdded"
+                            })
+                          )
                         },
                       });
 
@@ -106,6 +109,12 @@ class VirtualDeviceService {
                     );
                   },
                 });
+
+                // ws.send(
+                //   JSON.stringify({
+                //       type:
+                //   })
+                // )
               });
             },
             error: (err) => {
@@ -309,7 +318,9 @@ class VirtualDeviceService {
   }
 
   handleMessage(message, ws, client, broadcast) {
-    console.log(`DeviceName received: ${JSON.stringify(message)}, ${message.path}`);
+    console.log(
+      `DeviceName received: ${JSON.stringify(message)}, ${message.path}`
+    );
     if (
       message.type === "setConfig" &&
       message.path &&
