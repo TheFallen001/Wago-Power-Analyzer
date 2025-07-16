@@ -12,11 +12,13 @@ function randFloat(min, max) {
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
 function floatToBE_RE_Registers(value) {
   const buf = Buffer.alloc(4);
   buf.writeFloatBE(value);
-  return [buf.readUInt16BE(2), buf.readUInt16BE(0)];
+  return [buf.readUInt16BE(0), buf.readUInt16BE(2)];
 }
+
 function setRegister(addr, val) {
   const offset = addr * 2;
   holding.writeUInt16BE(val, offset);
@@ -54,8 +56,7 @@ function updateSimState() {
   simState.PT += randFloat(-100, 100);
   simState.PT = Math.max(1000, Math.min(15000, simState.PT));
   // Slightly adjust lat/lng for realism (within ~0.001 deg)
-  simState.lat += randFloat(-0.0005, 0.0005);
-  simState.lng += randFloat(-0.0005, 0.0005);
+
 }
 
 function getIA() {
@@ -77,8 +78,8 @@ const registerMap = {
   8242: () => floatToBE_RE_Registers(simState.PF),         // PF: Power factor
   8244: () => floatToBE_RE_Registers(simState.F),          // F: Frequency (Hz)
   // lat/lng as fixed values (Bucharest)
-  8300: () => floatToBE_RE_Registers(simState.lat),         // lat (dynamic, near actual)
-  8302: () => floatToBE_RE_Registers(simState.lng),         // lng (dynamic, near actual)
+  // 8300: () => floatToBE_RE_Registers(simState.lat),         // lat (dynamic, near actual)
+  // 8302: () => floatToBE_RE_Registers(simState.lng),         // lng (dynamic, near actual)
   // The rest can be simulated as before or left as is
   8194: () => floatToBE_RE_Registers(randFloat(220, 240)), // UB
   8196: () => floatToBE_RE_Registers(randFloat(220, 240)), // UC
