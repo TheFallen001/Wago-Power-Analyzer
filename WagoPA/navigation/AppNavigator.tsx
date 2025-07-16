@@ -19,9 +19,6 @@ const AppNavigator = () => {
         <Drawer.Screen
         name="Maps"
         component={MapScreen}/>
-        <Drawer.Screen
-        name="Details"
-        component={NewDetailScreen}/>
       </Drawer.Navigator>
     </NavigationContainer>
   );

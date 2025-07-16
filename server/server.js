@@ -16,7 +16,7 @@ const readline = require("readline");
 const { server, serverSocket, holding } = require("./ModbusSim.js");
 // Set up WebSocket server for React Native clients
 
-const IPADDRESS = "192.168.31.137";
+const IPADDRESS = "localhost";
 const wss = new WebSocket.Server({ port: 8080 });
 console.log("WebSocket server started on ws://localhost:8080");
 
