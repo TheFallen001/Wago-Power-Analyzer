@@ -1,7 +1,8 @@
 // DeviceStore.ts
 // Only contains shared types and utilities. All device logic is now in VirtualDeviceStore and ModbusDeviceStore.
 import wdxHelper, { Device } from "./wdx-helpers";
-const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
+const GOOGLE_API_KEY =
+  process.env.NEXT_PUBLIC_GOOGLE_API_KEY || process.env.GOOGLE_API_KEY || "";
 // google maps API key
 
 //your ipaddress
@@ -44,34 +45,35 @@ const initializeWebSocket = () => {
           wdxDevices.map((device) => ({
             name: device.name,
             deviceType: device.deviceType,
-            config:
-              device.config || device.deviceType === "Virtual"
-                ? {
-                    addr1: 0,
-                    baud1: 0,
-                    check1: 0,
-                    stopBit1: 0,
-                    baud2: 0,
-                    check2: 0,
-                    stopBit2: 0,
-                    lat: 40,
-                    lng: 28,
-                  }
-                : {
-                    Addr1: 0,
-                    Baud1: 0,
-                    Check1: 0,
-                    Baud2: 0,
-                    Check2: 0,
-                    "645Addr": 0,
-                    Language: 0,
-                    F: 0,
-                    PF: 0,
-                    QT: 0,
-                    PT: 0,
-                    UA: 0,
-                    IA: 0,
-                  },
+            config: device.config
+              ? device.config
+              : device.deviceType === "Virtual"
+              ? {
+                  addr1: 0,
+                  baud1: 0,
+                  check1: 0,
+                  stopBit1: 0,
+                  baud2: 0,
+                  check2: 0,
+                  stopBit2: 0,
+                  lat: 40,
+                  lng: 28,
+                }
+              : {
+                  Addr1: 0,
+                  Baud1: 0,
+                  Check1: 0,
+                  Baud2: 0,
+                  Check2: 0,
+                  "645Addr": 0,
+                  Language: 0,
+                  F: 0,
+                  PF: 0,
+                  QT: 0,
+                  PT: 0,
+                  UA: 0,
+                  IA: 0,
+                },
           }))
         );
         wdxHelper.lastSchemaDevices = wdxDevices.map((d) => ({
@@ -178,9 +180,9 @@ export async function addDevice(device: Device, modbusInfo: ModbusInfo) {
       ws?.send(
         JSON.stringify({
           type: "addDevice",
-          device: device
+          device: device,
         })
-      ); 
+      );
     } else {
       console.log("Sending MODBUS device info");
       ws?.send(
@@ -201,9 +203,9 @@ export async function addDevice(device: Device, modbusInfo: ModbusInfo) {
             currentDevices.push({
               name: device.name,
               deviceType: device.deviceType,
-              config: device.config
-            })
-          })
+              config: device.config,
+            });
+          });
 
           // wdxHelper.updateDevicesFromWDX(wdxHelper.devices)
           // trigger the callback

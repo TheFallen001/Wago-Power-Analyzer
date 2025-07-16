@@ -5,16 +5,63 @@ import {
   FlatList,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import wdxHelper from "../utils/DeviceStore";
 import { RootParamList } from "../navigation/types";
 import tw from "twrnc";
+import * as DocumentPicker from "expo-document-picker"
 
 const DevicesScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootParamList>>();
 
+  const handlePickCSV = async () => {
+    try{
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'text/csv', // Filter to CSV files
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled) {
+        console.log('User canceled the file picker');
+        return;
+      }
+
+      const file = result.assets[0]; 
+
+      console.log('Picked file:', file.name);
+      console.log('URI:', file.uri);
+      Alert.alert('CSV Selected', `File: ${file.name}`);
+    }catch (error) {
+      console.error('Error picking file:', error);
+      Alert.alert('Error', 'Failed to pick file.');
+    }
+  }
+
+  const isDefaultConfig = (config: any) => {
+    const defaultConfig = {
+      Addr1: 0,
+      Baud1: 0,
+      Check1: 0,
+      Baud2: 0,
+      Check2: 0,
+      "645Addr": 0,
+      Language: 0,
+      F: 0,
+      PF: 0,
+      QT: 0,
+      PT: 0,
+      UA: 0,
+      IA: 0,
+    };
+
+    return Object.entries(defaultConfig).every(
+      ([key, val]) => config[key] === val
+    );
+  };
   const renderDeviceItem = ({
     item,
   }: {
@@ -24,7 +71,7 @@ const DevicesScreen = () => {
       <Text style={tw`text-lg font-bold mb-1`}>{item.name}</Text>
       <Text>Address: {item.address || "Unknown"}</Text>
       <Text>Voltage Range: {item.voltageRange}</Text>
-      <Text>Status: {item.status}</Text>
+      {/* <Text>Status: {item.status}</Text> */}
       <View style={tw`flex-row mt-2`}>
         <TouchableOpacity
           style={tw`bg-green-600 py-2 px-4 rounded items-center mr-2`}
@@ -43,16 +90,16 @@ const DevicesScreen = () => {
           <Text style={tw`text-white`}>Configure</Text>
         </TouchableOpacity>
       </View>
-      {item.config === null ||
-        item.config === undefined ||
+      {(isDefaultConfig(item.config) ||
         (typeof item.config === "object" &&
-          Object.keys(item.config).length === 0 && (
-            <TouchableOpacity
-              style={tw`bg-green-600 py-2 px-4 rounded items-center mr-2 mt-5`}
-            >
-              <Text style={tw`text-white`}>Upload CSV</Text>
-            </TouchableOpacity>
-          ))}
+          Object.keys(item.config).length === 0)) && (
+        <TouchableOpacity
+          onPress={handlePickCSV}
+          style={tw`bg-green-600 py-2 px-4 rounded items-center mr-2 mt-5`}
+        >
+          <Text style={tw`text-white`}>Upload CSV</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 

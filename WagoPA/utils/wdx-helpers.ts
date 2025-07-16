@@ -66,10 +66,12 @@ class WDXHelpers {
   updateDevicesFromWDX = (
     wdxDevices: { name: string; deviceType: string; config: Device["config"] }[]
   ) => {
+    
     wdxDevices.forEach((wdxDevice, index) => {
       const deviceName = wdxDevice.name;
       const fullName = `Analyzer - ${deviceName}`;
       let device = this.devices.find((d) => d.name === fullName);
+      
 
       if (!device) {
         switch (wdxDevice.deviceType) {
@@ -101,6 +103,7 @@ class WDXHelpers {
             break;
           }
           case "MODBUS": {
+            
             device = {
               id: (index + 1).toString(),
               name: fullName,
@@ -128,6 +131,7 @@ class WDXHelpers {
               },
             };
             this.devices.push(device);
+            break;
           }
         }
       } else if (wdxDevice.config && Object.keys(wdxDevice.config).length > 0) {
@@ -282,7 +286,7 @@ class WDXHelpers {
         this.validDevicePaths.add(`MODBUS.${deviceName}.PT`);
         this.validDevicePaths.add(`MODBUS.${deviceName}.UA`);
         this.validDevicePaths.add(`MODBUS.${deviceName}.IA`);
-        this.devicePathMap[deviceName] = `Modbus.${deviceName}`;
+        this.devicePathMap[deviceName] = `MODBUS.${deviceName}`;
         break;
       }
     }

@@ -42,6 +42,7 @@ const ConfigureScreen = () => {
 
     
     if (dev) {
+      
       setAddr1(dev.config.Addr1);
       setBaud1(dev.config.Baud1);
       setCheck1(dev.config.Check1);
