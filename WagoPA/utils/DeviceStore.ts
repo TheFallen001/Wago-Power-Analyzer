@@ -6,7 +6,7 @@ const GOOGLE_API_KEY =
 // google maps API key
 
 //your ipaddress
-const IPADDRESS = "192.168.31.107";
+const IPADDRESS = "192.168.31.138";
 
 //Websocket server instance
 let ws: WebSocket | null = null;
@@ -241,6 +241,27 @@ export const updateAddress = ({
   }
 };
 
+export const sendCsvSchema = async (devName: string, csvSchema: string[][]) => {
+  console.log("About to send csv data...")
+  if (ws) {
+    try {
+      ws.send(
+        JSON.stringify({
+          type: "csvUpload",
+          device: {
+            name: devName,
+            deviceType: "MODBUS",
+          },
+
+          schemas: csvSchema,
+        })
+      );
+      console.log("Sent csv data...")
+    } catch (error) {
+      console.error("Error occured when sending csv file: ", error);
+    }
+  }
+};
 // Google Geocoding utility functions
 
 export async function geocodeAddress(

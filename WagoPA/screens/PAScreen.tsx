@@ -9,37 +9,80 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import wdxHelper from "../utils/DeviceStore";
+import wdxHelper, { sendCsvSchema } from "../utils/DeviceStore";
 import { RootParamList } from "../navigation/types";
 import tw from "twrnc";
-import * as DocumentPicker from "expo-document-picker"
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
+import Papa from "papaparse";
+
+interface SchemaTree {
+  path: string;
+  children: DataSchema[];
+}
+interface DataSchema {
+  path: string;
+  relativePath: string;
+  description: string;
+  metadata: ModbusMetadata;
+  readonly: boolean;
+  subscribeable: boolean;
+  editable: boolean;
+  extendable: boolean;
+  expandable: boolean;
+  refreshable: boolean;
+  removable: boolean;
+}
+
+interface ModbusMetadata {
+  MODBUSAddressFrom: number;
+  MODBUSAccess: ModbusAccess[];
+  MODBUSReadTransformation: string;
+  MODBUSWriteTransformation: string;
+  MODBUSType: string;
+  MODBUSAddressLength: number;
+}
+
+type ModbusAccess = "READ" | "WRITE" | "READ/WRITE";
 
 const DevicesScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootParamList>>();
 
-  const handlePickCSV = async () => {
-    try{
+  const handlePickCSV = async (devName: string) => {
+    try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'text/csv', // Filter to CSV files
+        type: "*/*", // accept any file
         copyToCacheDirectory: true,
         multiple: false,
       });
+      console.log("Result: ", result)
 
-      if (result.canceled) {
-        console.log('User canceled the file picker');
+      if (result.canceled || !result.assets?.length) {
+        console.log("User canceled the file picker");
         return;
       }
 
-      const file = result.assets[0]; 
+      const file = result.assets[0];
 
-      console.log('Picked file:', file.name);
-      console.log('URI:', file.uri);
-      Alert.alert('CSV Selected', `File: ${file.name}`);
-    }catch (error) {
-      console.error('Error picking file:', error);
-      Alert.alert('Error', 'Failed to pick file.');
+      if (!file.name.toLowerCase().endsWith(".csv")) {
+        Alert.alert("Invalid File", "Please select a .csv file.");
+        return;
+      }
+      const fileContent = await FileSystem.readAsStringAsync(file.uri);
+
+      const parsed = Papa.parse<string[]>(fileContent, {
+        header: false,
+        skipEmptyLines: true,
+      });
+
+      const rows = parsed.data as string[][];
+
+      await sendCsvSchema(devName, rows);
+    } catch (error) {
+      console.error("Error picking file:", error);
+      Alert.alert("Error", "Failed to pick file.");
     }
-  }
+  };
 
   const isDefaultConfig = (config: any) => {
     const defaultConfig = {
@@ -94,7 +137,7 @@ const DevicesScreen = () => {
         (typeof item.config === "object" &&
           Object.keys(item.config).length === 0)) && (
         <TouchableOpacity
-          onPress={handlePickCSV}
+          onPress={() => handlePickCSV(item.name)}
           style={tw`bg-green-600 py-2 px-4 rounded items-center mr-2 mt-5`}
         >
           <Text style={tw`text-white`}>Upload CSV</Text>

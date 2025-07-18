@@ -379,3 +379,146 @@ const valueAnalyzer = (value) => {
 
 
 
+private async __createSchemaFromContent(content: string) {
+    try {
+      this.showLoader = true;
+      const lines = content.split(/[\r\n]+/g);
+      if (this.hasHeader) {
+        lines.shift();
+      }
+ 
+      const parentSchema = this.node;
+ 
+      if (undefined === parentSchema) {
+        return;
+      }
+      parentSchema.children = [];
+ 
+      let schema, data, line: any;
+ 
+      while (0 < lines.length) {
+        line = lines.shift();
+ 
+        if (undefined === line || '' === line) {
+          continue;
+        }
+ 
+        data = line.split(this.CSV_SEPARATOR);
+ 
+        let schemaName = data[1];
+        let schemaPath = `${parentSchema?.path}${WDXSchema.WDX.Schema.Model.Data.PATH_SEPARATOR}${schemaName}`;
+ 
+        schema = new WDXSchema.WDX.Schema.Model.Data.DataSchema();
+        schema.path = schemaPath;
+        schema.relativePath = schemaName;
+        schema.description = data[2];
+        schema.metadata = this.getSchemaMetadata(data),
+          schema.readonly =
+          !(data[4].split(this.ACCESS_SEPARATOR) as
+            Array<WDXSchema.WDX.Schema.Model.Data.MetaData
+              .MetadataMODBUSAccess>)
+            .includes(WDXSchema.WDX.Schema.Model.Data.MetaData
+              .MetadataMODBUSAccess.WRITE);
+        schema.subscribeable = true;
+        schema.editable = true;
+        schema.extendable = false;
+        schema.expandable = false;
+        schema.refreshable = false;
+        schema.removable = true;
+ 
+        parentSchema.children?.push(schema);
+      }
+      const response =
+        await this.__wsDataClientService.setSchema(parentSchema).toPromise();
+      if (undefined !== response) this.node = response;
+      this.showLoader = false;
+    } catch (error: any) {
+      console.error(
+        'EdesignUiRuntimeDataTreeNodeComponent.__createSchemaFromContent',
+        error);
+      this.showLoader = false;
+    }
+  }
+ 
+  private getSchemaMetadata(data: Array<string>):
+    WDXSchema.WDX.Schema.Model.Data.MetaData.MetaDataMODBUS {
+    const schemaMetadata =
+      new WDXSchema.WDX.Schema.Model.Data.MetaData.MetaDataMODBUS();
+    schemaMetadata.MODBUSAddressFrom = Number(data[0]);
+    schemaMetadata.MODBUSAccess =
+      (data[4].split(this.ACCESS_SEPARATOR) as
+        Array<WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSAccess>);
+    schemaMetadata.MODBUSReadTransformation = data[5];
+    schemaMetadata.MODBUSWriteTransformation = data[6];
+ 
+    if (Object
+      .values(WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType)
+      .includes(
+        data[3] as
+        WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType)) {
+      schemaMetadata.MODBUSType = data[3] as
+        WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType;
+ 
+      switch (schemaMetadata.MODBUSType) {
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .FLOAT32_BE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .FLOAT32_BE_RE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .FLOAT32_LE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .FLOAT32_LE_RE:
+          schemaMetadata.MODBUSAddressLength = 2;
+          break;
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .FLOAT64_BE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .FLOAT64_BE_RE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .FLOAT64_LE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .FLOAT64_LE_RE:
+          schemaMetadata.MODBUSAddressLength = 4;
+          break;
+ 
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .INT16_BE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .INT16_LE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .UINT16_BE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .UINT16_BE:
+          schemaMetadata.MODBUSAddressLength = 1;
+          break;
+ 
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .INT32_BE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .INT32_LE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .UINT32_BE:
+        case WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType
+          .UINT32_BE:
+          schemaMetadata.MODBUSAddressLength = 2;
+          break;
+      }
+    } else {
+      if (data[3].includes(WDXSchema.WDX.Schema.Model.Data.MetaData
+        .MetadataMODBUSType.STRING_LE) ||
+        data[3].includes(WDXSchema.WDX.Schema.Model.Data.MetaData
+          .MetadataMODBUSType.STRING_LE_RE)) {
+        const regexp = /\((\d)+\)/g;
+        const match = data[3].match(regexp);
+        if (null !== match && 0 < match?.length) {
+          schemaMetadata.MODBUSAddressLength =
+            Number(match[0].replace('(', '').replace(')', ''));
+          schemaMetadata.MODBUSType = data[3].replace(match[0], '') as
+            WDXSchema.WDX.Schema.Model.Data.MetaData.MetadataMODBUSType;
+        } else {
+          throw `Wrong data type '${data[3]}'`;
+        }
+      }
+    }
+    return schemaMetadata;
+  }

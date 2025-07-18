@@ -291,6 +291,8 @@ class WDXHelpers {
       }
     }
   }
+
+  
 }
 
 export default new WDXHelpers();
