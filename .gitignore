@@ -5,6 +5,7 @@
 **/WagoPA/node_modules/
 **/server/node_modules/
 **/WagoPA/.env
+**/wago_pa_web/.env.local
 **/api.ts
 
 

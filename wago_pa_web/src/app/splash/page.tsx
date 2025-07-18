@@ -7,7 +7,7 @@ export default function Splash() {
   const router = useRouter();
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push("/map"); // Redirect to main page after splash
+      router.push("/dashboard"); // Redirect to main page after splash
     }, 1500);
     return () => clearTimeout(timer);
   }, [router]);

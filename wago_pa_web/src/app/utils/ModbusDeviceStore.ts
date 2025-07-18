@@ -64,7 +64,7 @@ function notifySchemaListeners() {
   listeners.forEach((listener) => listener(ModbusDevices));
 }
 
-const IPADDRESS = "192.168.31.91";
+const IPADDRESS = "192.168.31.138";
 
 //Websocket server instance
 //initializing web socket server

@@ -19,12 +19,13 @@ const Drawer = ({
   setCurrentPage: (page: string) => void;
 }) => {
   const navItems = [
+    { name: "Dashboard", path: "/dashboard" }, // Added Dashboard to navigation
     { name: "Map", path: "/map" },
     { name: "Add PA", path: "/add-pa" },
     { name: "Configure", path: "/configure" },
     { name: "Devices", path: "/devices" },
     { name: "Settings", path: "/settings" },
-    { name: "Dashboard", path: "/dashboard" }, // Added Dashboard to navigation
+    
   ];
 
   return (

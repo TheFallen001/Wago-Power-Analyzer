@@ -8,7 +8,7 @@ import {
 } from "@react-google-maps/api";
 import DeviceInfoPopup from "./DeviceInfoPopup";
 import { ModbusDevice, useModbusDevices, ModbusDevices, subscribeToDeviceUpdates } from "../utils/ModbusDeviceStore";
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || "";// TODO: Replace with your actual Google Maps API key or use an environment variable
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;// TODO: Replace with your actual Google Maps API key or use an environment variable
 
 // Set map container style
 const containerStyle = {
